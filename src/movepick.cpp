@@ -114,7 +114,7 @@ void MovePicker::score() {
           m.value = 6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
               + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
           if (blockedCount > 3 && type_of(pos.moved_piece(m)) == PAWN && type_of(pos.piece_on(to_sq(m))) == PAWN)
-              m.value -= 2048;
+              m.value -= 1024;
       }
       else if constexpr (Type == QUIETS)
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
