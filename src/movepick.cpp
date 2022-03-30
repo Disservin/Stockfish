@@ -182,7 +182,7 @@ void MovePicker::score() {
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
           if (blockedCount > 3 && type_of(pos.moved_piece(m)) == PAWN && type_of(pos.piece_on(to_sq(m))) == PAWN
               && (file_of(to_sq(m)) >= 2 || file_of(to_sq(m)) <= 5)) {
-              m.value += 1024;
+              m.value += 2048;
           }
       }
       else if constexpr (Type == QUIETS)
