@@ -178,6 +178,7 @@ void MovePicker::score() {
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
       else if constexpr (Type == QUIETS)
+      {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
@@ -189,7 +190,13 @@ void MovePicker::score() {
                           :                                               !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                                 0)
                           :                                                                                 0);
-
+          if (pos.game_ply() <= 40 && type_of(pos.moved_piece(m)) == PAWN)
+              m.value += 512;
+          if (pos.game_ply() >= 52 && type_of(pos.moved_piece(m)) == ROOK)
+              m.value += 512;
+          if (pos.game_ply() >= 120 && (type_of(pos.moved_piece(m)) == KING || type_of(pos.moved_piece(m)) == QUEEN))
+              m.value += 256;
+      }
       else // Type == EVASIONS
       {
           if (pos.capture(m))
