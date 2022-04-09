@@ -42,18 +42,18 @@ constexpr int CounterMovePruneThreshold = 0;
 struct Stack {
   Move* pv;
   PieceToHistory* continuationHistory;
-  int ply;
+  uint16_t ply;
   Move currentMove;
   Move excludedMove;
   Move killers[2];
   Value staticEval;
   Depth depth;
   int statScore;
-  int moveCount;
+  uint16_t moveCount;
   bool inCheck;
   bool ttPv;
   bool ttHit;
-  int doubleExtensions;
+  uint8_t doubleExtensions;
 };
 
 
@@ -74,7 +74,7 @@ struct RootMove {
   Value score = -VALUE_INFINITE;
   Value previousScore = -VALUE_INFINITE;
   Value averageScore = -VALUE_INFINITE;
-  int selDepth = 0;
+  uint16_t selDepth = 0;
   int tbRank = 0;
   Value tbScore;
   std::vector<Move> pv;

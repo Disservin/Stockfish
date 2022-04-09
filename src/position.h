@@ -40,13 +40,13 @@ namespace Stockfish {
 struct StateInfo {
 
   // Copied when making a move
-  Key    pawnKey;
-  Key    materialKey;
-  Value  nonPawnMaterial[COLOR_NB];
-  int    castlingRights;
-  int    rule50;
-  int    pliesFromNull;
-  Square epSquare;
+  Key      pawnKey;
+  Key      materialKey;
+  Value    nonPawnMaterial[COLOR_NB];
+  uint8_t castlingRights;
+  uint16_t rule50;
+  uint16_t pliesFromNull;
+  Square   epSquare;
 
   // Not copied when making a move (will be recomputed anyhow)
   Key        key;
@@ -56,7 +56,7 @@ struct StateInfo {
   Bitboard   pinners[COLOR_NB];
   Bitboard   checkSquares[PIECE_TYPE_NB];
   Piece      capturedPiece;
-  int        repetition;
+  uint8_t    repetition;
 
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;

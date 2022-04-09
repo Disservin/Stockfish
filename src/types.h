@@ -106,8 +106,8 @@ constexpr bool Is64Bit = false;
 typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
-constexpr int MAX_MOVES = 256;
-constexpr int MAX_PLY   = 246;
+constexpr uint16_t MAX_MOVES = 256;
+constexpr uint8_t MAX_PLY   = 246;
 
 /// A move needs 16 bits to be stored
 ///
@@ -121,7 +121,7 @@ constexpr int MAX_PLY   = 246;
 /// any normal move destination square is always different from origin square
 /// while MOVE_NONE and MOVE_NULL have the same origin and destination square.
 
-enum Move : int {
+enum Move : uint16_t {
   MOVE_NONE,
   MOVE_NULL = 65
 };
@@ -215,9 +215,9 @@ constexpr Value PieceValue[PHASE_NB][PIECE_NB] = {
     VALUE_ZERO, PawnValueEg, KnightValueEg, BishopValueEg, RookValueEg, QueenValueEg, VALUE_ZERO, VALUE_ZERO }
 };
 
-typedef int Depth;
+typedef int16_t Depth;
 
-enum : int {
+enum : int8_t {
   DEPTH_QS_CHECKS     =  0,
   DEPTH_QS_NO_CHECKS  = -1,
   DEPTH_QS_RECAPTURES = -5,
@@ -227,7 +227,7 @@ enum : int {
   DEPTH_OFFSET = -7 // value used only for TT entry occupancy check
 };
 
-enum Square : int {
+enum Square : uint8_t {
   SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
   SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
   SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
@@ -242,7 +242,7 @@ enum Square : int {
   SQUARE_NB   = 64
 };
 
-enum Direction : int {
+enum Direction : int8_t {
   NORTH =  8,
   EAST  =  1,
   SOUTH = -NORTH,
@@ -254,11 +254,11 @@ enum Direction : int {
   NORTH_WEST = NORTH + WEST
 };
 
-enum File : int {
+enum File : int8_t {
   FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, FILE_NB
 };
 
-enum Rank : int {
+enum Rank : int8_t  {
   RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, RANK_NB
 };
 
@@ -266,7 +266,7 @@ enum Rank : int {
 struct DirtyPiece {
 
   // Number of changed pieces
-  int dirty_num;
+  int8_t dirty_num;
 
   // Max 3 pieces can change in one move. A promotion with capture moves
   // both the pawn and the captured piece to SQ_NONE and the piece promoted
@@ -449,7 +449,7 @@ constexpr Square to_sq(Move m) {
   return Square(m & 0x3F);
 }
 
-constexpr int from_to(Move m) {
+constexpr uint16_t from_to(Move m) {
  return m & 0xFFF;
 }
 
