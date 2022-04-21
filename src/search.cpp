@@ -773,14 +773,13 @@ namespace {
     complexity = abs(ss->staticEval - (us == WHITE ? eg_value(pos.psq_score()) : -eg_value(pos.psq_score())));
 
     thisThread->complexityAverage.update(complexity);
-
+    
     // Step 7. Razoring.
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
     if (   !PvNode
-        && !improving
         && depth <= 7
-        && eval < alpha - 348 - 258 * depth * depth)
+        && (eval < alpha - 348 - 258 * depth * depth || improvement < - 500))
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
         if (value < alpha)
