@@ -1113,9 +1113,10 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
           else if ((ss-2)->staticEval != VALUE_NONE
-                   && abs(ss->staticEval) - abs((ss-2)->staticEval) > 75
-                   && ss->staticEval < 0
-                   && ss->staticEval > -100)
+                   && !PvNode
+                   && abs(ss->staticEval - (ss-2)->staticEval) >= 150
+                   && (ss-2)->staticEval >= 75 
+                   && ss->staticEval <= - 75)
               extension = 1;
 
       }
