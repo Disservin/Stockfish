@@ -1112,6 +1112,12 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
+          else if ((ss-2)->staticEval != VALUE_NONE
+                   && abs(ss->staticEval) - abs((ss-2)->staticEval) > 75
+                   && ss->staticEval < 0
+                   && ss->staticEval > -100)
+              extension = 1;
+
       }
 
       // Add extension to new depth
