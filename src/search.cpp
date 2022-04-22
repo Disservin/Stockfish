@@ -1116,6 +1116,10 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
+          else if (popcount(shift<pawn_push(WHITE)>(pos.pieces(WHITE, PAWN)) & pos.pieces(BLACK, PAWN)) > 4 
+                  && type_of(pos.moved_piece(move)) == PAWN
+                  && type_of(pos.piece_on(to_sq(move))) == PAWN)
+              extension = -1;
       }
 
       // Add extension to new depth
