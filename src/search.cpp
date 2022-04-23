@@ -1166,6 +1166,10 @@ moves_loop: // When in check, search starts here
           // Increase reduction if ttMove is a capture (~3 Elo)
           if (ttCapture)
               r++;
+          
+          // Increase reduction if the previous move was a null move.
+          if ((ss-1)->currentMove == MOVE_NULL)
+              r++;
 
           // Decrease reduction at PvNodes if bestvalue
           // is vastly different from static evaluation
