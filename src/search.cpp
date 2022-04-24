@@ -1275,7 +1275,7 @@ moves_loop: // When in check, search starts here
               // we must take care to only do this for the first PV line.
               if (   moveCount > 1
                   && !thisThread->pvIdx
-                  && value - 10 > alpha)
+                  && value - 20 > alpha)
                   ++thisThread->bestMoveChanges;
           }
           else
