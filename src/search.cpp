@@ -472,8 +472,8 @@ void Thread::search() {
           double complexPosition = std::clamp(1.0 + (complexity - 326) / 1618.1, 0.5, 1.5);
 
           double criticalPart = 1;
-          if (bestValue < -150 && bestValue > -200 && ss->ply <= 26)
-              criticalPart = 1+1.1*(ss->ply)/(512);
+          if (bestValue < -150 && bestValue > -200 && ss->ply <= 70)
+              criticalPart = 1+1.1*(ss->ply)/(256);
           double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition * criticalPart;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
