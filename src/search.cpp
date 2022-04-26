@@ -554,9 +554,9 @@ namespace {
     Depth extension, newDepth;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
     bool givesCheck, improving, didLMR, priorCapture;
-    bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
+    bool capture, doFullDepthSearch, moveCountPruning, ttCapture, possibleGoodCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement, complexity;
+    int moveCount, captureCount, quietCount, improvement, complexity, possibleGoodCaptureCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -567,6 +567,8 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    possibleGoodCaptureCount = 0;
+    possibleGoodCapture = false;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -920,7 +922,6 @@ namespace {
         depth--;
 
 moves_loop: // When in check, search starts here
-
     // Step 12. A small Probcut idea, when we are in check (~0 Elo)
     probCutBeta = beta + 481;
     if (   ss->inCheck
@@ -993,11 +994,15 @@ moves_loop: // When in check, search starts here
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
 
+      if (capture && rootNode && !possibleGoodCapture){
+          possibleGoodCapture = true;
+          possibleGoodCaptureCount = moveCount;
+      }
       // Calculate new depth for this move
       newDepth = depth - 1;
 
       Value delta = beta - alpha;
-
+        
       // Step 14. Pruning at shallow depth (~98 Elo). Depth conditions are important for mate finding.
       if (  !rootNode
           && pos.non_pawn_material(us)
@@ -1107,7 +1112,6 @@ moves_loop: // When in check, search starts here
           // Check extensions (~1 Elo)
           else if (   givesCheck
                    && depth > 9
-                   && !ss->inCheck
                    && abs(ss->staticEval) > 71)
               extension = 1;
 
@@ -1118,9 +1122,19 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
       }
-
+      
       // Add extension to new depth
       newDepth += extension;
+      
+      if (moveCount > possibleGoodCaptureCount 
+          && possibleGoodCapture 
+          && capture
+          && bestValue - 250 > ss->staticEval){
+              newDepth = depth - 1;
+              extension = 0;
+          }
+
+
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
