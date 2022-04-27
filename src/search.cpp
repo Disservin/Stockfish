@@ -1129,7 +1129,7 @@ moves_loop: // When in check, search starts here
       if (moveCount > possibleGoodCaptureCount 
           && possibleGoodCapture 
           && capture
-          && bestValue - 250 > ss->staticEval){
+          && bestValue - 300 > ss->staticEval){
               newDepth = depth - 1;
               extension = 0;
           }
