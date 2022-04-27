@@ -1123,18 +1123,21 @@ moves_loop: // When in check, search starts here
               extension = 1;
       }
       
-      // Add extension to new depth
-      newDepth += extension;
-      
+
       if (moveCount > possibleGoodCaptureCount 
           && possibleGoodCapture 
           && capture
           && bestValue - 300 > ss->staticEval){
-              newDepth = depth - 1;
-              extension = 0;
+              newDepth = depth - 2;
+              if (ttValue <= alpha && ttValue <= value)
+                  extension = -1;
+              else if (ttValue >= beta)
+                  extension = -2;
           }
 
-
+      // Add extension to new depth
+      newDepth += extension;
+      
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
