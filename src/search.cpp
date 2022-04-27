@@ -1129,6 +1129,7 @@ moves_loop: // When in check, search starts here
           && capture
           && bestValue - 300 > ss->staticEval){
               newDepth = depth - 2;
+              extension = 0;
           }
 
       // Add extension to new depth
