@@ -1168,7 +1168,7 @@ moves_loop: // When in check, search starts here
               r++;
           
           // Increase reduction if the previous move was a null move.
-          if ((ss-1)->currentMove == MOVE_NULL && !capture && depth >= 4)
+          if ((ss-1)->currentMove == MOVE_NULL && !capture && depth >= 4 && depth <= 10)
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
