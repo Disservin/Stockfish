@@ -1168,14 +1168,11 @@ moves_loop: // When in check, search starts here
           if (ttCapture)
               r++;
           
-          // Increase reduction if avgValue - 5 < bestValue < avgValue + 5
-          // we already have found two good moves so we can reduce other moves even more
-          // because they will likely be bad. 
           int avgValue = allValue/moveCount;
           if (   rootNode 
-              && moveCount >= 4 
-              && !capture
-              && avgValue - 5 < bestValue && bestValue < avgValue + 5)
+              && moveCount >= 3 
+              && !ss->inCheck
+              && (ss->staticEval < avgValue - 100 || ss->staticEval > avgValue + 100))
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
