@@ -1174,7 +1174,7 @@ moves_loop: // When in check, search starts here
           int avgValue = allValue/moveCount;
           if (   rootNode 
               && moveCount >= 3 
-              && avgValue - 5 < bestValue && bestValue < avgValue + 5)
+              && avgValue - 5 < ss->staticEval && ss->staticEval < avgValue + 5)
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
