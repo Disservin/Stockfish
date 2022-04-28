@@ -936,6 +936,17 @@ moves_loop: // When in check, search starts here
         return probCutBeta;
 
 
+    if (   !ss->ttPv
+        &&  ss->inCheck
+        &&  depth < 8
+        &&  ss->ply > 4
+        &&  (ss-2)->staticEval - (ss-4)->staticEval > 250
+        &&  bestValue < VALUE_KNOWN_WIN){
+            value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
+            if (value < alpha) return value;
+        }
+        
+
     const PieceToHistory* contHist[] = { (ss-1)->continuationHistory, (ss-2)->continuationHistory,
                                           nullptr                   , (ss-4)->continuationHistory,
                                           nullptr                   , (ss-6)->continuationHistory };
