@@ -556,7 +556,7 @@ namespace {
     bool givesCheck, improving, didLMR, priorCapture;
     bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement, complexity;
+    int moveCount, captureCount, quietCount, improvement, complexity, allValue;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -567,6 +567,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    allValue           = 0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -1166,6 +1167,15 @@ moves_loop: // When in check, search starts here
           // Increase reduction if ttMove is a capture (~3 Elo)
           if (ttCapture)
               r++;
+          
+          // Increase reduction if avgValue - 5 < bestValue < avgValue + 5
+          // we already have found two good moves so we can reduce other moves even more
+          // because they will likely be bad. 
+          int avgValue = allValue/moveCount;
+          if (   rootNode 
+              && moveCount >= 2 
+              && avgValue - 5 < bestValue && bestValue < avgValue + 5)
+              r++;
 
           // Decrease reduction at PvNodes if bestvalue
           // is vastly different from static evaluation
@@ -1314,6 +1324,9 @@ moves_loop: // When in check, search starts here
           else if (!capture && quietCount < 64)
               quietsSearched[quietCount++] = move;
       }
+      
+      if (rootNode)
+          allValue += bestValue;
     }
 
     // The following condition would detect a stop only after move loop has been
