@@ -1173,7 +1173,8 @@ moves_loop: // When in check, search starts here
           // because they will likely be bad. 
           int avgValue = allValue/moveCount;
           if (   rootNode 
-              && moveCount >= 3 
+              && moveCount >= 4 
+              && !capture
               && avgValue - 5 < bestValue && bestValue < avgValue + 5)
               r++;
 
