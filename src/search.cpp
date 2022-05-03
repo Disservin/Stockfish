@@ -1136,13 +1136,18 @@ moves_loop: // When in check, search starts here
       pos.do_move(move, st, givesCheck);
 
       bool doDeeperSearch = false;
+      doFullDepthSearch = false;
 
+      if (ss->inCheck && PvNode && (ss-2)->staticEval != VALUE_NONE && abs((ss-2)->staticEval - bestValue) > 300)
+        doFullDepthSearch = true;
+        
       // Step 17. Late moves reduction / extension (LMR, ~98 Elo)
       // We use various heuristics for the sons of a node after the first son has
       // been searched. In general we would like to reduce them, but there are many
       // cases where we extend a son if it has good chances to be "interesting".
       if (    depth >= 2
           &&  moveCount > 1 + (PvNode && ss->ply <= 1)
+          && !doFullDepthSearch
           && (   !ss->ttPv
               || !capture
               || (cutNode && (ss-1)->moveCount > 1)))
