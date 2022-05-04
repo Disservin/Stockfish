@@ -1166,6 +1166,10 @@ moves_loop: // When in check, search starts here
           // Increase reduction if ttMove is a capture (~3 Elo)
           if (ttCapture)
               r++;
+          
+          // Increase reduction for draw evaluations
+          if (bestValue > - 10 && bestValue < 10)
+              r++;
 
           // Decrease reduction at PvNodes if bestvalue
           // is vastly different from static evaluation
