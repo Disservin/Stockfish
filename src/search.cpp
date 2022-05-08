@@ -70,18 +70,17 @@ namespace {
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
   // Movecountpruning threshold
-  int moveCountPruningLimit[2][11] = {
-    { 1, 2, 3, 6, 9, 14, 19, 26, 33, 42, 51 },
-    { 3, 4, 7, 12, 19, 28, 39, 52, 67, 84, 103 }
+  constexpr int moveCountPruningLimit[2][11] = {
+    { 1, 2, 3, 6, 8, 14, 20, 27, 34, 42, 49 },
+    { 3, 4, 8, 11, 18, 28, 39, 53, 67, 74, 98 }
   };
-  TUNE(moveCountPruningLimit);
 
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
     int r = Reductions[d] * Reductions[mn];
     return (r + 1463 - int(delta) * 1024 / int(rootDelta)) / 1024 + (!i && r > 1010);
   }
 
-  int futility_move_count(bool improving, Depth depth) {
+  constexpr int futility_move_count(bool improving, Depth depth) {
     return moveCountPruningLimit[improving][depth];
   }
 
