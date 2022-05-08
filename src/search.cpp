@@ -70,9 +70,9 @@ namespace {
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
   // Movecountpruning threshold
-  constexpr int moveCountPruningLimit[2][11] = {
-    { 1, 2, 3, 6, 8, 14, 20, 27, 34, 42, 49 },
-    { 3, 4, 8, 11, 18, 28, 39, 53, 67, 74, 98 }
+  constexpr int moveCountPruningLimit[2][22] = {
+    { 1, 2, 4, 7, 11, 14, 19, 26, 33, 42, 51, 62, 73, 86, 99, 114, 129, 146, 163, 182, 201, 222 },
+    { 3, 4, 7, 12, 19, 28, 39, 52, 67, 84, 103, 124, 147, 172, 199, 228, 259, 292, 327, 364, 403}
   };
 
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
@@ -1010,7 +1010,7 @@ moves_loop: // When in check, search starts here
           && bestValue > VALUE_TB_LOSS_IN_MAX_PLY)
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~7 Elo)
-          moveCountPruning = moveCount >= futility_move_count(improving, depth) && depth <= 10;
+          moveCountPruning = moveCount >= futility_move_count(improving, depth) && depth <= 21;
 
           // Reduced depth of the next LMR search
           int lmrDepth = std::max(newDepth - reduction(improving, depth, moveCount, delta, thisThread->rootDelta), 0);
