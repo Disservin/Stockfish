@@ -65,8 +65,7 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
   int mtg = limits.movestogo ? std::min(limits.movestogo, 50) : 50;
 
   // Make sure timeLeft is > 0 since we may use it as a divisor
-  TimePoint timeLeft =  std::max(TimePoint(1),
-      limits.time[us] + limits.inc[us] * (mtg - 1) - moveOverhead * (2 + mtg));
+  TimePoint timeLeft = limits.time[us] + limits.inc[us] * (mtg - 1);
 
   // Use extra time with larger increments
   double optExtra = std::clamp(1.0 + 12.0 * limits.inc[us] / limits.time[us], 1.0, 1.12);
@@ -95,8 +94,14 @@ void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
   }
 
   // Never use more than 80% of the available time for this move
-  optimumTime = TimePoint(optScale * timeLeft);
-  maximumTime = TimePoint(std::min(0.8 * limits.time[us] - moveOverhead, maxScale * optimumTime));
+  optimumTime = TimePoint(std::min({0.8 * limits.time[us], optScale * timeLeft   }));
+  maximumTime = TimePoint(std::min({0.8 * limits.time[us], maxScale * optimumTime}));
+  optimumTime = std::max(TimePoint(1), optimumTime - moveOverhead);
+  maximumTime = std::max(TimePoint(1), maximumTime - moveOverhead);
+  if ((limits.time[us] - maximumTime - moveOverhead) / (mtg-1) < TimePoint(10) && maximumTime != TimePoint(1)){
+      optimumTime = std::max(TimePoint(1), (limits.time[us] - moveOverhead) / mtg);
+      maximumTime = std::max(TimePoint(1), (limits.time[us] - moveOverhead) / mtg);
+  }
 
   if (Options["Ponder"])
       optimumTime += optimumTime / 4;
