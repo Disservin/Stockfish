@@ -409,6 +409,8 @@ void Thread::search() {
               {
                   beta = std::min(bestValue + delta, VALUE_INFINITE);
                   ++failedHighCnt;
+                  if (failedHighCnt > 4)
+                      beta += (beta - alpha) / 5;
               }
               else
                   break;
