@@ -555,7 +555,7 @@ namespace {
     bool givesCheck, improving, didLMR, priorCapture;
     bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement, complexity;
+    int moveCount, captureCount, quietCount, improvement, complexity, checkCount;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -566,6 +566,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    checkCount         = 0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -992,6 +993,8 @@ moves_loop: // When in check, search starts here
       capture = pos.capture(move);
       movedPiece = pos.moved_piece(move);
       givesCheck = pos.gives_check(move);
+      
+      if (givesCheck) checkCount++;
 
       // Calculate new depth for this move
       newDepth = depth - 1;
@@ -1165,6 +1168,10 @@ moves_loop: // When in check, search starts here
 
           // Increase reduction if ttMove is a capture (~3 Elo)
           if (ttCapture)
+              r++;
+
+          // Increase reduction if there are many checks possible
+          if (checkCount > 5)
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
