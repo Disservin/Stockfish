@@ -71,8 +71,8 @@ namespace {
 
   // Movecountpruning threshold moveCountPruningLimit[improving][0] is meaningless
   constexpr int moveCountPruningLimit[2][22] = {
-    { 1, 2, 3, 6, 9, 14, 19, 26, 33, 42, 51, 62, 73, 86, 99, 114, 129, 146, 163, 182, 201, 222       },
-    { 3, 5, 9, 15, 23, 33, 45, 59, 75, 93, 113, 135, 159, 185, 213, 243, 275, 309, 345, 383, 423, 465}
+    { 1, 2, 4, 7, 11, 16, 22, 29, 37, 46, 56, 67, 79, 92, 106, 121, 137, 154, 172, 191, 211, 232},
+    { 3, 4, 7, 12, 19, 28, 39, 52, 67, 84, 103, 124, 147, 172, 199, 228, 259, 292, 327, 364, 403, 444}
   };
 
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
