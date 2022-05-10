@@ -1049,7 +1049,7 @@ moves_loop: // When in check, search starts here
               if (   ss->inCheck
                   && lmrDepth < 8
                   && (ss-2)->staticEval != VALUE_NONE
-                  && (ss-2)->staticEval + 200 + 140 * lmrDepth + history / 60 <= alpha)
+                  && (ss-2)->staticEval + 400 + 140 * lmrDepth + history / 60 <= alpha)
                   continue;
 
               // Prune moves with negative SEE (~3 Elo)
