@@ -1167,11 +1167,11 @@ moves_loop: // When in check, search starts here
           if (ttCapture)
               r++;
 
-          // Decrease reduction for moves that counter a check with a check
+          // Increase reduction for moves that counter a check with a check
           if (givesCheck
               && (ss-1)->inCheck
               &&  depth == 2)
-              r--;
+              r++;
 
           // Decrease reduction at PvNodes if bestvalue
           // is vastly different from static evaluation
