@@ -1045,6 +1045,13 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 122 + 138 * lmrDepth + history / 60 <= alpha)
                   continue;
 
+              // Futility pruning for position in check
+              if (   ss->inCheck
+                  && lmrDepth < 8
+                  && (ss-2)->staticEval != VALUE_NONE
+                  && (ss-2)->staticEval + 350 + 140 * lmrDepth + history / 60 <= alpha)
+                  continue;
+
               // Prune moves with negative SEE (~3 Elo)
               if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 20 * lmrDepth)))
                   continue;
