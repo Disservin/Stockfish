@@ -1124,7 +1124,7 @@ Value Eval::evaluate(const Position& pos) {
 
       if (abs(nnue) < 50){
           // use nnue and classical
-          v = (nnue + v) / 2;
+          v = Value((int)nnue * 0.8 + (int) v * 0.2);
       }
   }
 
