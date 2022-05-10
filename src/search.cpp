@@ -1169,8 +1169,7 @@ moves_loop: // When in check, search starts here
 
           // Increase reduction for moves that counter a check with a check
           if (givesCheck
-              && (ss-1)->inCheck
-              &&  depth == 2)
+              && (ss-1)->inCheck)
               r++;
 
           // Decrease reduction at PvNodes if bestvalue
