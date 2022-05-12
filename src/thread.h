@@ -69,7 +69,7 @@ public:
   Position rootPos;
   StateInfo rootState;
   Search::RootMoves rootMoves;
-  Depth rootDepth, completedDepth, depth;
+  Depth rootDepth, completedDepth, depth, previousDepth;
   Value rootDelta;
   CounterMoveHistory counterMoves;
   ButterflyHistory mainHistory;
@@ -88,7 +88,6 @@ struct MainThread : public Thread {
   void search() override;
   void check_time();
 
-  Depth previousDepth;
   double previousTimeReduction;
   Value bestPreviousScore;
   Value bestPreviousAverageScore;

@@ -60,7 +60,8 @@ void Thread::clear() {
   counterMoves.fill(MOVE_NONE);
   mainHistory.fill(0);
   captureHistory.fill(0);
-
+  previousDepth = 0;
+  
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
       {
@@ -163,7 +164,6 @@ void ThreadPool::clear() {
   main()->bestPreviousScore = VALUE_INFINITE;
   main()->bestPreviousAverageScore = VALUE_INFINITE;
   main()->previousTimeReduction = 1.0;
-  main()->previousDepth = 0;
 }
 
 

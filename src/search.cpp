@@ -503,8 +503,10 @@ void Thread::search() {
       return;
 
   mainThread->previousTimeReduction = timeReduction;
-  mainThread->previousDepth = completedDepth;
 
+  for (Thread* th : Threads)
+    th->previousDepth = completedDepth;
+    
   // If skill level is enabled, swap best PV line with the sub-optimal one
   if (skill.enabled())
       std::swap(rootMoves[0], *std::find(rootMoves.begin(), rootMoves.end(),
@@ -1062,7 +1064,7 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
-              &&  depth >= 4 - (static_cast<MainThread*>(thisThread)->previousDepth > 20) + 2 * (PvNode && tte->is_pv())
+              &&  depth >= 4 - (thisThread->previousDepth > 20) + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
