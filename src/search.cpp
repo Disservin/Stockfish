@@ -1064,10 +1064,8 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           
-          int scaledDepth = thisThread->previousDepth == MAX_PLY && thisThread->rootDepth > 27   ? 1
-                          : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth >= 20  ? -1 
-                          : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth < 20   ? -2
-                          : thisThread->previousDepth > 27                                       ? 1
+          int scaledDepth = thisThread->previousDepth == MAX_PLY ? -1
+                          : thisThread->previousDepth > 27       ?  1
                           : 0;
 
           if (   !rootNode
