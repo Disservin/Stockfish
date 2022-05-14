@@ -1064,14 +1064,14 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           
-          int scaleDepth = thisThread->previousDepth == MAX_PLY && thisThread->rootDepth > 27   ? 1
-                         : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth >= 22  ? -2 
-                         : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth < 22   ? -4
-                         : thisThread->previousDepth > 27                                       ? 1
-                         : 0;
+          int scaledDepth = thisThread->previousDepth == MAX_PLY && thisThread->rootDepth > 27   ? 1
+                          : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth >= 20  ? -1 
+                          : thisThread->previousDepth == MAX_PLY && thisThread->rootDepth < 20   ? -2
+                          : thisThread->previousDepth > 27                                       ? 1
+                          : 0;
 
           if (   !rootNode
-              &&  depth >= 4 - scaleDepth + 2 * (PvNode && tte->is_pv())
+              &&  depth >= 4 - scaledDepth + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
