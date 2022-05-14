@@ -1063,8 +1063,12 @@ moves_loop: // When in check, search starts here
           // then that move is singular and should be extended. To verify this we do
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
+          int scaledDepth = (thisThread->previousDepth > 27) ? 3 
+                          : (thisThread->previousDepth > 22) ? 2
+                          : 0;
+
           if (   !rootNode
-              &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
+              &&  depth >= 6 - scaledDepth + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
