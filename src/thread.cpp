@@ -60,7 +60,7 @@ void Thread::clear() {
   counterMoves.fill(MOVE_NONE);
   mainHistory.fill(0);
   captureHistory.fill(0);
-  previousDepth = 0;
+  previousDepth = MAX_PLY;
   
   for (bool inCheck : { false, true })
       for (StatsType c : { NoCaptures, Captures })
