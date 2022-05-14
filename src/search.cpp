@@ -1064,8 +1064,8 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           //
-          Depth scaledDepth =   thisThread->previousDepth > 24 ? 2 
-                              : thisThread->previousDepth > 20 ? 1 
+          Depth scaledDepth =   thisThread->previousDepth > 27 ? 2 
+                              : thisThread->previousDepth > 22 ? 1 
                               : 0;
           if (   !rootNode
               &&  depth >= 5 - scaledDepth + 2 * (PvNode && tte->is_pv())
