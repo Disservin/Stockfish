@@ -1066,7 +1066,7 @@ moves_loop: // When in check, search starts here
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
               &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
-              &&  !(ss->ply >= 3 && (ss-3)->singularExt && (ss-2)->singularExt && (ss-1)->singularExt)
+              &&  !(ss->ply >= 5 && (ss-5)->singularExt && (ss-4)->singularExt &&(ss-3)->singularExt && (ss-2)->singularExt && (ss-1)->singularExt)
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
