@@ -58,10 +58,6 @@ using namespace Search;
 
 namespace {
 
-  int ext1 = 5;
-  int ext2 = 5;
-  TUNE(ext1, ext2);
-
   // Different node types, used as a template parameter
   enum NodeType { NonPV, PV, Root };
 
@@ -1069,7 +1065,7 @@ moves_loop: // When in check, search starts here
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
 
           if (   !rootNode
-              &&  thisThread->previousDepth > ext1 && ss->doubleExtensions <= ext2
+              &&  thisThread->previousDepth > 5 && ss->doubleExtensions <= 5
               &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
@@ -1091,8 +1087,7 @@ moves_loop: // When in check, search starts here
 
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
-                      && value < singularBeta - 26
-                      && ss->doubleExtensions <= 8)
+                      && value < singularBeta - 26)
                       extension = 2;
               }
 
