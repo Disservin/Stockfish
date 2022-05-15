@@ -609,6 +609,7 @@ namespace {
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
     ss->depth            = depth;
+    ss->singularExt      = false;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -1065,6 +1066,7 @@ moves_loop: // When in check, search starts here
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
               &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
+              &&  !(ss->ply >= 3 && (ss-3)->singularExt && (ss-2)->singularExt && (ss-1)->singularExt)
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
@@ -1082,12 +1084,14 @@ moves_loop: // When in check, search starts here
               if (value < singularBeta)
               {
                   extension = 1;
-
+                  ss->singularExt = true;
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
                       && value < singularBeta - 26
-                      && ss->doubleExtensions <= 8)
-                      extension = 2;
+                      && ss->doubleExtensions <= 8){
+                        extension = 2;
+                        ss->singularExt = false;                          
+                      }
               }
 
               // Multi-cut pruning
