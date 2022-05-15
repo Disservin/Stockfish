@@ -1004,7 +1004,7 @@ moves_loop: // When in check, search starts here
       {
           // Skip quiet moves if movecount exceeds our FutilityMoveCount threshold (~7 Elo)
           int scale = thisThread->previousDepth > 27 ? -1 : 1;
-          int futilityMoveCount = (3 + (depth + scale )* depth) / (2 - improving);
+          int futilityMoveCount = (3 + (depth + scale ) * depth) / (2 - improving);
           moveCountPruning = moveCount >= futilityMoveCount;
 
           // Reduced depth of the next LMR search
