@@ -1063,7 +1063,14 @@ moves_loop: // When in check, search starts here
           // then that move is singular and should be extended. To verify this we do
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
+          int ext1 = 0;
+          int ext2 = 0;
+          TUNE(SetRange(0, 10), ext1);
+          TUNE(SetRange(0, 10), ext2);
+
+          bool cansingExt = thisThread->previousDepth > ext1 && ss->doubleExtensions <= ext2;
           if (   !rootNode
+              &&  cansingExt
               &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
