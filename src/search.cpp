@@ -777,6 +777,8 @@ namespace {
 
     thisThread->complexityAverage.update(complexity);
 
+    if (excludedMove) goto moves_loop;
+    
     // Step 7. Razoring.
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
