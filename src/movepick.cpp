@@ -182,7 +182,7 @@ Move MovePicker::select(Pred filter) {
 /// MovePicker::next_move() is the most important method of the MovePicker class. It
 /// returns a new pseudo-legal move every time it is called until there are no more
 /// moves left, picking the move with the highest score from a list of generated moves.
-Move MovePicker::next_move(bool skipQuiets) {
+Move MovePicker::next_move() {
 
 top:
   switch (stage) {
@@ -233,23 +233,19 @@ top:
       [[fallthrough]];
 
   case QUIET_INIT:
-      if (!skipQuiets)
-      {
-          cur = endBadCaptures;
-          endMoves = generate<QUIETS>(pos, cur);
+      cur = endBadCaptures;
+      endMoves = generate<QUIETS>(pos, cur);
 
-          score<QUIETS>();
-          partial_insertion_sort(cur, endMoves, -3000 * depth);
-      }
+      score<QUIETS>();
+      partial_insertion_sort(cur, endMoves, -3000 * depth);
 
       ++stage;
       [[fallthrough]];
 
   case QUIET:
-      if (   !skipQuiets
-          && select<Next>([&](){return   *cur != refutations[0].move
-                                      && *cur != refutations[1].move
-                                      && *cur != refutations[2].move;}))
+      if (select<Next>([&](){return   *cur != refutations[0].move
+                                   && *cur != refutations[1].move
+                                   && *cur != refutations[2].move;}))
           return *(cur - 1);
 
       // Prepare the pointers to loop over the bad captures
