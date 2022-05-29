@@ -1337,7 +1337,7 @@ moves_loop: // When in check, search starts here
       }
     }
 
-    if (pos.capture(bestMove) && bestValue - 200 > (avgscore-bestValue)/moveCount && rootNode && depth >= 15 && thisThread == Threads.main())
+    if (pos.capture(bestMove) && bestValue - 400 > (avgscore-bestValue)/moveCount && rootNode && depth >= 15 && thisThread == Threads.main())
         Time.maximumTime *= 0.75;
 
     // The following condition would detect a stop only after move loop has been
