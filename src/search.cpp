@@ -954,6 +954,7 @@ moves_loop: // When in check, search starts here
     value = bestValue;
     moveCountPruning = false;
 
+    int avgscore = 0;
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
     bool likelyFailLow =    PvNode
@@ -1250,6 +1251,7 @@ moves_loop: // When in check, search starts here
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
+      avgscore += value;
 
       // Step 20. Check for a new best move
       // Finished searching the move. If a stop occurred, the return value of
@@ -1337,6 +1339,9 @@ moves_loop: // When in check, search starts here
               quietsSearched[quietCount++] = move;
       }
     }
+
+    if (pos.capture(bestMove) && bestValue - 200 > (avgscore-bestValue)/moveCount && rootNode && depth >= 15 && thisThread == Threads.main())
+        Time.maximumTime *= 0.75;
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
