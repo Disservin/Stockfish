@@ -947,11 +947,13 @@ moves_loop: // When in check, search starts here
                                       contHist,
                                       countermove,
                                       ss->killers);
-
+             
     value = bestValue;
     moveCountPruning = false;
 
-    int avgscore = 0;
+    int scores[MAX_MOVES]{};
+    memset(scores, VALUE_NONE, sizeof(scores));
+
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
     bool likelyFailLow =    PvNode
@@ -1248,7 +1250,8 @@ moves_loop: // When in check, search starts here
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
-      avgscore += value;
+
+      scores[moveCount-1] = value;
 
       // Step 20. Check for a new best move
       // Finished searching the move. If a stop occurred, the return value of
@@ -1337,7 +1340,15 @@ moves_loop: // When in check, search starts here
       }
     }
 
-    if (pos.capture(bestMove) && bestValue - 800 > (avgscore-bestValue)/moveCount && rootNode && depth >= 15 && thisThread == Threads.main())
+    std::sort(scores, scores + moveCount);
+    int alphaTrim = moveCount * 0.1;
+    int sum = 0;
+    for (int i = alphaTrim; i <= moveCount - alphaTrim; i++)
+        sum += scores[i];
+    int mean = (1 / (moveCount - 2 * alphaTrim))* sum;
+
+    if (pos.capture(bestMove) && bestValue - 800 > (mean-bestValue)/moveCount 
+        && rootNode && depth >= 15 && thisThread == Threads.main())
         Time.maximumTime *= 0.75;
 
     // The following condition would detect a stop only after move loop has been
