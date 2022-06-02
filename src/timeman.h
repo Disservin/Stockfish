@@ -37,11 +37,11 @@ public:
                                      TimePoint(Threads.nodes_searched()) : now() - startTime; }
 
   int64_t availableNodes; // When in 'nodes as time' mode
+  TimePoint maximumTime;
 
 private:
   TimePoint startTime;
   TimePoint optimumTime;
-  TimePoint maximumTime;
 };
 
 extern TimeManagement Time;

@@ -484,8 +484,8 @@ void Thread::search() {
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
           
-          if (depth >= 10 && effort >= 95 && Time.elapsed() > totalTime / 2 && !mainThread->ponder) {
-              Threads.stop = true;
+          if (depth >= 10 && effort >= 95 && !mainThread->ponder) {
+              Time.maximumTime /= 2;
           }
 
           // Stop the search if we have exceeded the totalTime
