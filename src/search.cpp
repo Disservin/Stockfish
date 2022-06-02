@@ -314,6 +314,7 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
+  memset(mainThread->spentEffort, 0, sizeof(unsigned long long) * 64 * 64);
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -1051,6 +1052,24 @@ moves_loop: // When in check, search starts here
       // We take care to not overdo to avoid search getting stuck.
       if (ss->ply < thisThread->rootDepth * 2)
       {
+          if (   rootNode
+              && !ss->inCheck
+              && !excludedMove // Avoid recursive singular search
+              &&  thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 12)
+          {
+              Value singularBeta = ss->staticEval - 3 * depth;
+              Depth singularDepth = (depth - 1) / 2;
+
+              ss->excludedMove = move;
+              value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
+              ss->excludedMove = MOVE_NONE;
+
+              if (value < singularBeta)
+                  extension = 1;
+
+              else if (singularBeta >= beta)
+                  return singularBeta;
+          }
           // Singular extension search (~58 Elo). If all moves but one fail low on a
           // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
           // then that move is singular and should be extended. To verify this we do
@@ -1058,8 +1077,8 @@ moves_loop: // When in check, search starts here
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
               &&  depth >= 4 - (thisThread->previousDepth > 27) + 2 * (PvNode && tte->is_pv())
-              &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
+              &&  move == ttMove
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
               &&  abs(ttValue) < VALUE_KNOWN_WIN
               && (tte->bound() & BOUND_LOWER)
@@ -1127,6 +1146,9 @@ moves_loop: // When in check, search starts here
                                                                 [capture]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
+
+      unsigned long long nodeCount = 0;
+      if (thisThread == Threads.main() && rootNode) nodeCount = thisThread->nodes;
 
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1230,6 +1252,9 @@ moves_loop: // When in check, search starts here
 
       // Step 19. Undo move
       pos.undo_move(move);
+      
+      if (thisThread == Threads.main() && rootNode)
+          thisThread->spentEffort[from_sq(move)][to_sq(move)] += thisThread->nodes - nodeCount;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
