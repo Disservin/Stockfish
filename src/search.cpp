@@ -314,6 +314,7 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
+  memset(mainThread->spentEffort, 0, sizeof(unsigned long long) * 64 * 64);
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -1112,6 +1113,8 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
+          else if (thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 12)
+            extension = 1;
       }
 
       // Add extension to new depth
@@ -1127,6 +1130,9 @@ moves_loop: // When in check, search starts here
                                                                 [capture]
                                                                 [movedPiece]
                                                                 [to_sq(move)];
+
+      unsigned long long nodeCount = 0;
+      if (thisThread == Threads.main() && rootNode) nodeCount = thisThread->nodes;
 
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1230,6 +1236,9 @@ moves_loop: // When in check, search starts here
 
       // Step 19. Undo move
       pos.undo_move(move);
+      
+      if (thisThread == Threads.main() && rootNode)
+          thisThread->spentEffort[from_sq(move)][to_sq(move)] += thisThread->nodes - nodeCount;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
