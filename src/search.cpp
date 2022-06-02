@@ -314,6 +314,7 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
+  unsigned long long startNodes = this->nodes;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -463,6 +464,8 @@ void Thread::search() {
           && !Threads.stop
           && !mainThread->stopOnPonderhit)
       {
+          int effort = (this->spentEffort[from_sq(lastBestMove)][to_sq(lastBestMove)] * 100) / (this->nodes - startNodes);
+
           double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
                                     +  6 * (mainThread->iterValue[iterIdx] - bestValue)) / 781.4;
           fallingEval = std::clamp(fallingEval, 0.5, 1.5);
@@ -480,6 +483,10 @@ void Thread::search() {
           // yielding correct scores and sufficiently fast moves.
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
+          
+          if (depth >= 13 && effort >= 95 && Time.elapsed() > totalTime / 2 && !mainThread->ponder) {
+              Threads.stop = true;
+          }
 
           // Stop the search if we have exceeded the totalTime
           if (Time.elapsed() > totalTime)
@@ -1132,6 +1139,9 @@ moves_loop: // When in check, search starts here
                                                                 [movedPiece]
                                                                 [to_sq(move)];
 
+      unsigned long long nodeCount = 0;
+      if (thisThread == Threads.main()) nodeCount = thisThread->nodes;
+
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
 
@@ -1239,6 +1249,9 @@ moves_loop: // When in check, search starts here
 
       // Step 19. Undo move
       pos.undo_move(move);
+      
+      if (thisThread == Threads.main())
+          thisThread->spentEffort[from_sq(move)][to_sq(move)] += thisThread->nodes - nodeCount;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
