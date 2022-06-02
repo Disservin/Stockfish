@@ -314,7 +314,7 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
-  unsigned long long startNodes = this->nodes;
+  memset(mainThread->spentEffort, 0, sizeof(unsigned long long) * 64 * 64);
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -464,7 +464,7 @@ void Thread::search() {
           && !Threads.stop
           && !mainThread->stopOnPonderhit)
       {
-          int effort = (this->spentEffort[from_sq(lastBestMove)][to_sq(lastBestMove)] * 100) / (this->nodes - startNodes);
+          int effort = (mainThread->spentEffort[from_sq(rootMoves[0].pv[0])][to_sq(rootMoves[0].pv[0])] * 100) / (mainThread->nodes);
 
           double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
                                     +  6 * (mainThread->iterValue[iterIdx] - bestValue)) / 781.4;
@@ -484,7 +484,7 @@ void Thread::search() {
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
           
-          if (depth >= 13 && effort >= 95 && Time.elapsed() > totalTime / 2 && !mainThread->ponder) {
+          if (depth >= 10 && effort >= 95 && Time.elapsed() > totalTime / 2 && !mainThread->ponder) {
               Threads.stop = true;
           }
 
@@ -1140,7 +1140,7 @@ moves_loop: // When in check, search starts here
                                                                 [to_sq(move)];
 
       unsigned long long nodeCount = 0;
-      if (thisThread == Threads.main()) nodeCount = thisThread->nodes;
+      if (thisThread == Threads.main() && rootNode) nodeCount = thisThread->nodes;
 
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1250,7 +1250,7 @@ moves_loop: // When in check, search starts here
       // Step 19. Undo move
       pos.undo_move(move);
       
-      if (thisThread == Threads.main())
+      if (thisThread == Threads.main() && rootNode)
           thisThread->spentEffort[from_sq(move)][to_sq(move)] += thisThread->nodes - nodeCount;
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);

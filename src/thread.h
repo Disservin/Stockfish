@@ -76,7 +76,7 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
   Score trend;
-  int spentEffort[64][64];
+  unsigned long long spentEffort[64][64];
 };
 
 
