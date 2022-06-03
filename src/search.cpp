@@ -465,6 +465,7 @@ void Thread::search() {
           && !mainThread->stopOnPonderhit)
       {
           int effort = (mainThread->spentEffort[from_sq(rootMoves[0].pv[0])][to_sq(rootMoves[0].pv[0])] * 100) / (mainThread->nodes);
+          float effortScaling = (120 - std::min(effort, 40)) / 100.0f;
 
           double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
                                     +  6 * (mainThread->iterValue[iterIdx] - bestValue)) / 781.4;
@@ -483,13 +484,9 @@ void Thread::search() {
           // yielding correct scores and sufficiently fast moves.
           if (rootMoves.size() == 1)
               totalTime = std::min(500.0, totalTime);
-          
-          if (depth >= 10 && effort >= 95 && Time.elapsed() > totalTime / 2 && !mainThread->ponder) {
-              Threads.stop = true;
-          }
 
           // Stop the search if we have exceeded the totalTime
-          if (Time.elapsed() > totalTime)
+          if (Time.elapsed() > totalTime * effortScaling)
           {
               // If we are allowed to ponder do not stop the search now but
               // keep pondering until the GUI sends "ponderhit" or "stop".
