@@ -465,7 +465,7 @@ void Thread::search() {
           && !mainThread->stopOnPonderhit)
       {
           int effort = (mainThread->spentEffort[from_sq(rootMoves[0].pv[0])][to_sq(rootMoves[0].pv[0])] * 100) / (mainThread->nodes);
-          int adjustHighEffort = effort > 80 ? 50 : 40;
+          int adjustHighEffort = effort >= 95 ? 10 : 50;
           double effortScaling = std::pow(0.5, 0.01*(effort - adjustHighEffort));
 
           double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
