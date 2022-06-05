@@ -465,7 +465,7 @@ void Thread::search() {
           && !mainThread->stopOnPonderhit)
       {
           int effort = (mainThread->spentEffort[from_sq(rootMoves[0].pv[0])][to_sq(rootMoves[0].pv[0])] * 100) / (mainThread->nodes);
-          float effortScaling = std::min((150 - std::min(effort, 80)) / 100.0f, 1.2f);
+          float effortScaling = std::min(std::max(static_cast<double>((150-effort)/100), 1.0), 1.3);
 
           double fallingEval = (69 + 12 * (mainThread->bestPreviousAverageScore - bestValue)
                                     +  6 * (mainThread->iterValue[iterIdx] - bestValue)) / 781.4;
@@ -478,7 +478,7 @@ void Thread::search() {
           int complexity = mainThread->complexityAverage.value();
           double complexPosition = std::clamp(1.0 + (complexity - 326) / 1618.1, 0.5, 1.5);
 
-          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition;
+          double totalTime = Time.optimum() * fallingEval * reduction * bestMoveInstability * complexPosition * effortScaling;
 
           // Cap used time in case of a single legal move for a better viewer experience in tournaments
           // yielding correct scores and sufficiently fast moves.
@@ -486,7 +486,7 @@ void Thread::search() {
               totalTime = std::min(500.0, totalTime);
 
           // Stop the search if we have exceeded the totalTime
-          if (Time.elapsed() > totalTime * effortScaling)
+          if (Time.elapsed() > totalTime)
           {
               // If we are allowed to ponder do not stop the search now but
               // keep pondering until the GUI sends "ponderhit" or "stop".
