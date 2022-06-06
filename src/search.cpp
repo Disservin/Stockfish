@@ -242,7 +242,6 @@ void MainThread::search() {
   for (Thread* th : Threads)
   {
     th->previousDepth = bestThread->completedDepth;
-    th->previousScore = bestPreviousScore;
   }
 
 
@@ -1873,6 +1872,11 @@ string UCI::pv(const Position& pos, Depth depth, Value alpha, Value beta) {
       if (ss.rdbuf()->in_avail()) // Not at first line
           ss << "\n";
 
+      for (Thread* th : Threads)
+      {
+          th->previousScore = v;
+      }  
+  
       ss << "info"
          << " depth "    << d
          << " seldepth " << rootMoves[i].selDepth
