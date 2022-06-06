@@ -908,6 +908,8 @@ namespace {
          ss->ttPv = ttPv;
     }
 
+moves_loop: // When in check, search starts here
+
     // Step 11. If the position is not in TT, decrease depth by 2 or 1 depending on node type (~3 Elo)
     if (   PvNode
         && !ttMove)
@@ -920,9 +922,7 @@ namespace {
         && depth >= 8
         && !ttMove)
         depth--;
-
-moves_loop: // When in check, search starts here
-
+        
     // Step 12. A small Probcut idea, when we are in check (~0 Elo)
     probCutBeta = beta + 481;
     if (   ss->inCheck
