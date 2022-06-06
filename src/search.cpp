@@ -1012,6 +1012,10 @@ moves_loop: // When in check, search starts here
           if (   capture
               || givesCheck)
           {
+              // SEE based pruning (~9 Elo)
+              if (!pos.see_ge(move, Value(-203) * depth))
+                  continue;
+
               // Futility pruning for captures (~0 Elo)
               if (   !pos.empty(to_sq(move))
                   && !givesCheck
@@ -1020,10 +1024,6 @@ moves_loop: // When in check, search starts here
                   && !ss->inCheck
                   && ss->staticEval + 281 + 179 * lmrDepth + PieceValue[EG][pos.piece_on(to_sq(move))]
                    + captureHistory[movedPiece][to_sq(move)][type_of(pos.piece_on(to_sq(move)))] / 6 < alpha)
-                  continue;
-
-              // SEE based pruning (~9 Elo)
-              if (!pos.see_ge(move, Value(-203) * depth))
                   continue;
           }
           else
