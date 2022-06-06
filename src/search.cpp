@@ -240,7 +240,11 @@ void MainThread::search() {
   bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
   for (Thread* th : Threads)
+  {
     th->previousDepth = bestThread->completedDepth;
+    th->previousScore = bestPreviousScore;
+  }
+
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
