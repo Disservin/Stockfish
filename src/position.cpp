@@ -22,6 +22,7 @@
 #include <cstring> // For std::memset, std::memcmp
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 #include "bitboard.h"
 #include "misc.h"
@@ -870,6 +871,12 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Update king attacks used for fast check detection
   set_check_info(st);
 
+  std::cout << "xxx " << st->previous->key << " -> " << st->key << "[label=" << UCI::move(m, false) << "]" << std::endl;
+  if (checkers())
+  {
+     std::cout << "xxx " << st->key << "[label=chk,shape=" << (side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+  }
+
   // Calculate the repetition info. It is the ply distance from the previous
   // occurrence of the same position, negative in the 3-fold case, or zero
   // if the position was not repeated.
@@ -1021,7 +1028,8 @@ void Position::do_null_move(StateInfo& newSt) {
   sideToMove = ~sideToMove;
 
   set_check_info(st);
-
+  
+  std::cout << "xxx " << st->previous->key << " -> " << st->key << "[color=blue,fontcolor=blue,label=null]" << std::endl;
   st->repetition = 0;
 
   assert(pos_is_ok());

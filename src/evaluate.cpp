@@ -1119,7 +1119,7 @@ Value Eval::evaluate(const Position& pos) {
 
   // Guarantee evaluation does not hit the tablebase range
   v = std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
-
+  std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? v : -v) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
   return v;
 }
 

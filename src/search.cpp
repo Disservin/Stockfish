@@ -121,6 +121,7 @@ namespace {
   void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
   void update_all_stats(const Position& pos, Stack* ss, Move bestMove, Value bestValue, Value beta, Square prevSq,
                         Move* quietsSearched, int quietCount, Move* capturesSearched, int captureCount, Depth depth);
+  bool pv_is_draw(Position& pos);
 
   // perft() is our utility to verify move generation. All the leaf nodes up
   // to the given depth are generated and counted, and the sum is returned.
@@ -238,6 +239,8 @@ void MainThread::search() {
 
   bestPreviousScore = bestThread->rootMoves[0].score;
   bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+
+  pv_is_draw(rootPos);
 
   for (Thread* th : Threads)
     th->previousDepth = bestThread->completedDepth;
@@ -1473,11 +1476,16 @@ moves_loop: // When in check, search starts here
                 && (tte->bound() & (ttValue > bestValue ? BOUND_LOWER : BOUND_UPPER)))
                 bestValue = ttValue;
         }
-        else
+        else 
+        {
             // In case of null move search use previous static eval with a different sign
             ss->staticEval = bestValue =
             (ss-1)->currentMove != MOVE_NULL ? evaluate(pos)
                                              : -(ss-1)->staticEval;
+            
+            if ((ss-1)->currentMove == MOVE_NULL) 
+               std::cout << "xxx " << pos.key() << "[label=" << (pos.side_to_move() == WHITE ? ss->staticEval : -ss->staticEval) << ",shape=" << (pos.side_to_move() == WHITE ? "ellipse]" : "box]") << std::endl;
+        }
 
         // Stand pat. Return immediately if static value is at least beta
         if (bestValue >= beta)
@@ -1769,6 +1777,26 @@ moves_loop: // When in check, search starts here
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
+  }
+    // Is the PV leading to a draw position? Assumes all pv moves are legal
+  bool pv_is_draw(Position& pos) {
+
+    StateInfo st[MAX_PLY];
+    auto& pv = pos.this_thread()->rootMoves[0].pv;
+
+    for (size_t i = 0; i < pv.size(); ++i) {
+        Key prevKey = pos.key();
+        pos.do_move(pv[i], st[i]);
+        Key nextKey = pos.key();
+        std::cout << "xxx " << prevKey << " -> " << nextKey << "[color=red,penwidth=3.0,fontcolor=red,label=" << UCI::move(pv[i], false) << "]" << std::endl;
+    }
+
+    bool isDraw = pos.is_draw(pv.size());
+
+    for (size_t i = pv.size(); i > 0; --i)
+        pos.undo_move(pv[i-1]);
+
+    return isDraw;
   }
 
   // When playing with strength handicap, choose best move among a set of RootMoves
