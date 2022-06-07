@@ -1,2 +1,4 @@
-position fen rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-go depth 14
+position fen 8/8/8/1B6/6p1/8/4KPpp/3N2kr w - - 0 1
+go depth 25
+ucinewgame
+quit
