@@ -1350,7 +1350,7 @@ moves_loop: // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
     
-    (ss+1)->disableNullMove = (float)nullmoveCount/(float)moveCount > 0.7 && rootNode;
+    (ss+1)->disableNullMove = 10 * nullmoveCount > 7 * moveCount && rootNode;
 
     if (!moveCount)
         bestValue = excludedMove ? alpha :
