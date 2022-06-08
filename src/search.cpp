@@ -772,7 +772,7 @@ namespace {
                   : (ss-4)->staticEval != VALUE_NONE ? ss->staticEval - (ss-4)->staticEval
                   :                                    175;
 
-    improving = improvement > 0;
+    improving = improvement > 25;
     complexity = abs(ss->staticEval - (us == WHITE ? eg_value(pos.psq_score()) : -eg_value(pos.psq_score())));
 
     thisThread->complexityAverage.update(complexity);
