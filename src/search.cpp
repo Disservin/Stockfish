@@ -283,7 +283,8 @@ void Thread::search() {
       (ss+i)->ply = i;
 
   ss->pv = pv;
-
+  ss->disableNullMove = false;
+  
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
 
@@ -609,7 +610,6 @@ namespace {
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
-    ss->disableNullMove  = false;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -798,12 +798,12 @@ namespace {
         &&  eval >= beta
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
         return eval;
-
+    
     // Step 9. Null move search with verification search (~22 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss->ply > 4 || !((ss-(ss->ply))->disableNullMove))
         && (ss-1)->statScore < 14695
+        &&  !(ss->disableNullMove)
         &&  eval >= beta
         &&  eval >= ss->staticEval
         &&  ss->staticEval >= beta - 15 * depth - improvement / 15 + 198 + complexity / 28
@@ -1350,8 +1350,7 @@ moves_loop: // When in check, search starts here
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
     
-    if ((float)nullmoveCount/(float)moveCount > 0.7 && rootNode)
-        ss->disableNullMove = true;
+    (ss+1)->disableNullMove = (float)nullmoveCount/(float)moveCount > 0.7 && rootNode;
 
     if (!moveCount)
         bestValue = excludedMove ? alpha :
