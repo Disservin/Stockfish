@@ -609,6 +609,7 @@ namespace {
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
     (ss+2)->cutoffCnt    = 0;
     ss->doubleExtensions = (ss-1)->doubleExtensions;
+    ss->disableNullMove  = false;
     Square prevSq        = to_sq((ss-1)->currentMove);
 
     // Initialize statScore to zero for the grandchildren of the current position.
@@ -801,6 +802,7 @@ namespace {
     // Step 9. Null move search with verification search (~22 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
+        && (ss->ply > 4 || !((ss-(ss->ply))->disableNullMove))
         && (ss-1)->statScore < 14695
         &&  eval >= beta
         &&  eval >= ss->staticEval
@@ -953,7 +955,7 @@ moves_loop: // When in check, search starts here
 
     value = bestValue;
     moveCountPruning = false;
-
+    int nullmoveCount = 0;
     // Indicate PvNodes that will probably fail low if the node was searched
     // at a depth equal or greater than the current depth, and the result of this search was a fail low.
     bool likelyFailLow =    PvNode
@@ -1245,6 +1247,7 @@ moves_loop: // When in check, search starts here
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
+      if ((ss+1)->currentMove == MOVE_NULL) nullmoveCount++;
       // Step 20. Check for a new best move
       // Finished searching the move. If a stop occurred, the return value of
       // the search cannot be trusted, and we return immediately without
@@ -1346,6 +1349,9 @@ moves_loop: // When in check, search starts here
     // return a fail low score.
 
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
+    
+    if ((float)nullmoveCount/(float)moveCount > 0.7 && rootNode)
+        ss->disableNullMove = true;
 
     if (!moveCount)
         bestValue = excludedMove ? alpha :
