@@ -635,7 +635,7 @@ namespace {
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
         && ss->ttHit
-        && tte->depth() > depth - ((int)thisThread->id() & 0x1)
+        && tte->depth() >= depth - ((int)thisThread->id() & 0x1)
         && ttValue != VALUE_NONE // Possible in case of TT access race
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
     {
@@ -791,7 +791,7 @@ namespace {
     // Step 8. Futility pruning: child node (~25 Elo).
     // The depth condition is important for mate finding.
     if (   !ss->ttPv
-        &&  depth < 8
+        &&  depth < 6
         &&  eval - futility_margin(depth, improving) - (ss-1)->statScore / 256 >= beta
         &&  eval >= beta
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
@@ -800,10 +800,9 @@ namespace {
     // Step 9. Null move search with verification search (~22 Elo)
     if (   !PvNode
         && (ss-1)->currentMove != MOVE_NULL
-        && (ss-1)->statScore < 14695
         &&  eval >= beta
         &&  eval >= ss->staticEval
-        &&  ss->staticEval >= beta - 15 * depth - improvement / 15 + 198 + complexity / 28
+        &&  ss->staticEval >= beta - 15 * depth - improvement / 15 + 177 + complexity / 28
         && !excludedMove
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
@@ -1038,7 +1037,7 @@ moves_loop: // When in check, search starts here
 
               // Futility pruning: parent node (~9 Elo)
               if (   !ss->inCheck
-                  && lmrDepth < 11
+                  && lmrDepth < 7
                   && ss->staticEval + 122 + 138 * lmrDepth + history / 60 <= alpha)
                   continue;
 
@@ -1076,12 +1075,6 @@ moves_loop: // When in check, search starts here
               if (value < singularBeta)
               {
                   extension = 1;
-
-                  // Avoid search explosion by limiting the number of double extensions
-                  if (  !PvNode
-                      && value < singularBeta - 26
-                      && ss->doubleExtensions <= 8)
-                      extension = 2;
               }
 
               // Multi-cut pruning
@@ -1094,18 +1087,12 @@ moves_loop: // When in check, search starts here
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension)
               else if (ttValue >= beta)
-                  extension = -2;
+                  return beta;
 
               // If the eval of ttMove is less than alpha and value, we reduce it (negative extension)
               else if (ttValue <= alpha && ttValue <= value)
                   extension = -1;
           }
-
-          // Check extensions (~1 Elo)
-          else if (   givesCheck
-                   && depth > 9
-                   && abs(ss->staticEval) > 71)
-              extension = 1;
 
           // Quiet ttMove extensions (~0 Elo)
           else if (   PvNode
@@ -1361,7 +1348,7 @@ moves_loop: // When in check, search starts here
                           || cutNode
                           || bestValue < alpha - 70 * depth;
 
-        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth) * (1 + extraBonus));
+        update_continuation_histories(ss-1, pos.piece_on(prevSq), prevSq, stat_bonus(depth));
     }
 
     if (PvNode)
