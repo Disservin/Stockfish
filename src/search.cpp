@@ -942,7 +942,7 @@ moves_loop: // When in check, search starts here
                                       countermove,
                                       ss->killers,
                                       thisThread->id(), 
-                                      (int)thisThread->nodes);
+                                      (uint64_t)thisThread->nodes);
 
     value = bestValue;
     moveCountPruning = false;
