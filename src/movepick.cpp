@@ -154,7 +154,7 @@ void MovePicker::score() {
                           :                                                                           0);
           // Add a small random component
           // equation: randint(-1, 1) * randint(0, max(50, 30 + id))
-          m.value += (uint64_t)(id != 0) * ((nodesMP & 1) * -2 + 1) * (nodesMP & std::min(50, 30 + id));  
+          m.value += (uint64_t)(id != 0) * ((nodesMP & 1) * -2 + 1) * (nodesMP & std::min(150, 100 + id));  
       }
 
       else // Type == EVASIONS
