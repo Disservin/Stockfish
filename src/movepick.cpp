@@ -152,7 +152,9 @@ void MovePicker::score() {
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0);
-          m.value += ((nodesMP & 1) * -2 + 1) * (nodesMP & (id & 20));  
+          // Add a small random component
+          // equation: randint(-1, 1) * randint(0, max(50, 30 + id))
+          m.value += (uint64_t)(id != 0) * ((nodesMP & 1) * -2 + 1) * (nodesMP & std::min(50, 30 + id));  
       }
 
       else // Type == EVASIONS
