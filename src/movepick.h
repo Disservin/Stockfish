@@ -123,7 +123,9 @@ public:
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
                                            Move,
-                                           const Move*);
+                                           const Move*,
+                                           int ThreadId,
+                                           uint64_t nodes);
   MovePicker(const Position&, Move, Depth, const ButterflyHistory*,
                                            const CapturePieceToHistory*,
                                            const PieceToHistory**,
@@ -148,6 +150,8 @@ private:
   Value threshold;
   Depth depth;
   ExtMove moves[MAX_MOVES];
+  int id;
+  uint64_t nodesMP;
 };
 
 } // namespace Stockfish

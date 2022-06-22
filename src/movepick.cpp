@@ -61,9 +61,11 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const ButterflyHist
                                                              const CapturePieceToHistory* cph,
                                                              const PieceToHistory** ch,
                                                              Move cm,
-                                                             const Move* killers)
+                                                             const Move* killers,
+                                                             int ThreadId,
+                                                             uint64_t nodes)
            : pos(p), mainHistory(mh), captureHistory(cph), continuationHistory(ch),
-             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d)
+             ttMove(ttm), refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}}, depth(d), id(ThreadId), nodesMP(nodes)
 {
   assert(d > 0);
 
@@ -132,11 +134,13 @@ void MovePicker::score() {
   }
 
   for (auto& m : *this)
+  {
       if constexpr (Type == CAPTURES)
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
                    +     (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))];
 
-      else if constexpr (Type == QUIETS)
+      else if constexpr (Type == QUIETS) 
+      {
           m.value =      (*mainHistory)[pos.side_to_move()][from_to(m)]
                    + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
@@ -148,6 +152,8 @@ void MovePicker::score() {
                           :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0);
+          m.value += ((nodesMP & 1) * -2 + 1) * (nodesMP & (id & 20));  
+      }
 
       else // Type == EVASIONS
       {
@@ -159,6 +165,8 @@ void MovePicker::score() {
                        + 2 * (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)]
                        - (1 << 28);
       }
+      
+    }
 }
 
 /// MovePicker::select() returns the next move satisfying a predicate function.
