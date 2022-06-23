@@ -771,7 +771,8 @@ namespace {
     // static evaluation and the previous static evaluation at our turn (if we were
     // in check at our previous move we look at the move prior to it). The improvement
     // margin and the improving flag are used in various pruning heuristics.
-    improvement =   (ss-2)->staticEval != VALUE_NONE ? ss->staticEval - (ss-2)->staticEval
+    improvement =   (ss-2)->currentMove == MOVE_NULL ? 175
+                  : (ss-2)->staticEval != VALUE_NONE ? ss->staticEval - (ss-2)->staticEval
                   : (ss-4)->staticEval != VALUE_NONE ? ss->staticEval - (ss-4)->staticEval
                   :                                    175;
     improving = improvement > 0;
