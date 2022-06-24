@@ -153,8 +153,7 @@ void MovePicker::score() {
                           :                                                                           0)
                           :                                                                           0);
           // Add a small random component
-          // equation: randint(-1, 1) * randint(0, 6000 or less depending on thread id)
-          m.value += ((nodesMP & 1) * -2 + 1) * (nodesMP & ((id % 5) * 1000));  
+          m.value = id == 0 ? m.value : m.value + (nodesMP & (((id&3) * 2000) - 4000));  
       }
 
       else // Type == EVASIONS
