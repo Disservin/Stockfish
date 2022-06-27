@@ -444,8 +444,8 @@ ifeq ($(KERNEL),Darwin)
 	CXXFLAGS += -mmacosx-version-min=10.14
 	LDFLAGS += -mmacosx-version-min=10.14
 	ifneq ($(arch),any)
-		CXXFLAGS += -arch $(arch)
-		LDFLAGS += -arch $(arch)
+		CXXFLAGS += -mcpu=apple-a14
+		LDFLAGS += -mcpu=apple-a14
 	endif
 	XCRUN = xcrun
 endif
