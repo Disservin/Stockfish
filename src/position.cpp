@@ -520,28 +520,28 @@ bool Position::legal(Move m) const {
             && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(~us, QUEEN, BISHOP));
   }
 
-  // Castling moves generation does not check if the castling path is clear of
-  // enemy attacks, it is delayed at a later time: now!
-  if (type_of(m) == CASTLING)
-  {
-      // After castling, the rook and king final positions are the same in
-      // Chess960 as they would be in standard chess.
-      to = relative_square(us, to > from ? SQ_G1 : SQ_C1);
-      Direction step = to > from ? WEST : EAST;
-
-      for (Square s = to; s != from; s += step)
-          if (attackers_to(s) & pieces(~us))
-              return false;
-
-      // In case of Chess960, verify if the Rook blocks some checks
-      // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
-      return !chess960 || !(blockers_for_king(us) & to_sq(m));
-  }
-
   // If the moving piece is a king, check whether the destination square is
   // attacked by the opponent.
-  if (type_of(piece_on(from)) == KING)
-      return !(attackers_to(to, pieces() ^ from) & pieces(~us));
+  if (type_of(piece_on(from)) == KING) {
+    // Castling moves generation does not check if the castling path is clear of
+    // enemy attacks, it is delayed at a later time: now!
+    if (type_of(m) == CASTLING)
+    {
+        // After castling, the rook and king final positions are the same in
+        // Chess960 as they would be in standard chess.
+        to = relative_square(us, to > from ? SQ_G1 : SQ_C1);
+        Direction step = to > from ? WEST : EAST;
+
+        for (Square s = to; s != from; s += step)
+            if (attackers_to(s) & pieces(~us))
+                return false;
+
+        // In case of Chess960, verify if the Rook blocks some checks
+        // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
+        return !chess960 || !(blockers_for_king(us) & to_sq(m));
+    }
+    return !(attackers_to(to, pieces() ^ from) & pieces(~us));
+  }
 
   // A non-king move is legal if and only if it is not pinned or it
   // is moving along the ray towards or away from the king.
