@@ -371,6 +371,7 @@ void Thread::search() {
               Depth searchDepth = rootDepth;
               if (!Threads.increaseDepth)
                 searchDepth = Depth(Threads.stayDepth);
+                rootDepth = searchDepth;
 
               Depth adjustedDepth = std::max(1, searchDepth - failedHighCnt);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
