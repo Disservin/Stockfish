@@ -312,7 +312,7 @@ void Thread::search() {
   trend         = SCORE_ZERO;
   optimism[ us] = Value(39);
   optimism[~us] = -optimism[us];
-
+  
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
          && !Threads.stop
@@ -369,9 +369,12 @@ void Thread::search() {
           while (true)
           {
               Depth searchDepth = rootDepth;
-              if (!Threads.increaseDepth)
+              if (!Threads.increaseDepth) 
+              {
                 searchDepth = Depth(Threads.stayDepth);
                 rootDepth = searchDepth;
+                searchAgainCounter++;
+              }
 
               Depth adjustedDepth = std::max(1, searchDepth - failedHighCnt);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
@@ -793,7 +796,7 @@ namespace {
     // Step 8. Futility pruning: child node (~25 Elo).
     // The depth condition is important for mate finding.
     if (   !ss->ttPv
-        &&  depth < 8
+        &&  depth < 8 - thisThread->searchAgainCounter / 2
         &&  eval - futility_margin(depth, improving) - (ss-1)->statScore / 256 >= beta
         &&  eval >= beta
         &&  eval < 26305) // larger than VALUE_KNOWN_WIN, but smaller than TB wins.
