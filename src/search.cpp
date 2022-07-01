@@ -337,8 +337,8 @@ void Thread::search() {
         searchAgainCounter++;
         if (searchAgainCounter > 10)
         {
-            searchAgainCounter = 0;
             rootDepth -= searchAgainCounter + 1;
+            searchAgainCounter = 0;
             Threads.increaseDepth = true;
         }
       }
