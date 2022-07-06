@@ -19,6 +19,8 @@
 #include <cassert>
 
 #include <algorithm> // For std::count
+#include <cmath>    // for std::pow
+
 #include "movegen.h"
 #include "search.h"
 #include "thread.h"
@@ -216,7 +218,7 @@ void ThreadPool::start_thinking(Position& pos, StateListPtr& states,
 Thread* ThreadPool::get_best_thread() const {
 
     Thread* bestThread = front();
-    std::map<Move, int64_t> votes;
+    std::map<Move, double> votes;
     Value minScore = VALUE_NONE;
 
     // Find minimum score of all threads
@@ -226,8 +228,7 @@ Thread* ThreadPool::get_best_thread() const {
     // Vote according to score and depth, and select the best thread
     for (Thread* th : *this)
     {
-        votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+        votes[th->rootMoves[0].pv[0]] += 1.0 / (1.0 + std::pow(10.0, -(double)th->rootMoves[0].score / 4.0));
 
         if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
