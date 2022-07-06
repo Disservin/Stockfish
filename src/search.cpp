@@ -952,6 +952,9 @@ moves_loop: // When in check, search starts here
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
 
+    Depth deepSE = 0;
+    Value secondScore = VALUE_NONE;
+
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1072,13 +1075,13 @@ moves_loop: // When in check, search starts here
 
               if (value < singularBeta)
               {
-                  extension = 1;
+                  deepSE = extension = 1;
 
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
                       && value < singularBeta - 26
                       && ss->doubleExtensions <= 8)
-                      extension = 2;
+                      deepSE = extension = 2;
               }
 
               // Multi-cut pruning
@@ -1168,6 +1171,9 @@ moves_loop: // When in check, search starts here
           // Increase reduction if next ply has a lot of fail high else reset count to 0
           if ((ss+1)->cutoffCnt > 3 && !PvNode)
               r++;
+          
+          if (moveCount >= 3 && bestValue - 50 > secondScore && deepSE)
+              r += deepSE;
 
           ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                          + (*contHist[0])[movedPiece][to_sq(move)]
@@ -1230,7 +1236,8 @@ moves_loop: // When in check, search starts here
       pos.undo_move(move);
 
       assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
-
+      
+      if (moveCount == 2) secondScore = value;
       // Step 20. Check for a new best move
       // Finished searching the move. If a stop occurred, the return value of
       // the search cannot be trusted, and we return immediately without
