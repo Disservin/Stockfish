@@ -1172,7 +1172,7 @@ moves_loop: // When in check, search starts here
           if ((ss+1)->cutoffCnt > 3 && !PvNode)
               r++;
           
-          if (moveCount >= 3 && bestValue - 50 > secondScore && deepSE)
+          if (moveCount >= 3 && bestValue - 100 > secondScore && deepSE)
               r += deepSE;
 
           ss->statScore =  thisThread->mainHistory[us][from_to(move)]
