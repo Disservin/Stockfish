@@ -495,6 +495,10 @@ void Thread::search() {
                    && !mainThread->ponder
                    && Time.elapsed() > totalTime * 0.43)
                    Threads.increaseDepth = false;
+          else if (   Threads.increaseDepth
+                   && !mainThread->ponder
+                   && Time.elapsed() > totalTime * 0.33)
+                   rootDepth++;
           else
                    Threads.increaseDepth = true;
       }
