@@ -1079,6 +1079,9 @@ moves_loop: // When in check, search starts here
                       && value < singularBeta - 26
                       && ss->doubleExtensions <= 8)
                       extension = 2;
+                  
+                  if (ss->inCheck && ss->moveCount < 4)
+                      extension++;
               }
 
               // Multi-cut pruning
