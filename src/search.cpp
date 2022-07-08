@@ -1168,6 +1168,13 @@ moves_loop: // When in check, search starts here
           // Increase reduction if next ply has a lot of fail high else reset count to 0
           if ((ss+1)->cutoffCnt > 3 && !PvNode)
               r++;
+          
+          Bitboard pinners;
+
+          if (rootNode 
+              && (type_of(pos.piece_on(from_sq(move))) == ROOK || type_of(pos.piece_on(from_sq(move))) == QUEEN)
+              && pos.slider_blockers(pos.pieces(~us, ROOK, BISHOP), from_sq(move), pinners))
+              r--;
 
           ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                          + (*contHist[0])[movedPiece][to_sq(move)]
