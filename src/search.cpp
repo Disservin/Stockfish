@@ -952,6 +952,7 @@ moves_loop: // When in check, search starts here
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
 
+    Depth checkSE = 0;
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1079,6 +1080,9 @@ moves_loop: // When in check, search starts here
                       && value < singularBeta - 26
                       && ss->doubleExtensions <= 8)
                       extension = 2;
+                  
+                  if (ss->inCheck && ss->moveCount < 4)
+                      checkSE = 1;
               }
 
               // Multi-cut pruning
@@ -1113,7 +1117,7 @@ moves_loop: // When in check, search starts here
       }
 
       // Add extension to new depth
-      newDepth += extension;
+      newDepth += extension + checkSE;
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
 
       // Speculative prefetch as early as possible
