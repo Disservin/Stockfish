@@ -954,6 +954,7 @@ moves_loop: // When in check, search starts here
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
 
+    Depth checkSE = 0;
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
@@ -1081,6 +1082,11 @@ moves_loop: // When in check, search starts here
                       && value < singularBeta - 26
                       && ss->doubleExtensions <= 8)
                       extension = 2;
+                  
+                  if (   ss->inCheck 
+                      && ss->moveCount < 4
+                      && ss->doubleExtensions <= 8)
+                      checkSE = 2;
               }
 
               // Multi-cut pruning
@@ -1179,7 +1185,8 @@ moves_loop: // When in check, search starts here
 
           // Decrease/increase reduction for moves with a good/bad history (~30 Elo)
           r -= ss->statScore / 15914;
-
+          
+          r -= checkSE;
           // In general we want to cap the LMR depth search at newDepth, but when
           // reduction is negative, we allow this move a limited search extension
           // beyond the first move depth. This may lead to hidden double extensions.
