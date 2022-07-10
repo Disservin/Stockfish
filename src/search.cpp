@@ -1052,24 +1052,6 @@ moves_loop: // When in check, search starts here
       // We take care to not overdo to avoid search getting stuck.
       if (ss->ply < thisThread->rootDepth * 2)
       {
-          if (   rootNode
-              && !ss->inCheck
-              && !excludedMove // Avoid recursive singular search
-              &&  thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 12)
-          {
-              Value singularBeta = ss->staticEval - 3 * depth;
-              Depth singularDepth = (depth - 1) / 2;
-
-              ss->excludedMove = move;
-              value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
-              ss->excludedMove = MOVE_NONE;
-
-              if (value < singularBeta)
-                  extension = 1;
-
-              else if (singularBeta >= beta)
-                  return singularBeta;
-          }
           // Singular extension search (~58 Elo). If all moves but one fail low on a
           // search of (alpha-s, beta-s), and just one fails high on (alpha, beta),
           // then that move is singular and should be extended. To verify this we do
@@ -1131,6 +1113,9 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
+          else if (   rootNode
+                   && thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 12)
+            extension = 1;
       }
 
       // Add extension to new depth
