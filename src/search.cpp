@@ -1113,7 +1113,7 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5491)
               extension = 1;
-          else if (thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 12)
+          else if (thisThread->spentEffort[from_sq(move)][to_sq(move)] * 100 > thisThread->nodes * 90 && depth >= 5)
             extension = 1;
       }
 
