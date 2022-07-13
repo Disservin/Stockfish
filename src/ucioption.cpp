@@ -81,6 +81,10 @@ void init(OptionsMap& o) {
   o["SyzygyProbeLimit"]      << Option(7, 0, 7);
   o["Use NNUE"]              << Option(true, on_use_NNUE);
   o["EvalFile"]              << Option(EvalFileDefaultName, on_eval_file);
+  o["fut_depth"]             << Option(8, 0, 20);
+  o["fut_divisor"]           << Option(256, 1, 1024);
+  o["fut_margin"]            << Option(168, 0, 300);
+  o["fut_margin_2"]            << Option(168, 0, 300);
 }
 
 
