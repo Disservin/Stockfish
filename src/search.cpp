@@ -1100,7 +1100,7 @@ moves_loop: // When in check, search starts here
                   extension = -1;
               
               else if (ss->moveCount < 4)
-                  extension = -1;
+                  extension = 1;
           }
 
           // Check extensions (~1 Elo)
