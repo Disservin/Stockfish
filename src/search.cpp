@@ -1099,7 +1099,7 @@ moves_loop: // When in check, search starts here
               else if (ttValue <= alpha && ttValue <= value)
                   extension = -1;
               
-              else if (ss->moveCount < 4)
+              else if (ss->moveCount < 4 && depth > 10)
                   extension = -1;
           }
 
