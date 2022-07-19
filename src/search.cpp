@@ -284,8 +284,6 @@ void Thread::search() {
 
   ss->pv = pv;
 
-  (ss-1)->disableNullMove = false;
-
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
 
@@ -322,6 +320,8 @@ void Thread::search() {
          && !Threads.stop
          && !(Limits.depth && mainThread && rootDepth > Limits.depth))
   {
+      (ss-1)->disableNullMove = false;
+      
       // Age out PV variability metric
       if (mainThread)
           totBestMoveChanges /= 2;
