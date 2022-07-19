@@ -824,7 +824,7 @@ namespace {
 
         pos.undo_null_move();
 
-        if ((ss-(depth-R))->inCheck) goto moves_loop;
+        if ((ss+(depth-R))->inCheck) goto moves_loop;
 
         if (nullValue >= beta)
         {
