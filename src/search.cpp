@@ -1342,7 +1342,7 @@ moves_loop: // When in check, search starts here
       }
     }
 
-    if (ss->nullmoveCnt >= moveCount - 2 && moveCount - 2 > 0)
+    if (ss->nullmoveCnt >= moveCount - 4 && moveCount - 4 > 0 && ss->ply < 6)
         thisThread->nullmoveAllowed = false;
 
     // The following condition would detect a stop only after move loop has been
