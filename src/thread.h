@@ -76,6 +76,8 @@ public:
   CapturePieceToHistory captureHistory;
   ContinuationHistory continuationHistory[2][2];
   Score trend;
+  bool nullmoveAllowed;
+  bool research;
 };
 
 

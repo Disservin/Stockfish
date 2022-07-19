@@ -314,6 +314,9 @@ void Thread::search() {
   optimism[~us] = -optimism[us];
 
   int searchAgainCounter = 0;
+  
+  research = false;
+  nullmoveAllowed = true;
 
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
@@ -348,6 +351,16 @@ void Thread::search() {
 
           // Reset UCI info selDepth for each depth and each PV line
           selDepth = 0;
+          
+          if (research)
+          {
+              research = false;
+              nullmoveAllowed = true;
+          }
+          else if (nullmoveAllowed == false)
+          {
+              research = true;
+          }
 
           // Reset aspiration window starting size
           if (rootDepth >= 4)
@@ -807,6 +820,7 @@ namespace {
         &&  eval >= ss->staticEval
         &&  ss->staticEval >= beta - 15 * depth - improvement / 15 + 201 + complexity / 24
         && !excludedMove
+        && !thisThread->research
         &&  pos.non_pawn_material(us)
         && (ss->ply >= thisThread->nmpMinPly || us != thisThread->nmpColor))
     {
@@ -831,7 +845,10 @@ namespace {
                 nullValue = beta;
 
             if (thisThread->nmpMinPly || (abs(beta) < VALUE_KNOWN_WIN && depth < 14))
+            {
+                (ss-1)->nullmoveCnt++;
                 return nullValue;
+            }
 
             assert(!thisThread->nmpMinPly); // Recursive verification is not allowed
 
@@ -845,7 +862,10 @@ namespace {
             thisThread->nmpMinPly = 0;
 
             if (v >= beta)
+            {
+                (ss-1)->nullmoveCnt++;
                 return nullValue;
+            }
         }
     }
 
@@ -953,6 +973,8 @@ moves_loop: // When in check, search starts here
                          && ttMove
                          && (tte->bound() & BOUND_UPPER)
                          && tte->depth() >= depth;
+
+    ss->nullmoveCnt = 0;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1319,6 +1341,9 @@ moves_loop: // When in check, search starts here
               quietsSearched[quietCount++] = move;
       }
     }
+
+    if (ss->nullmoveCnt >= moveCount - 4 && moveCount - 4 > 0)
+        thisThread->nullmoveAllowed = false;
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
