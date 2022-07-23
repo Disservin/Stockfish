@@ -441,7 +441,10 @@ void Thread::search() {
          lastBestMoveDepth = rootDepth;
       }
 
-      if (rootDepth > 10 && !ss->tacticalLine && abs(bestValue - evaluate(rootPos)) > 500) ss->tacticalLine = true;
+      if (   rootDepth > 10 && !ss->tacticalLine 
+          && ss->staticEval != VALUE_NONE
+          && abs(bestValue - ss->staticEval) > 500) 
+          ss->tacticalLine = true;
 
       // Have we found a "mate in x"?
       if (   Limits.mate
