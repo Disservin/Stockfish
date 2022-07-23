@@ -283,6 +283,7 @@ void Thread::search() {
       (ss+i)->ply = i;
 
   ss->pv = pv;
+  ss->tacticalLine = false;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -439,6 +440,8 @@ void Thread::search() {
          lastBestMove = rootMoves[0].pv[0];
          lastBestMoveDepth = rootDepth;
       }
+
+      if (rootDepth > 10 && !ss->tacticalLine && abs(bestValue - evaluate(rootPos)) > 500) ss->tacticalLine = true;
 
       // Have we found a "mate in x"?
       if (   Limits.mate
@@ -606,6 +609,7 @@ namespace {
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
+    (ss+1)->tacticalLine = ss->tacticalLine;
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
@@ -782,7 +786,7 @@ namespace {
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
     if (   !PvNode
-        && depth <= 7
+        && depth <= 7 - ss->tacticalLine
         && eval < alpha - 348 - 258 * depth * depth)
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
