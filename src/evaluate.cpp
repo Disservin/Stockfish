@@ -1063,7 +1063,7 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   if (!useNNUE || useClassical)
   {
       v = Evaluation<NO_TRACE>(pos).value();
-      useClassical = abs(v) >= 297;
+      useClassical = abs(v) >= 330;
   }
 
   // If result of a classical evaluation is much lower than threshold fall back to NNUE
