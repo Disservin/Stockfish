@@ -58,6 +58,22 @@ using namespace std;
 
 namespace Stockfish {
 
+int classDepth = 9;
+int classPieces = 7;
+int classPQ = 5;
+int classPawnMat = 856;
+int classPawnMat2 = 64;
+int class50mc = 10;
+int classUseClass = 297;
+
+TUNE(classDepth);
+TUNE(classPieces);
+TUNE(classPQ);
+TUNE(classPawnMat);
+TUNE(classPawnMat2);
+TUNE(class50mc);
+TUNE(classUseClass);
+
 namespace Eval {
 
   bool useNNUE;
@@ -1055,15 +1071,15 @@ Value Eval::evaluate(const Position& pos, int* complexity) {
   Value psq = pos.psq_eg_stm();
   // Deciding between classical and NNUE eval (~10 Elo): for high PSQ imbalance we use classical,
   // but we switch to NNUE during long shuffling or with high material on the board.
-  bool useClassical =    (pos.this_thread()->depth > 9 || pos.count<ALL_PIECES>() > 7)
-                      && abs(psq) * 5 > (856 + pos.non_pawn_material() / 64) * (10 + pos.rule50_count());
+  bool useClassical =    (pos.this_thread()->depth > classDepth || pos.count<ALL_PIECES>() > classPieces)
+                      && abs(psq) * classPQ > (classPawnMat + pos.non_pawn_material() / classPawnMat2) * (class50mc + pos.rule50_count());
 
   // Deciding between classical and NNUE eval (~10 Elo): for high PSQ imbalance we use classical,
   // but we switch to NNUE during long shuffling or with high material on the board.
   if (!useNNUE || useClassical)
   {
       v = Evaluation<NO_TRACE>(pos).value();
-      useClassical = abs(v) >= 297;
+      useClassical = abs(v) >= classUseClass;
   }
 
   // If result of a classical evaluation is much lower than threshold fall back to NNUE
