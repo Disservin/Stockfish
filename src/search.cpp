@@ -561,7 +561,7 @@ namespace {
     bool givesCheck, improving, didLMR, priorCapture;
     bool capture, doFullDepthSearch, moveCountPruning, ttCapture;
     Piece movedPiece;
-    int moveCount, captureCount, quietCount, improvement, complexity;
+    int moveCount, captureCount, quietCount, improvement, complexity, oppChoice;
 
     // Step 1. Initialize node
     Thread* thisThread = pos.this_thread();
@@ -572,6 +572,7 @@ namespace {
     moveCount          = captureCount = quietCount = ss->moveCount = 0;
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
+    oppChoice          = 0;
 
     // Check for the available remaining time
     if (thisThread == Threads.main())
@@ -1276,7 +1277,7 @@ moves_loop: // When in check, search starts here
       if (value > bestValue)
       {
           bestValue = value;
-
+          oppChoice++;
           if (value > alpha)
           {
               bestMove = move;
@@ -1319,6 +1320,12 @@ moves_loop: // When in check, search starts here
               quietsSearched[quietCount++] = move;
       }
     }
+
+    if (depth > 5 && oppChoice > 6 && ss->ply == 2)
+    {
+        bestValue -= 10;
+    }
+        
 
     // The following condition would detect a stop only after move loop has been
     // completed. But in this case bestValue is valid because we have fully
