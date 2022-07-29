@@ -730,7 +730,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       captured = NO_PIECE;
   }
 
-  if (captured)
+  else if (captured)
   {
       Square capsq = to;
 
