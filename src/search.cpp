@@ -334,7 +334,7 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
-      isLosing = previousScore < - 300;
+      isLosing = previousScore < - 500;
       if (!Threads.increaseDepth)
          searchAgainCounter++;
 
