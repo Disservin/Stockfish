@@ -334,7 +334,7 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
-
+      isLosing = previousScore < - 300;
       if (!Threads.increaseDepth)
          searchAgainCounter++;
 
@@ -590,7 +590,7 @@ namespace {
         if (   Threads.stop.load(std::memory_order_relaxed)
             || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->previousScore < -400)
+            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->isLosing)
                                                         : value_draw(pos.this_thread());
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
@@ -741,7 +741,7 @@ namespace {
         // Never assume anything about values stored in TT
         ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos, thisThread->previousScore < -400, &complexity);
+            ss->staticEval = eval = evaluate(pos, thisThread->isLosing, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
 
@@ -756,7 +756,7 @@ namespace {
     }
     else
     {
-        ss->staticEval = eval = evaluate(pos, thisThread->previousScore < -400, &complexity);
+        ss->staticEval = eval = evaluate(pos, thisThread->isLosing, &complexity);
 
         // Save static evaluation into transposition table
         if (!excludedMove)
@@ -1421,7 +1421,7 @@ moves_loop: // When in check, search starts here
     // Check for an immediate draw or maximum ply reached
     if (   pos.is_draw(ss->ply)
         || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->previousScore < -400) : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->isLosing) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1456,7 +1456,7 @@ moves_loop: // When in check, search starts here
         {
             // Never assume anything about values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                ss->staticEval = bestValue = evaluate(pos, thisThread->previousScore < -400);
+                ss->staticEval = bestValue = evaluate(pos, thisThread->isLosing);
 
             // ttValue can be used as a better position evaluation (~7 Elo)
             if (    ttValue != VALUE_NONE
@@ -1466,7 +1466,7 @@ moves_loop: // When in check, search starts here
         else
             // In case of null move search use previous static eval with a different sign
             ss->staticEval = bestValue =
-            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, thisThread->previousScore < -400)
+            (ss-1)->currentMove != MOVE_NULL ? evaluate(pos, thisThread->isLosing)
                                              : -(ss-1)->staticEval;
 
         // Stand pat. Return immediately if static value is at least beta
