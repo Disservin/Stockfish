@@ -226,18 +226,18 @@ Thread* ThreadPool::get_best_thread() const {
     // Vote according to score and depth, and select the best thread
     for (Thread* th : *this)
     {
-        votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+        votes[th->rootMovesCopy[0].pv[0]] +=
+            (th->rootMovesCopy[0].score - minScore + 14) * int(th->completedDepth);
 
-        if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
+        if (abs(bestThread->rootMovesCopy[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
             // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
+            if (th->rootMovesCopy[0].score > bestThread->rootMovesCopy[0].score)
                 bestThread = th;
         }
-        else if (   th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
-                 || (   th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]))
+        else if (   th->rootMovesCopy[0].score >= VALUE_TB_WIN_IN_MAX_PLY
+                 || (   th->rootMovesCopy[0].score > VALUE_TB_LOSS_IN_MAX_PLY
+                     && votes[th->rootMovesCopy[0].pv[0]] > votes[bestThread->rootMovesCopy[0].pv[0]]))
             bestThread = th;
     }
 

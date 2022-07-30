@@ -236,20 +236,20 @@ void MainThread::search() {
       && rootMoves[0].pv[0] != MOVE_NONE)
       bestThread = Threads.get_best_thread();
 
-  bestPreviousScore = bestThread->rootMoves[0].score;
-  bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+  bestPreviousScore = bestThread->rootMovesCopy[0].score;
+  bestPreviousAverageScore = bestThread->rootMovesCopy[0].averageScore;
 
   for (Thread* th : Threads)
-    th->previousDepth = bestThread->completedDepth;
+    th->previousDepth = bestThread->completedDepthCopy;
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
-      sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
+      sync_cout << UCI::pv(rootPos, bestThread->completedDepthCopy, -VALUE_INFINITE, VALUE_INFINITE) << sync_endl;
 
-  sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+  sync_cout << "bestmove " << UCI::move(bestThread->rootMovesCopy[0].pv[0], rootPos.is_chess960());
 
-  if (bestThread->rootMoves[0].pv.size() > 1 || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
-      std::cout << " ponder " << UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+  if (bestThread->rootMovesCopy[0].pv.size() > 1 || bestThread->rootMovesCopy[0].extract_ponder_from_tt(rootPos))
+      std::cout << " ponder " << UCI::move(bestThread->rootMovesCopy[0].pv[1], rootPos.is_chess960());
 
   std::cout << sync_endl;
 }
@@ -312,9 +312,8 @@ void Thread::search() {
   trend         = SCORE_ZERO;
   optimism[ us] = Value(39);
   optimism[~us] = -optimism[us];
-
-  int searchAgainCounter = 0;
-
+  
+  bool prepareForNextSearch = false;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
          && !Threads.stop
@@ -331,9 +330,30 @@ void Thread::search() {
 
       size_t pvFirst = 0;
       pvLast = 0;
+      
+      rootMovesCopy = rootMoves;
+      completedDepthCopy = completedDepth;
 
-      if (!Threads.increaseDepth)
-         searchAgainCounter++;
+      if (   !mainThread 
+          && !Threads.increaseDepth 
+          && prepareForNextSearch == false 
+          && rootMoves[0].pv.size() >= 2)
+      {
+        StateInfo st;
+        ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
+        rootPos.do_move(rootMoves[0].pv[0], st);
+        rootPos.do_move(rootMoves[0].pv[1], st);
+        Threads.increaseDepth = true;
+        prepareForNextSearch = true;
+        rootDepth = 0;
+        bestValue = delta = alpha = -VALUE_INFINITE;
+        beta = VALUE_INFINITE;
+        complexityAverage.set(174, 1);
+        trend         = SCORE_ZERO;
+        optimism[ us] = Value(39);
+        optimism[~us] = -optimism[us];
+      }
+      
 
       // MultiPV loop. We perform a full root search for each PV line
       for (pvIdx = 0; pvIdx < multiPV && !Threads.stop; ++pvIdx)
@@ -375,7 +395,7 @@ void Thread::search() {
           {
               // Adjust the effective depth searched, but ensuring at least one effective increment for every
               // four searchAgain steps (see issue #2717).
-              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+              Depth adjustedDepth = std::max(1, rootDepth - failedHighCnt);
               bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -495,6 +515,7 @@ void Thread::search() {
           }
           else if (   Threads.increaseDepth
                    && !mainThread->ponder
+                   && !prepareForNextSearch
                    && Time.elapsed() > totalTime * 0.43)
                    Threads.increaseDepth = false;
           else
