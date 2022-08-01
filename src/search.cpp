@@ -1170,6 +1170,16 @@ moves_loop: // When in check, search starts here
           // Increase reduction if next ply has a lot of fail high else reset count to 0
           if ((ss+1)->cutoffCnt > 3 && !PvNode)
               r++;
+          
+          // copilot was tasked to write an elo gaining patch
+          if (   !PvNode
+              && !capture
+              && !ss->inCheck
+              && ss->staticEval + r * depth > beta
+              && ss->staticEval + r * depth < VALUE_KNOWN_WIN
+              && ss->staticEval + r * depth < beta + 200)
+              r--;
+
 
           ss->statScore =  thisThread->mainHistory[us][from_to(move)]
                          + (*contHist[0])[movedPiece][to_sq(move)]
