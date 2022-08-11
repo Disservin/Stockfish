@@ -247,11 +247,17 @@ Thread* ThreadPool::get_best_thread() const {
 
 /// Start non-main threads
 
-void ThreadPool::start_searching() {
-
+void ThreadPool::start_searching() 
+{
     for (Thread* th : *this)
+    {
         if (th != front())
+        {
+            if (th->id() % 3 == 1)
+                th->clear();
             th->start_searching();
+        }
+    }
 }
 
 
