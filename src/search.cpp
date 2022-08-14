@@ -274,6 +274,7 @@ void Thread::search() {
   double timeReduction = 1, totBestMoveChanges = 0;
   Color us = rootPos.side_to_move();
   int iterIdx = 0;
+  rootPieceCount = rootPos.count<ALL_PIECES>();
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
@@ -754,6 +755,9 @@ namespace {
         if (!excludedMove)
             tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
+
+    if (!PvNode && ss->ply >= 15 && pos.count<ALL_PIECES>() <= 5 && thisThread->rootPieceCount > 15)
+        return ss->staticEval;
 
     thisThread->complexityAverage.update(complexity);
 
