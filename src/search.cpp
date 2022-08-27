@@ -283,6 +283,7 @@ void Thread::search() {
       (ss+i)->ply = i;
 
   ss->pv = pv;
+  ss->checkCount = 0;
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -572,6 +573,8 @@ namespace {
     bestValue          = -VALUE_INFINITE;
     maxValue           = VALUE_INFINITE;
 
+    ss->checkCount += ss->inCheck;
+
     // Check for the available remaining time
     if (thisThread == Threads.main())
         static_cast<MainThread*>(thisThread)->check_time();
@@ -605,6 +608,7 @@ namespace {
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
+    (ss+1)->checkCount   = ss->checkCount;
     (ss+1)->ttPv         = false;
     (ss+1)->excludedMove = bestMove = MOVE_NONE;
     (ss+2)->killers[0]   = (ss+2)->killers[1] = MOVE_NONE;
@@ -909,6 +913,13 @@ namespace {
         &&  depth >= 8
         && !ttMove)
         depth--;
+
+    if (ss->ply >= 15 + depth && ss->checkCount == 0 && !PvNode)
+    {
+        value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
+        if (value < alpha)
+            return value;
+    }
 
 moves_loop: // When in check, search starts here
 
