@@ -98,6 +98,34 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, Depth d, const Cap
                              && pos.see_ge(ttm, threshold));
 }
 
+template<GenType Type>
+threats MovePicker::isThreat()
+{
+  threats thr;
+  thr.threatened = (uint64_t)(0);
+  thr.threatenedByPawn = (uint64_t)(0);
+  thr.threatenedByMinor = (uint64_t)(0);
+  thr.threatenedByRook = (uint64_t)(0);
+
+  if constexpr (Type == QUIETS)
+  {
+      Color us = pos.side_to_move();
+      // squares threatened by pawns
+      thr.threatenedByPawn  = pos.attacks_by<PAWN>(~us);
+      // squares threatened by minors or pawns
+      thr.threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | thr.threatenedByPawn;
+      // squares threatened by rooks, minors or pawns
+      thr.threatenedByRook  = pos.attacks_by<ROOK>(~us) | thr.threatenedByMinor;
+
+      // pieces threatened by pieces of lesser material value
+      thr.threatened =  (pos.pieces(us, QUEEN) & thr.threatenedByRook)
+                  | (pos.pieces(us, ROOK)  & thr.threatenedByMinor)
+                  | (pos.pieces(us, KNIGHT, BISHOP) & thr.threatenedByPawn);
+  }
+
+  return thr;
+}
+
 /// MovePicker::score() assigns a numerical value to each move in a list, used
 /// for sorting. Captures are ordered by Most Valuable Victim (MVV), preferring
 /// captures with a good history. Quiets moves are ordered using the histories.
@@ -105,24 +133,8 @@ template<GenType Type>
 void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
-
-  [[maybe_unused]] Bitboard threatened, threatenedByPawn, threatenedByMinor, threatenedByRook;
-  if constexpr (Type == QUIETS)
-  {
-      Color us = pos.side_to_move();
-      // squares threatened by pawns
-      threatenedByPawn  = pos.attacks_by<PAWN>(~us);
-      // squares threatened by minors or pawns
-      threatenedByMinor = pos.attacks_by<KNIGHT>(~us) | pos.attacks_by<BISHOP>(~us) | threatenedByPawn;
-      // squares threatened by rooks, minors or pawns
-      threatenedByRook  = pos.attacks_by<ROOK>(~us) | threatenedByMinor;
-
-      // pieces threatened by pieces of lesser material value
-      threatened =  (pos.pieces(us, QUEEN) & threatenedByRook)
-                  | (pos.pieces(us, ROOK)  & threatenedByMinor)
-                  | (pos.pieces(us, KNIGHT, BISHOP) & threatenedByPawn);
-  }
-
+  
+  positionalThreats = isThreat<Type>();
   for (auto& m : *this)
       if constexpr (Type == CAPTURES)
           m.value =  6 * int(PieceValue[MG][pos.piece_on(to_sq(m))])
@@ -134,10 +146,10 @@ void MovePicker::score() {
                    +     (*continuationHistory[1])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[3])[pos.moved_piece(m)][to_sq(m)]
                    +     (*continuationHistory[5])[pos.moved_piece(m)][to_sq(m)]
-                   +     (threatened & from_sq(m) ?
-                           (type_of(pos.moved_piece(m)) == QUEEN && !(to_sq(m) & threatenedByRook)  ? 50000
-                          : type_of(pos.moved_piece(m)) == ROOK  && !(to_sq(m) & threatenedByMinor) ? 25000
-                          :                                         !(to_sq(m) & threatenedByPawn)  ? 15000
+                   +     (positionalThreats.threatened & from_sq(m) ?
+                           (type_of(pos.moved_piece(m)) == QUEEN && !(to_sq(m) & positionalThreats.threatenedByRook)  ? 50000
+                          : type_of(pos.moved_piece(m)) == ROOK  && !(to_sq(m) & positionalThreats.threatenedByMinor) ? 25000
+                          :                                         !(to_sq(m) & positionalThreats.threatenedByPawn)  ? 15000
                           :                                                                           0)
                           :                                                                           0)
                    +     bool(pos.check_squares(type_of(pos.moved_piece(m))) & to_sq(m)) * 16384;

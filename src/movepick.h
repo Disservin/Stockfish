@@ -105,6 +105,12 @@ typedef Stats<int16_t, 29952, PIECE_NB, SQUARE_NB> PieceToHistory;
 /// (~63 elo)
 typedef Stats<PieceToHistory, NOT_USED, PIECE_NB, SQUARE_NB> ContinuationHistory;
 
+struct threats {
+  Bitboard threatened;
+  Bitboard threatenedByPawn;
+  Bitboard threatenedByMinor;
+  Bitboard threatenedByRook;
+};
 
 /// MovePicker class is used to pick one pseudo-legal move at a time from the
 /// current position. The most important method is next_move(), which returns a
@@ -130,9 +136,11 @@ public:
                                            Square);
   MovePicker(const Position&, Move, Value, Depth, const CapturePieceToHistory*);
   Move next_move(bool skipQuiets = false);
-
+  threats positionalThreats;
+  
 private:
   template<PickType T, typename Pred> Move select(Pred);
+  template<GenType> threats isThreat();
   template<GenType> void score();
   ExtMove* begin() { return cur; }
   ExtMove* end() { return endMoves; }
