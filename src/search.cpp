@@ -37,6 +37,10 @@
 
 namespace Stockfish {
 
+int constval = 369, constmult = 254;
+TUNE(constval);
+TUNE(constmult);
+
 namespace Search {
 
   LimitsType Limits;
@@ -775,7 +779,7 @@ namespace {
     // Step 7. Razoring.
     // If eval is really low check with qsearch if it can exceed alpha, if it can't,
     // return a fail low.
-    if (   depth <= 7
+    if (   depth <= 8
         && eval < alpha - 369 - 254 * depth * depth)
     {
         value = qsearch<NonPV>(pos, ss, alpha - 1, alpha);
