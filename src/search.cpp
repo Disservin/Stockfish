@@ -1163,7 +1163,7 @@ moves_loop: // When in check, search starts here
           if (singularQuietLMR)
               r--;
 
-          if (depth > 4 && mp.positionalThreat & from_sq(move))
+          if (depth < 4 && mp.positionalThreat & from_sq(move))
               r--;
 
           // Increase reduction if next ply has a lot of fail high else reset count to 0
