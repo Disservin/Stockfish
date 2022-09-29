@@ -1193,7 +1193,7 @@ moves_loop: // When in check, search starts here
                                         : -stat_bonus(newDepth);
 
               if (capture)
-                  bonus /= 6;
+                  bonus /= 6 - (ss->ply > 10) - (ss->ply > 20);
 
               update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
