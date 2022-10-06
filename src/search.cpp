@@ -69,7 +69,7 @@ namespace {
   template <typename T>
   int clamp_range(T v)
   {
-    return std::clamp(static_cast<int>(v), -5000, 5000);
+    return std::clamp(static_cast<int>(v), -15000, 15000);
   }
   
   // Reductions lookup table, initialized at startup
