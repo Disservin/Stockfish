@@ -65,13 +65,19 @@ namespace {
   Value futility_margin(Depth d, bool improving) {
     return Value(165 * (d - improving));
   }
-
+  
+  template <typename T>
+  int clamp_range(T v)
+  {
+    return std::clamp(static_cast<int>(v), -5000, 5000);
+  }
+  
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
 
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
     int r = Reductions[d] * Reductions[mn];
-    return (r + 1642 - int(delta) * 1024 / int(rootDelta)) / 1024 + (!i && r > 916);
+    return (r + 1642 - clamp_range<Value>(delta) * 1024 / clamp_range<Value>(rootDelta)) / 1024 + (!i && r > 916);
   }
 
   constexpr int futility_move_count(bool improving, Depth depth) {
