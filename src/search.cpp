@@ -69,24 +69,13 @@ namespace {
   // Reductions lookup table, initialized at startup
   int Reductions[MAX_MOVES]; // [depth or moveNumber]
   
-  int VALUE_PV_1 = 1642;
-  int VALUE_PV_2 = 1024;
-  int VALUE_PV_3 = 1024;
-  int VALUE_PV_4 = 916;
-  int VALUE_ELSE_1 = 1642;
-  int VALUE_ELSE_2 = 1024;
-  int VALUE_ELSE_3 = 1024;
-  int VALUE_ELSE_4 = 916;
-  
-  TUNE(VALUE_PV_1, VALUE_PV_2, VALUE_PV_3, VALUE_PV_4, VALUE_ELSE_1, VALUE_ELSE_2, VALUE_ELSE_3, VALUE_ELSE_4);
-  
   template <NodeType nodeType>
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
     int r = Reductions[d] * Reductions[mn];
     if (nodeType == PV || nodeType == Root)
-        return (r + VALUE_PV_1 - int(delta) * VALUE_PV_2 / int(rootDelta)) / VALUE_PV_3 + (!i && r > VALUE_PV_4);
+        return (r + 1094 - int(delta) * 1414 / int(rootDelta)) / 922 + (!i && r > 948);
     else
-        return (r + VALUE_ELSE_1 - int(delta) * VALUE_ELSE_2 / int(rootDelta)) / VALUE_ELSE_3 + (!i && r > VALUE_ELSE_4);
+        return (r + 1328 - int(delta) * 1002 / int(rootDelta)) / 1177 + (!i && r > 950);
   }
 
   constexpr int futility_move_count(bool improving, Depth depth) {
