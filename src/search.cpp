@@ -73,9 +73,9 @@ namespace {
   Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
     int r = Reductions[d] * Reductions[mn];
     if (nodeType == PV || nodeType == Root)
-        return (r + 671 - int(delta) * 1833 / int(rootDelta)) / 749 + (!i && r > 1345);
+        return (r + 58 - int(delta) * 2020 / int(rootDelta)) / 647 + (!i && r > 1287);
     else
-        return (r + 1392 - int(delta) * 996 / int(rootDelta)) / 1094 + (!i && r > 990);
+        return (r + 1989 - int(delta) * 799 / int(rootDelta)) / 1277 + (!i && r > 995);
   }
 
   constexpr int futility_move_count(bool improving, Depth depth) {
