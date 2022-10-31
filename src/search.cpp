@@ -274,6 +274,7 @@ void Thread::search() {
   double timeReduction = 1, totBestMoveChanges = 0;
   Color us = rootPos.side_to_move();
   int iterIdx = 0;
+  rootr50c = rootPos.rule50_count();
 
   std::memset(ss-7, 0, 10 * sizeof(Stack));
   for (int i = 7; i > 0; i--)
@@ -1048,7 +1049,7 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
-              &&  depth >= 4 - (thisThread->previousDepth > 24) + 2 * (PvNode && tte->is_pv())
+              &&  depth >= 4 - (thisThread->previousDepth > 24) + (thisThread->rootr50c - pos.rule50_count() > 5) + 2 * (PvNode && tte->is_pv())
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
