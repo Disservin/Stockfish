@@ -1058,10 +1058,17 @@ moves_loop: // When in check, search starts here
           {
               Value singularBeta = ttValue - (3 + (ss->ttPv && !PvNode)) * depth;
               Depth singularDepth = (depth - 1) / 2;
+              
+              bool add50rc = depth >= 15 && pos.rule50_count() < 75;
+              if (add50rc)
+                  pos.addToRule50(20);
 
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+
+              if (add50rc)
+                  pos.subToRule50(20);
 
               if (value < singularBeta)
               {
@@ -1074,13 +1081,14 @@ moves_loop: // When in check, search starts here
                       && ss->doubleExtensions <= 9)
                       extension = 2;
               }
-
+              else if (singularBeta >= beta && add50rc && value > 100)
+                  return singularBeta;
               // Multi-cut pruning
               // Our ttMove is assumed to fail high, and now we failed high also on a reduced
               // search without the ttMove. So we assume this expected Cut-node is not singular,
               // that multiple moves fail high, and we can prune the whole subtree by returning
               // a soft bound.
-              else if (singularBeta >= beta)
+              else if (singularBeta >= beta && !add50rc)
                   return singularBeta;
 
               // If the eval of ttMove is greater than beta, we reduce it (negative extension)
@@ -1091,7 +1099,6 @@ moves_loop: // When in check, search starts here
               else if (ttValue <= alpha && ttValue <= value)
                   extension = -1;
           }
-
           // Check extensions (~1 Elo)
           else if (   givesCheck
                    && depth > 9
