@@ -84,6 +84,15 @@ namespace {
     return std::min((12 * d + 282) * d - 349 , 1594);
   }
 
+  bool epsilon_range(std::vector<Value>& vec) {
+    constexpr int epsilon = 10;
+
+    if (vec.size() == 4 && std::max_element(vec.begin(), vec.end()) - std::min_element(vec.begin(), vec.end()) <= epsilon)
+        return true;
+
+    return false;
+  }
+
   // Add a small random component to draw evaluations to avoid 3-fold blindness
   Value value_draw(const Thread* thisThread) {
     return VALUE_DRAW - 1 + Value(thisThread->nodes & 0x2);
@@ -240,7 +249,22 @@ void MainThread::search() {
   bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
   for (Thread* th : Threads)
+  {
     th->previousDepth = bestThread->completedDepth;
+
+    if (th->lastFullDepthEval.size() < 4)
+    {
+        th->lastFullDepthEval.push_back(bestThread->rootMoves[0].score);
+    }
+    else
+    {
+        th->lastFullDepthEval[0] = th->lastFullDepthEval[1];
+        th->lastFullDepthEval[1] = th->lastFullDepthEval[2];
+        th->lastFullDepthEval[2] = th->lastFullDepthEval[3];
+        th->lastFullDepthEval[3] = bestThread->rootMoves[0].score;
+    }
+    
+  }
 
   // Send again PV info if we have a new best thread
   if (bestThread != this)
@@ -425,7 +449,7 @@ void Thread::search() {
 
           // Sort the PV lines searched so far and update the GUI
           std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
-
+    
           if (    mainThread
               && (Threads.stop || pvIdx + 1 == multiPV || Time.elapsed() > 3000))
               sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
@@ -1058,10 +1082,18 @@ moves_loop: // When in check, search starts here
           {
               Value singularBeta = ttValue - (3 + (ss->ttPv && !PvNode)) * depth;
               Depth singularDepth = (depth - 1) / 2;
+              
+              bool stuckScore = epsilon_range(thisThread->lastFullDepthEval);
+              int rule50 = pos.rule50_count();
+              if (stuckScore)
+                pos.makeRule50(80);
 
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+              
+              if (stuckScore)
+                pos.makeRule50(rule50);
 
               if (value < singularBeta)
               {
@@ -1074,7 +1106,6 @@ moves_loop: // When in check, search starts here
                       && ss->doubleExtensions <= 9)
                       extension = 2;
               }
-
               // Multi-cut pruning
               // Our ttMove is assumed to fail high, and now we failed high also on a reduced
               // search without the ttMove. So we assume this expected Cut-node is not singular,
@@ -1091,7 +1122,6 @@ moves_loop: // When in check, search starts here
               else if (ttValue <= alpha && ttValue <= value)
                   extension = -1;
           }
-
           // Check extensions (~1 Elo)
           else if (   givesCheck
                    && depth > 9
