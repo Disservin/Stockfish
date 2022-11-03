@@ -842,27 +842,25 @@ namespace {
     }
 
     if (   !PvNode
-        && depth >= 5 + ss->ply / 20 && pos.rule50_count() > 5 && pos.rule50_count() < 80
+        && depth >= 3 + ss->ply / 20 && pos.rule50_count() > 10 && pos.rule50_count() < 80
         && pos.non_pawn_material(us)
+        && abs(beta) <= VALUE_KNOWN_WIN
         && !excludedMove)
     {          
         int rule50 = pos.rule50_count();
 
         pos.makeRule50(80);
 
-        Depth R = 5 + std::min(2, depth / 5) + std::min(Value(3), (ss->staticEval - beta) / 256);
+        Depth R = std::min(int(eval - beta) / 168, 7) + depth / 3 + 4 - (complexity > 861);
 
-        Value value80 = search<NonPV>(pos, ss, beta - 1, beta, depth-R, cutNode);
+        value = search<NonPV>(pos, ss, beta - 1 , beta, depth - R, cutNode);
 
         pos.makeRule50(rule50);
 
-        if (value80 < beta)
+        if (value >= beta)
         {
-            // Do not return unproven mate or TB scores
-            if (value80 >= VALUE_TB_WIN_IN_MAX_PLY)
-                value80 = beta;
-
-            return value80;
+            tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth + (80 - rule50) / 2, MOVE_NONE, ss->staticEval);
+            return beta;
         }
         
     }
