@@ -393,8 +393,8 @@ jobs:
         run: find ./binaries/ -empty -delete
         shell: bash
 
-      - name: Archive binaries ${{matrix.config.os}}
+      - name: Archive binaries
         uses: actions/upload-artifact@v3
         with:
-          name: Stockfish Binaries
+          name: Stockfish Binaries ${{matrix.config.os}}
           path: src/binaries/
