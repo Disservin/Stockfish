@@ -145,7 +145,7 @@ jobs:
 
       - name: Extract the commit sha
         run: |
-          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > sha && echo "git_sha=$(cat sha)" >> $GITHUB_ENV && echo "Git sha:" $(cat sha)
+          git show --no-patch --no-notes --date=format:'%d-%m-%y' --pretty='%cd-%h' HEAD > sha && echo "git_sha=$(cat sha)" >> $GITHUB_ENV && echo "Git sha:" $(cat sha)
 
       - name: Create binary folder
         run: |
@@ -162,104 +162,104 @@ jobs:
 
       # x86-32 tests
 
-      # - name: Test debug x86-32 build
-      #   if: ${{ matrix.config.run_32bit_tests }}
-      #   run: |
-      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-      #     make clean
-      #     make -j2 ARCH=x86-32 optimize=no debug=yes build
-      #     ../tests/signature.sh $benchref
+      - name: Test debug x86-32 build
+        if: ${{ matrix.config.run_32bit_tests }}
+        run: |
+          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+          make clean
+          make -j2 ARCH=x86-32 optimize=no debug=yes build
+          ../tests/signature.sh $benchref
 
-      # - name: Test x86-32 build
-      #   if: ${{ matrix.config.run_32bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-32 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-32 build
+        if: ${{ matrix.config.run_32bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-32 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test x86-32-sse41-popcnt build
-      #   if: ${{ matrix.config.run_32bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-32-sse41-popcnt build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse41-popcnt-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-32-sse41-popcnt build
+        if: ${{ matrix.config.run_32bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-32-sse41-popcnt build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse41-popcnt-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test x86-32-sse2 build
-      #   if: ${{ matrix.config.run_32bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-32-sse2 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse2-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-32-sse2 build
+        if: ${{ matrix.config.run_32bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-32-sse2 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse2-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test general-32 build
-      #   if: ${{ matrix.config.run_32bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=general-32 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-32-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test general-32 build
+        if: ${{ matrix.config.run_32bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=general-32 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-32-${{matrix.config.os}}${{matrix.config.ext}}
 
       # x86-64 tests
 
-      # - name: Test debug x86-64-modern build
-      #   if: ${{ matrix.config.run_64bit_tests }}
-      #   run: |
-      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-      #     make clean
-      #     make -j2 ARCH=x86-64-modern optimize=no debug=yes build
-      #     ../tests/signature.sh $benchref
+      - name: Test debug x86-64-modern build
+        if: ${{ matrix.config.run_64bit_tests }}
+        run: |
+          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+          make clean
+          make -j2 ARCH=x86-64-modern optimize=no debug=yes build
+          ../tests/signature.sh $benchref
 
-      # - name: Test x86-64-modern build
-      #   if: ${{ matrix.config.run_64bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-64-modern build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-modern-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-64-modern build
+        if: ${{ matrix.config.run_64bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-64-modern build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-modern-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test x86-64-ssse3 build
-      #   if: ${{ matrix.config.run_64bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-64-ssse3 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-ssse3-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-64-ssse3 build
+        if: ${{ matrix.config.run_64bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-64-ssse3 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-ssse3-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test x86-64-sse3-popcnt build
-      #   if: ${{ matrix.config.run_64bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-64-sse3-popcnt build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-sse3-popcnt-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-64-sse3-popcnt build
+        if: ${{ matrix.config.run_64bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-64-sse3-popcnt build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-sse3-popcnt-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test x86-64 build
-      #   if: ${{ matrix.config.run_64bit_tests }}
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=x86-64 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test x86-64 build
+        if: ${{ matrix.config.run_64bit_tests }}
+        run: |
+          make clean
+          make -j2 ARCH=x86-64 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # - name: Test general-64 build
-      #   if: matrix.config.run_64bit_tests
-      #   run: |
-      #     make clean
-      #     make -j2 ARCH=general-64 build sha=$git_sha
-      #     ../tests/signature.sh $benchref
-      #     strip ./stockfish${{matrix.config.ext}}
-      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-64-${{matrix.config.os}}${{matrix.config.ext}}
+      - name: Test general-64 build
+        if: matrix.config.run_64bit_tests
+        run: |
+          make clean
+          make -j2 ARCH=general-64 build sha=$git_sha
+          ../tests/signature.sh $benchref
+          strip ./stockfish${{matrix.config.ext}}
+          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-64-${{matrix.config.os}}${{matrix.config.ext}}
 
       # x86-64 with newer extensions tests
 
