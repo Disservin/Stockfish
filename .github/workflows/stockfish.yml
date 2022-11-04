@@ -390,7 +390,7 @@ jobs:
       #     ../tests/instrumented.sh --sanitizer-thread
 
       - name: Find and remove empty files
-        run: find ./my-path -empty -delete
+        run: find ./binaries/ -empty -delete
         shell: bash
 
       - name: Archive binaries ${{matrix.config.os}}
