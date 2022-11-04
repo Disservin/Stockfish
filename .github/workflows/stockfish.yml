@@ -87,7 +87,7 @@ jobs:
               msys_sys: 'mingw64',
               msys_env: 'x86_64-gcc',
               shell: 'msys2 {0}',
-              ext: ${{matrix.config.ext}}
+              ext: .exe
             }
           - {
               name: "Windows 2022 Mingw-w64 GCC i686",
@@ -98,7 +98,7 @@ jobs:
               msys_sys: 'mingw32',
               msys_env: 'i686-gcc',
               shell: 'msys2 {0}',
-              ext: ${{matrix.config.ext}}
+              ext: .exe
             }
           - {
               name: "Windows 2022 Mingw-w64 Clang x86_64",
@@ -109,7 +109,7 @@ jobs:
               msys_sys: 'clang64',
               msys_env: 'clang-x86_64-clang',
               shell: 'msys2 {0}',
-              ext: ${{matrix.config.ext}}
+              ext: .exe
             }
 
     defaults:
