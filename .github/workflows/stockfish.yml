@@ -145,7 +145,7 @@ jobs:
 
       - name: Extract the commit sha
         run: |
-          git show --no-patch --no-notes --date=format:'%d%m%y' --pretty='%cd-%h' HEAD > sha && echo "git_sha=$(cat sha)" >> $GITHUB_ENV && echo "Git sha:" $(cat sha)
+          git rev-parse --short "$GITHUB_SHA" > sha && echo "git_sha=$(cat sha)" >> $GITHUB_ENV && echo "Git sha:" $(cat sha)
 
       - name: Create binary folder
         run: |

@@ -149,11 +149,12 @@ string engine_info(bool to_uci) {
   /// Version number. If Version is left empty, then compile date in the format
   /// DDMMYY and show in engine_info.
   ss << "Stockfish " << version << " " << setfill('0');
-  #ifdef SHA
-  ss << SHA;
-  #else
+
   date >> month >> day >> year;
   ss << setw(2) << day << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
+
+  #ifdef SHA
+  ss << "-" << SHA;
   #endif
 
   ss << (to_uci  ? "\nid author ": " by ")
