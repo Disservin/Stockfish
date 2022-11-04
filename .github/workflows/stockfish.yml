@@ -176,6 +176,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-32 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test x86-32-sse41-popcnt build
@@ -184,6 +185,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-32-sse41-popcnt build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse41-popcnt${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test x86-32-sse2 build
@@ -192,6 +194,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-32-sse2 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-32-sse2${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test general-32 build
@@ -200,6 +203,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=general-32 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-32${{matrix.config.os}}${{matrix.config.ext}}
 
       # x86-64 tests
@@ -218,6 +222,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-64-modern build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-modern${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test x86-64-ssse3 build
@@ -226,6 +231,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-64-ssse3 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-ssse3${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test x86-64-sse3-popcnt build
@@ -234,6 +240,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-64-sse3-popcnt build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-sse3-popcnt${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test x86-64 build
@@ -242,6 +249,7 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-64 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64${{matrix.config.os}}${{matrix.config.ext}}
 
       # - name: Test general-64 build
@@ -250,7 +258,9 @@ jobs:
       #     make clean
       #     make -j2 ARCH=general-64 build sha=$git_sha
       #     ../tests/signature.sh $benchref
+      #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-64${{matrix.config.os}}${{matrix.config.ext}}
+
       # x86-64 with newer extensions tests
 
       - name: Compile x86-64-avx2 build
@@ -258,6 +268,7 @@ jobs:
         run: |
           make clean
           make -j2 ARCH=x86-64-avx2 build sha=$git_sha
+          strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-avx2-${{matrix.config.os}}${{matrix.config.ext}}
 
       - name: Compile x86-64-bmi2 build
@@ -265,6 +276,7 @@ jobs:
         run: |
           make clean
           make -j2 ARCH=x86-64-bmi2 build sha=$git_sha
+          strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-bmi2${{matrix.config.os}}${{matrix.config.ext}}
 
       - name: Compile x86-64-avx512 build
@@ -272,6 +284,7 @@ jobs:
         run: |
           make clean
           make -j2 ARCH=x86-64-avx512 build sha=$git_sha
+          strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-avx512${{matrix.config.os}}${{matrix.config.ext}}
 
       - name: Compile x86-64-vnni512 build
@@ -279,6 +292,7 @@ jobs:
         run: |
           make clean
           make -j2 ARCH=x86-64-vnni512 build sha=$git_sha
+          strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni512${{matrix.config.os}}${{matrix.config.ext}}
 
       - name: Compile x86-64-vnni256 build
@@ -286,6 +300,7 @@ jobs:
         run: |
           make clean
           make -j2 ARCH=x86-64-vnni256 build sha=$git_sha
+          strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni256${{matrix.config.os}}${{matrix.config.ext}}
 
       # armv8 tests
