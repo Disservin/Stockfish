@@ -287,21 +287,21 @@ jobs:
           strip ./stockfish${{matrix.config.ext}}
           mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-avx512-${{matrix.config.os}}${{matrix.config.ext}}
 
-      - name: Compile x86-64-vnni512 build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-vnni512 build sha=$git_sha
-          strip ./stockfish${{matrix.config.ext}}
-          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni512-${{matrix.config.os}}${{matrix.config.ext}}
+      # - name: Compile x86-64-vnni512 build
+      #   if: ${{ matrix.config.run_64bit_tests }}
+      #   run: |
+      #     make clean
+      #     make -j2 ARCH=x86-64-vnni512 build sha=$git_sha
+      #     strip ./stockfish${{matrix.config.ext}}
+      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni512-${{matrix.config.os}}${{matrix.config.ext}}
 
-      - name: Compile x86-64-vnni256 build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-vnni256 build sha=$git_sha
-          strip ./stockfish${{matrix.config.ext}}
-          mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni256-${{matrix.config.os}}${{matrix.config.ext}}
+      # - name: Compile x86-64-vnni256 build
+      #   if: ${{ matrix.config.run_64bit_tests }}
+      #   run: |
+      #     make clean
+      #     make -j2 ARCH=x86-64-vnni256 build sha=$git_sha
+      #     strip ./stockfish${{matrix.config.ext}}
+      #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-x86-64-vnni256-${{matrix.config.os}}${{matrix.config.ext}}
 
       # armv8 tests
 
