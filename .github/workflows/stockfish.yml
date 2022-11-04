@@ -388,9 +388,10 @@ jobs:
       #     make clean
       #     make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
       #     ../tests/instrumented.sh --sanitizer-thread
+
       - name: Find and remove empty files
         run: find ./my-path -empty -delete
-          shell: bash
+        shell: bash
 
       - name: Archive binaries ${{matrix.config.os}}
         uses: actions/upload-artifact@v3
