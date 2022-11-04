@@ -147,10 +147,10 @@ string engine_info(bool to_uci) {
   stringstream ss, date(__DATE__); // From compiler, format is "Sep 21 2008"
 
   /// Version number. If Version is left empty, then compile date in the format
-  /// DD-MM-YY and show in engine_info.
-  ss << "Stockfish ";
+  /// DDMMYY and show in engine_info.
+  ss << "Stockfish " << version << " " << setfill('0');
   #ifdef SHA
-  ss << version << "-" << SHA << setfill('0');
+  ss << SHA;
   #else
   date >> month >> day >> year;
   ss << setw(2) << day << setw(2) << (1 + months.find(month) / 4) << year.substr(2);
