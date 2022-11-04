@@ -682,6 +682,11 @@ ifeq ($(pext),yes)
 	endif
 endif
 
+### Include version
+ifdef sha
+	CXXFLAGS += -DSHA=\"$(sha)\"
+endif
+
 ### 3.8 Link Time Optimization
 ### This is a mix of compile and link time options because the lto link phase
 ### needs access to the optimization flags.

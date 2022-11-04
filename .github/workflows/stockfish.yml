@@ -5,6 +5,7 @@ on:
       - master
       - tools
       - github_ci
+      - artifact-sha
   pull_request:
     branches:
       - master
@@ -26,57 +27,57 @@ jobs:
           # run_64bit_tests: true
           # run_armv8_tests: true
           # run_armv7_tests: true
-          - {
-              name: "Ubuntu 20.04 GCC",
-              os: ubuntu-20.04,
-              compiler: g++,
-              comp: gcc,
-              run_expensive_tests: true,
-              run_32bit_tests: true,
-              run_64bit_tests: true,
-              shell: 'bash {0}'
-            }
-          - {
-              name: "Ubuntu 20.04 Clang",
-              os: ubuntu-20.04,
-              compiler: clang++,
-              comp: clang,
-              run_32bit_tests: true,
-              run_64bit_tests: true,
-              shell: 'bash {0}'
-            }
-          - {
-              name: "Ubuntu 20.04 NDK armv8",
-              os: ubuntu-20.04,
-              compiler: aarch64-linux-android21-clang++,
-              comp: ndk,
-              run_armv8_tests: false,
-              shell: 'bash {0}'
-            }
-          - {
-              name: "Ubuntu 20.04 NDK armv7",
-              os: ubuntu-20.04,
-              compiler: armv7a-linux-androideabi21-clang++,
-              comp: ndk,
-              run_armv7_tests: false,
-              shell: 'bash {0}'
-            }
-          - {
-              name: "MacOS 12 Apple Clang",
-              os: macos-12,
-              compiler: clang++,
-              comp: clang,
-              run_64bit_tests: true,
-              shell: 'bash {0}'
-            }
-          - {
-              name: "MacOS 12 GCC 11",
-              os: macos-12,
-              compiler: g++-11,
-              comp: gcc,
-              run_64bit_tests: true,
-              shell: 'bash {0}'
-            }
+          # - {
+          #     name: "Ubuntu 20.04 GCC",
+          #     os: ubuntu-20.04,
+          #     compiler: g++,
+          #     comp: gcc,
+          #     run_expensive_tests: true,
+          #     run_32bit_tests: true,
+          #     run_64bit_tests: true,
+          #     shell: 'bash {0}'
+          #   }
+          # - {
+          #     name: "Ubuntu 20.04 Clang",
+          #     os: ubuntu-20.04,
+          #     compiler: clang++,
+          #     comp: clang,
+          #     run_32bit_tests: true,
+          #     run_64bit_tests: true,
+          #     shell: 'bash {0}'
+          #   }
+          # - {
+          #     name: "Ubuntu 20.04 NDK armv8",
+          #     os: ubuntu-20.04,
+          #     compiler: aarch64-linux-android21-clang++,
+          #     comp: ndk,
+          #     run_armv8_tests: false,
+          #     shell: 'bash {0}'
+          #   }
+          # - {
+          #     name: "Ubuntu 20.04 NDK armv7",
+          #     os: ubuntu-20.04,
+          #     compiler: armv7a-linux-androideabi21-clang++,
+          #     comp: ndk,
+          #     run_armv7_tests: false,
+          #     shell: 'bash {0}'
+          #   }
+          # - {
+          #     name: "MacOS 12 Apple Clang",
+          #     os: macos-12,
+          #     compiler: clang++,
+          #     comp: clang,
+          #     run_64bit_tests: true,
+          #     shell: 'bash {0}'
+          #   }
+          # - {
+          #     name: "MacOS 12 GCC 11",
+          #     os: macos-12,
+          #     compiler: g++-11,
+          #     comp: gcc,
+          #     run_64bit_tests: true,
+          #     shell: 'bash {0}'
+          #   }
           - {
               name: "Windows 2022 Mingw-w64 GCC x86_64",
               os: windows-2022,
@@ -85,7 +86,8 @@ jobs:
               run_64bit_tests: true,
               msys_sys: 'mingw64',
               msys_env: 'x86_64-gcc',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: .exe
             }
           - {
               name: "Windows 2022 Mingw-w64 GCC i686",
@@ -95,7 +97,8 @@ jobs:
               run_32bit_tests: true,
               msys_sys: 'mingw32',
               msys_env: 'i686-gcc',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: .exe
             }
           - {
               name: "Windows 2022 Mingw-w64 Clang x86_64",
@@ -105,7 +108,8 @@ jobs:
               run_64bit_tests: true,
               msys_sys: 'clang64',
               msys_env: 'clang-x86_64-clang',
-              shell: 'msys2 {0}'
+              shell: 'msys2 {0}',
+              ext: .exe
             }
 
     defaults:
@@ -139,6 +143,16 @@ jobs:
           git log HEAD | grep "\b[Bb]ench[ :]\+[0-9]\{7\}" | head -n 1 | sed "s/[^0-9]*\([0-9]*\).*/\1/g" > git_sig
           [ -s git_sig ] && echo "benchref=$(cat git_sig)" >> $GITHUB_ENV && echo "Reference bench:" $(cat git_sig) || echo "No bench found"
 
+      - name: Extract the commit sha
+        run: |
+          git show --no-patch --no-notes --pretty='%cs-%h' HEAD > sha && echo "git_sha=$(cat sha)" >> $GITHUB_ENV && echo "Git sha:" $(cat sha)
+
+      - name: Create binary folder
+        run: |
+          mkdir ./binaries
+          touch test.txt
+          mv test.txt ./binaries/stockfish-x86-64-wtf.exe
+
       - name: Check compiler
         run: |
           export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
@@ -150,85 +164,94 @@ jobs:
 
       # x86-32 tests
 
-      - name: Test debug x86-32 build
-        if: ${{ matrix.config.run_32bit_tests }}
-        run: |
-          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-          make clean
-          make -j2 ARCH=x86-32 optimize=no debug=yes build
-          ../tests/signature.sh $benchref
+      # - name: Test debug x86-32 build
+      #   if: ${{ matrix.config.run_32bit_tests }}
+      #   run: |
+      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+      #     make clean
+      #     make -j2 ARCH=x86-32 optimize=no debug=yes build
+      #     ../tests/signature.sh $benchref
 
       - name: Test x86-32 build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-32 build
+          make -j2 ARCH=x86-32 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-32.exe
           ../tests/signature.sh $benchref
 
       - name: Test x86-32-sse41-popcnt build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-32-sse41-popcnt build
+          make -j2 ARCH=x86-32-sse41-popcnt build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-32-sse41-popcnt.exe
           ../tests/signature.sh $benchref
 
       - name: Test x86-32-sse2 build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-32-sse2 build
+          make -j2 ARCH=x86-32-sse2 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-32-sse2.exe
           ../tests/signature.sh $benchref
 
       - name: Test general-32 build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=general-32 build
+          make -j2 ARCH=general-32 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-general-32.exe
           ../tests/signature.sh $benchref
 
       # x86-64 tests
 
-      - name: Test debug x86-64-modern build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
-          make clean
-          make -j2 ARCH=x86-64-modern optimize=no debug=yes build
-          ../tests/signature.sh $benchref
+      # - name: Test debug x86-64-modern build
+      #   if: ${{ matrix.config.run_64bit_tests }}
+      #   run: |
+      #     export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern optimize=no debug=yes build
+      #     ../tests/signature.sh $benchref
 
       - name: Test x86-64-modern build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-modern build
+          make -j2 ARCH=x86-64-modern build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-modern.exe
           ../tests/signature.sh $benchref
 
       - name: Test x86-64-ssse3 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-ssse3 build
+          make -j2 ARCH=x86-64-ssse3 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-ssse3.exe
           ../tests/signature.sh $benchref
 
       - name: Test x86-64-sse3-popcnt build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-sse3-popcnt build
+          make -j2 ARCH=x86-64-sse3-popcnt build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-sse3-popcnt.exe
           ../tests/signature.sh $benchref
 
       - name: Test x86-64 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64 build
+          make -j2 ARCH=x86-64 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64.exe
           ../tests/signature.sh $benchref
 
       - name: Test general-64 build
         if: matrix.config.run_64bit_tests
         run: |
           make clean
-          make -j2 ARCH=general-64 build
+          make -j2 ARCH=general-64 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-general-64.exe
           ../tests/signature.sh $benchref
 
       # x86-64 with newer extensions tests
@@ -237,31 +260,36 @@ jobs:
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-avx2 build
+          make -j2 ARCH=x86-64-avx2 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-avx2.exe
 
       - name: Compile x86-64-bmi2 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-bmi2 build
+          make -j2 ARCH=x86-64-bmi2 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-bmi2.exe
 
       - name: Compile x86-64-avx512 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-avx512 build
+          make -j2 ARCH=x86-64-avx512 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-avx512.exe
 
       - name: Compile x86-64-vnni512 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-vnni512 build
+          make -j2 ARCH=x86-64-vnni512 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-vnni512.exe
 
       - name: Compile x86-64-vnni256 build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           make clean
-          make -j2 ARCH=x86-64-vnni256 build
+          make -j2 ARCH=x86-64-vnni256 build sha=$git_sha
+          mv ./stockfish.exe ./binaries/stockfish-x86-64-vnni256.exe
 
       # armv8 tests
 
@@ -314,37 +342,43 @@ jobs:
 
       # Other tests
 
-      - name: Check perft and search reproducibility
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-modern build
-          ../tests/perft.sh
-          ../tests/reprosearch.sh
+      # - name: Check perft and search reproducibility
+      #   if: ${{ matrix.config.run_64bit_tests }}
+      #   run: |
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern build
+      #     ../tests/perft.sh
+      #     ../tests/reprosearch.sh
 
       # Sanitizers
 
-      - name: Run under valgrind
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern debug=yes optimize=no build > /dev/null
-          ../tests/instrumented.sh --valgrind
-          ../tests/instrumented.sh --valgrind-thread
+      # - name: Run under valgrind
+      #   if: ${{ matrix.config.run_expensive_tests }}
+      #   run: |
+      #     export CXXFLAGS="-O1 -fno-inline"
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern debug=yes optimize=no build > /dev/null
+      #     ../tests/instrumented.sh --valgrind
+      #     ../tests/instrumented.sh --valgrind-thread
 
-      - name: Run with UB sanitizer
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern sanitize=undefined optimize=no debug=yes build > /dev/null
-          ../tests/instrumented.sh --sanitizer-undefined
+      # - name: Run with UB sanitizer
+      #   if: ${{ matrix.config.run_expensive_tests }}
+      #   run: |
+      #     export CXXFLAGS="-O1 -fno-inline"
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern sanitize=undefined optimize=no debug=yes build > /dev/null
+      #     ../tests/instrumented.sh --sanitizer-undefined
 
-      - name: Run with thread sanitizer
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
-          ../tests/instrumented.sh --sanitizer-thread
+      # - name: Run with thread sanitizer
+      #   if: ${{ matrix.config.run_expensive_tests }}
+      #   run: |
+      #     export CXXFLAGS="-O1 -fno-inline"
+      #     make clean
+      #     make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
+      #     ../tests/instrumented.sh --sanitizer-thread
+
+      - name: Archive binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: Stockfish ${{matrix.config.name}}
+          path: src/binaries/
