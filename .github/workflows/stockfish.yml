@@ -261,7 +261,7 @@ jobs:
       #     strip ./stockfish${{matrix.config.ext}}
       #     mv ./stockfish${{matrix.config.ext}} ./binaries/stockfish-general-64-${{matrix.config.os}}${{matrix.config.ext}}
 
-      # # x86-64 with newer extensions tests
+      # x86-64 with newer extensions tests
 
       - name: Compile x86-64-avx2 build
         if: ${{ matrix.config.run_64bit_tests }}
@@ -397,4 +397,8 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Stockfish Binaries ${{matrix.config.os}}
-          path: src/binaries/
+          path: |
+            src/binaries/
+            Top CPU Contributors.txt
+            Copying.txt
+            AUTHORS
