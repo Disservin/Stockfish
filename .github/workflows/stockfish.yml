@@ -5,11 +5,15 @@ on:
       - master
       - tools
       - github_ci
+      - artifact-sha-sep
   pull_request:
     branches:
       - master
       - tools
 jobs:
+  Binaries:
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/artifact-sha-sep'
+    uses: ./.github/workflows/stockfish_binaries.yml
   Stockfish:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
