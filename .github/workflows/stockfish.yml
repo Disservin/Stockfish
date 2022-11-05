@@ -389,10 +389,6 @@ jobs:
           make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
           ../tests/instrumented.sh --sanitizer-thread
 
-      - name: Find and remove empty files
-        run: find ./binaries/ -empty -delete
-        shell: bash
-
       - name: Archive binaries
         uses: actions/upload-artifact@v3
         with:
