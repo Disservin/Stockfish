@@ -87,17 +87,25 @@ jobs:
           make -j2 profile-build ARCH=$BINARY COMP=$COMP
           strip ./stockfish$EXT
           mv ./stockfish$EXT ../stockfish-$OS-$BINARY$EXT
+          chmod u+x ../stockfish-$OS-$BINARY$EXT
 
       - name: Remove non src files
         run: rm -f *.o .depend *.nnue
+
+      - name: Tar files
+        run: |
+          cd ..
+          mkdir stockfish-$OS-$BINARY
+          cp src stockfish-$OS-$BINARY/
+          cp stockfish-$OS-$BINARY$EXT stockfish-$OS-$BINARY/
+          cp Top CPU Contributors.txt stockfish-$OS-$BINARY/
+          cp Copying.txt stockfish-$OS-$BINARY/
+          cp AUTHORS stockfish-$OS-$BINARY/
+          tar -cvf stockfish-$OS-$BINARY.tar stockfish-$OS-$BINARY
 
       - name: Archive binaries
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: |
-            src
-            stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}${{ matrix.config.ext }}
-            Top CPU Contributors.txt
-            Copying.txt
-            AUTHORS
+            stockfish-$OS-$BINARY.tar
