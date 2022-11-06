@@ -74,4 +74,4 @@ jobs:
           export CXXFLAGS="-O1 -fno-inline"
           make clean
           make -j2 ARCH=x86-64-modern ${{ matrix.sanitizers.make_option }} debug=yes optimize=no build > /dev/null
-          ../tests/instrumented.sh ${{ matrix.sanitizers.instrumented_option }}
+          ../tests/instrumented.sh --${{ matrix.sanitizers.instrumented_option }}
