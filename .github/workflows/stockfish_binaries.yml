@@ -3,7 +3,7 @@ on:
   workflow_call:
 jobs:
   Stockfish:
-    name: ${{ matrix.config.name }}
+    name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:
       COMPILER: ${{ matrix.config.compiler }}
