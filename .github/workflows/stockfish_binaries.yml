@@ -95,13 +95,13 @@ jobs:
       - name: Tar files
         run: |
           cd ..
-          mkdir stockfish-$OS-$BINARY
-          cp -r src stockfish-$OS-$BINARY/
-          cp stockfish-$OS-$BINARY$EXT stockfish-$OS-$BINARY/
-          cp Top CPU Contributors.txt stockfish-$OS-$BINARY/
-          cp Copying.txt stockfish-$OS-$BINARY/
-          cp AUTHORS stockfish-$OS-$BINARY/
-          tar -cvf stockfish-$OS-$BINARY.tar stockfish-$OS-$BINARY
+          mkdir stockfish
+          cp -r src stockfish/
+          cp stockfish-$OS-$BINARY$EXT stockfish/
+          cp Top CPU Contributors.txt stockfish/
+          cp Copying.txt stockfish/
+          cp AUTHORS stockfish/
+          tar -cvf stockfish-$OS-$BINARY.tar stockfish
 
       - name: Archive binaries
         uses: actions/upload-artifact@v3
