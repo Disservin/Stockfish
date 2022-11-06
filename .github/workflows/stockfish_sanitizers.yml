@@ -26,17 +26,17 @@ jobs:
               instrumented_option: sanitizer-thread
             }
           - {
-              name: Sanitize thread,
+              name: Sanitize undefined,
               make_option: sanitize=undefined,
               instrumented_option: sanitizer-undefined
             }
           - {
-              name: Sanitize thread,
+              name: Valgrind,
               make_option: "",
               instrumented_option: valgrind
             }
           - {
-              name: Sanitize thread,
+              name: Valgrind thread,
               make_option: "",
               instrumented_option: valgrind-thread
             }
