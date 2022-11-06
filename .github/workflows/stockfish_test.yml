@@ -12,18 +12,11 @@ jobs:
     strategy:
       matrix:
         config:
-          # set the variable for the required tests:
-          # run_expensive_tests: true
-          # run_32bit_tests: true
-          # run_64bit_tests: true
-          # run_armv8_tests: true
-          # run_armv7_tests: true
           - {
               name: "Ubuntu 20.04 GCC",
               os: ubuntu-20.04,
               compiler: g++,
               comp: gcc,
-              run_expensive_tests: true,
               run_32bit_tests: true,
               run_64bit_tests: true,
               shell: 'bash {0}'
