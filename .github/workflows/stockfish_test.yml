@@ -94,6 +94,7 @@ jobs:
             }
         options:
           - {
+              name: "debug",
               make_option: optimize=no debug=yes,
               arch: x86-32
             }
@@ -164,7 +165,7 @@ jobs:
 
       # x86-32 tests
 
-      - name: Test debug ${{ matrix.options.arch }} build
+      - name: Test ${{ matrix.options.name }} ${{ matrix.options.arch }} build
         if: ${{ matrix.config.run_32bit_tests }}
         run: |
           export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
@@ -174,47 +175,12 @@ jobs:
 
       # x86-64 tests
 
-      - name: Test debug x86-64-modern build
+      - name: Test ${{ matrix.options.name }} ${{ matrix.options.arch }} build
         if: ${{ matrix.config.run_64bit_tests }}
         run: |
           export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
           make clean
-          make -j2 ARCH=x86-64-modern optimize=no debug=yes build
-          ../tests/signature.sh $benchref
-
-      - name: Test x86-64-modern build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-modern build
-          ../tests/signature.sh $benchref
-
-      - name: Test x86-64-ssse3 build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-ssse3 build
-          ../tests/signature.sh $benchref
-
-      - name: Test x86-64-sse3-popcnt build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64-sse3-popcnt build
-          ../tests/signature.sh $benchref
-
-      - name: Test x86-64 build
-        if: ${{ matrix.config.run_64bit_tests }}
-        run: |
-          make clean
-          make -j2 ARCH=x86-64 build
-          ../tests/signature.sh $benchref
-
-      - name: Test general-64 build
-        if: matrix.config.run_64bit_tests
-        run: |
-          make clean
-          make -j2 ARCH=general-64 build
+          make -j2 ARCH=${{ matrix.options.arch }} ${{ matrix.options.make_option }} build
           ../tests/signature.sh $benchref
 
       # armv8 tests
