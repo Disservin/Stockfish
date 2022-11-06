@@ -113,6 +113,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
+          sudo apt install expect valgrind g++-multilib qemu-user
 
       - name: Setup msys and install required packages
         if: runner.os == 'Windows'
