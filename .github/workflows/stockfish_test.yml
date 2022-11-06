@@ -113,6 +113,15 @@ jobs:
               make_option: "",
               arch: general-32
             }
+        exclude:
+          - config: 
+              {
+                name: "Ubuntu 20.04 NDK armv8"
+              }
+          - config:
+              {
+                name: "Ubuntu 20.04 NDK armv7"
+              }
     defaults:
       run:
         working-directory: src
