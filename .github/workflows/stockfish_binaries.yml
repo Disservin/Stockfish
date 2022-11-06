@@ -96,7 +96,7 @@ jobs:
         run: |
           cd ..
           mkdir stockfish-$OS-$BINARY
-          cp src stockfish-$OS-$BINARY/
+          cp -r src stockfish-$OS-$BINARY/
           cp stockfish-$OS-$BINARY$EXT stockfish-$OS-$BINARY/
           cp Top CPU Contributors.txt stockfish-$OS-$BINARY/
           cp Copying.txt stockfish-$OS-$BINARY/
