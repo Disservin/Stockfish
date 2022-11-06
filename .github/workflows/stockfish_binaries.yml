@@ -98,7 +98,7 @@ jobs:
           mkdir stockfish
           cp -r src stockfish/
           cp stockfish-$OS-$BINARY$EXT stockfish/
-          cp Top CPU Contributors.txt stockfish/
+          cp "Top CPU Contributors.txt" stockfish/
           cp Copying.txt stockfish/
           cp AUTHORS stockfish/
           tar -cvf stockfish-$OS-$BINARY.tar stockfish
@@ -108,4 +108,4 @@ jobs:
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: |
-            stockfish-$OS-$BINARY.tar
+            stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar
