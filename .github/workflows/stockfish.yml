@@ -324,30 +324,3 @@ jobs:
           make -j2 ARCH=x86-64-modern build
           ../tests/perft.sh
           ../tests/reprosearch.sh
-
-      # Sanitizers
-
-      - name: Run under valgrind
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern debug=yes optimize=no build > /dev/null
-          ../tests/instrumented.sh --valgrind
-          ../tests/instrumented.sh --valgrind-thread
-
-      - name: Run with UB sanitizer
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern sanitize=undefined optimize=no debug=yes build > /dev/null
-          ../tests/instrumented.sh --sanitizer-undefined
-
-      - name: Run with thread sanitizer
-        if: ${{ matrix.config.run_expensive_tests }}
-        run: |
-          export CXXFLAGS="-O1 -fno-inline"
-          make clean
-          make -j2 ARCH=x86-64-modern sanitize=thread optimize=no debug=yes build > /dev/null
-          ../tests/instrumented.sh --sanitizer-thread
