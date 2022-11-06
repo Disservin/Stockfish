@@ -5,11 +5,14 @@ on:
       - master
       - tools
       - github_ci
+      - speedup-ci
   pull_request:
     branches:
       - master
       - tools
 jobs:
+  Sanitizers:
+    uses: ./.github/workflows/stockfish_sanitizers.yml
   Stockfish:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
