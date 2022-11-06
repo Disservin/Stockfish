@@ -21,22 +21,22 @@ jobs:
             }
         sanitizers:
           - {
-              name: run with thread sanitizer,
+              name: Run with thread sanitizer,
               make_option: sanitize=thread,
               instrumented_option: sanitizer-thread
             }
           - {
-              name: run with UB sanitizer,
+              name: Run with UB sanitizer,
               make_option: sanitize=undefined,
               instrumented_option: sanitizer-undefined
             }
           - {
-              name: under valgrind,
+              name: Run under valgrind,
               make_option: "",
               instrumented_option: valgrind
             }
           - {
-              name: under valgrind-thread,
+              name: Run under valgrind-thread,
               make_option: "",
               instrumented_option: valgrind-thread
             }
@@ -74,7 +74,7 @@ jobs:
 
       # Sanitizers
 
-      - name: Run ${{ matrix.sanitizers.name }}
+      - name: ${{ matrix.sanitizers.name }}
         run: |
           export CXXFLAGS="-O1 -fno-inline"
           make clean
