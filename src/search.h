@@ -34,10 +34,6 @@ namespace Search {
 // Different node types, used as a template parameter
 enum NodeType { NonPV, PV, Root };
 
-typedef std::vector<RootMove> RootMoves;
-
-extern LimitsType Limits;
-
 /// Stack struct keeps track of the information we need to remember from nodes
 /// shallower and deeper in the tree during the search. Each search thread has
 /// its own array of Stack objects, indexed by the current ply.
@@ -57,6 +53,26 @@ struct Stack {
   bool ttHit;
   int doubleExtensions;
   int cutoffCnt;
+};
+
+/// LimitsType struct stores information sent by GUI about available time to
+/// search the current move, maximum depth/time, or if we are in analysis mode.
+
+struct LimitsType {
+  LimitsType() {  // Init explicitly due to broken value-initialization of non
+                  // POD in MSVC
+    time[WHITE] = time[BLACK] = inc[WHITE] = inc[BLACK] = npmsec = movetime =
+        TimePoint(0);
+    movestogo = depth = mate = perft = infinite = 0;
+    nodes = 0;
+  }
+
+  bool use_time_management() const { return time[WHITE] || time[BLACK]; }
+
+  std::vector<Move> searchmoves;
+  TimePoint time[COLOR_NB], inc[COLOR_NB], npmsec, movetime, startTime;
+  int movestogo, depth, mate, perft, infinite;
+  int64_t nodes;
 };
 
 /// RootMove struct is used for moves at the root of the tree. For each root
@@ -81,26 +97,6 @@ struct RootMove {
   std::vector<Move> pv;
 };
 
-/// LimitsType struct stores information sent by GUI about available time to
-/// search the current move, maximum depth/time, or if we are in analysis mode.
-
-struct LimitsType {
-  LimitsType() {  // Init explicitly due to broken value-initialization of non
-                  // POD in MSVC
-    time[WHITE] = time[BLACK] = inc[WHITE] = inc[BLACK] = npmsec = movetime =
-        TimePoint(0);
-    movestogo = depth = mate = perft = infinite = 0;
-    nodes = 0;
-  }
-
-  bool use_time_management() const { return time[WHITE] || time[BLACK]; }
-
-  std::vector<Move> searchmoves;
-  TimePoint time[COLOR_NB], inc[COLOR_NB], npmsec, movetime, startTime;
-  int movestogo, depth, mate, perft, infinite;
-  int64_t nodes;
-};
-
 struct Skill {
   Skill(int skill_level, int uci_elo);
   bool enabled() const { return level < 20.0; }
@@ -110,6 +106,9 @@ struct Skill {
   double level;
   Move best = MOVE_NONE;
 };
+
+extern LimitsType Limits;
+typedef std::vector<RootMove> RootMoves;
 
 template <NodeType nodeType>
 Value search(Position &pos, Stack *ss, Value alpha, Value beta, Depth depth, bool cutNode);
