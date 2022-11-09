@@ -34,6 +34,10 @@ namespace Search {
 // Different node types, used as a template parameter
 enum NodeType { NonPV, PV, Root };
 
+typedef std::vector<RootMove> RootMoves;
+
+extern LimitsType Limits;
+
 /// Stack struct keeps track of the information we need to remember from nodes
 /// shallower and deeper in the tree during the search. Each search thread has
 /// its own array of Stack objects, indexed by the current ply.
@@ -77,8 +81,6 @@ struct RootMove {
   std::vector<Move> pv;
 };
 
-typedef std::vector<RootMove> RootMoves;
-
 /// LimitsType struct stores information sent by GUI about available time to
 /// search the current move, maximum depth/time, or if we are in analysis mode.
 
@@ -99,15 +101,21 @@ struct LimitsType {
   int64_t nodes;
 };
 
-extern LimitsType Limits;
+struct Skill {
+  Skill(int skill_level, int uci_elo);
+  bool enabled() const { return level < 20.0; }
+  bool time_to_pick(Depth depth) const { return depth == 1 + int(level); }
+  Move pick_best(size_t multiPV);
+
+  double level;
+  Move best = MOVE_NONE;
+};
 
 template <NodeType nodeType>
-Value search(Position &pos, Stack *ss, Value alpha, Value beta, Depth depth,
-             bool cutNode);
+Value search(Position &pos, Stack *ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
 template <NodeType nodeType>
-Value qsearch(Position &pos, Stack *ss, Value alpha, Value beta,
-              Depth depth = 0);
+Value qsearch(Position &pos, Stack *ss, Value alpha, Value beta, Depth depth = 0);
 
 void update_all_stats(const Position &pos, Stack *ss, Move bestMove,
                       Value bestValue, Value beta, Square prevSq,
@@ -130,15 +138,6 @@ void clear();
 
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
-struct Skill {
-  Skill(int skill_level, int uci_elo);
-  bool enabled() const { return level < 20.0; }
-  bool time_to_pick(Depth depth) const { return depth == 1 + int(level); }
-  Move pick_best(size_t multiPV);
-
-  double level;
-  Move best = MOVE_NONE;
-};
 
 template <bool Root>
 uint64_t perft(Position &pos, Depth depth);
