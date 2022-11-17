@@ -1101,7 +1101,8 @@ moves_loop: // When in check, search starts here
               extension = 1;
           else if (   pos.rule50_count() > 10
                    && (type_of(movedPiece) == PAWN || capture)
-                   && depth > 7)
+                   && depth > 7 
+                   && ss->ply > 4)
               extension = 1;
       }
 
