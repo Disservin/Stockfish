@@ -85,8 +85,8 @@ namespace {
   }
 
   // Add a small random component to draw evaluations to avoid 3-fold blindness
-  Value value_draw(const Thread* thisThread) {
-    return VALUE_DRAW - 1 + Value(thisThread->nodes & 0x2);
+  Value value_draw(const Thread* thisThread, int ply) {
+    return VALUE_DRAW - 1 + Value(thisThread->nodes & 0x2) * std::min(ply / 7, 10);
   }
 
   // Skill structure is used to implement strength limit. If we have an uci_elo then
@@ -529,7 +529,7 @@ namespace {
         && alpha < VALUE_DRAW
         && pos.has_game_cycle(ss->ply))
     {
-        alpha = value_draw(pos.this_thread());
+        alpha = value_draw(pos.this_thread(), ss->ply);
         if (alpha >= beta)
             return alpha;
     }
@@ -581,7 +581,7 @@ namespace {
             || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
             return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
-                                                        : value_draw(pos.this_thread());
+                                                        : value_draw(pos.this_thread(), ss->ply);
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
         // would be at best mate_in(ss->ply+1), but if alpha is already bigger because
