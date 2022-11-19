@@ -220,11 +220,11 @@ Thread* ThreadPool::get_best_thread() const {
     for (Thread* th: *this)
         minScore = std::min(minScore, th->rootMoves[0].score);
 
-    // Vote according to score and depth, and select the best thread
+    // Vote according to score, depth and number of pieces, and select the best thread
     for (Thread* th : *this)
     {
         votes[th->rootMoves[0].pv[0]] +=
-            (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+            (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth) + 32 - popcount(th->rootPos.pieces());
 
         if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
