@@ -1099,9 +1099,10 @@ moves_loop: // When in check, search starts here
                    && move == ss->killers[0]
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5177)
               extension = 1;
-          else if (   pos.rule50_count() > 10
+          else if (   pos.rule50_count() > 7
                    && (type_of(movedPiece) == PAWN || capture)
-                   && depth > 7 
+                   && abs(ss->staticEval) > 82
+                   && depth > 8 
                    && ss->ply > 4)
               extension = 1;
       }
