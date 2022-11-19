@@ -1100,6 +1100,7 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5177)
               extension = 1;
           else if (   pos.rule50_count() > 7
+                   && !ttMove
                    && (type_of(movedPiece) == PAWN || capture)
                    && abs(ss->staticEval) > 82
                    && depth > 8 
