@@ -1190,13 +1190,13 @@ moves_loop: // When in check, search starts here
               if (capture)
                   bonus /= 6;
 
+              update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
+              
               // Adjust full depth search based on LMR results - if result
               // was good enough search deeper, if it was bad enough search shallower
               const bool doDeeperSearch = value > (alpha + 64 + 11 * (newDepth - d));
               const bool doShallowerSearch = value < bestValue + newDepth;
               value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth + doDeeperSearch - doShallowerSearch, !cutNode);
-
-              update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
       }
 
