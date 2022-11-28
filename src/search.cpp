@@ -620,7 +620,7 @@ namespace {
     excludedMove = ss->excludedMove;
     posKey = excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(excludedMove);
     tte = TT.probe(posKey, ss->ttHit);
-    ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
+    ss->ttValue = ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture(ttMove);
@@ -720,7 +720,7 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = ss->ttValue = eval = VALUE_NONE;
+        ss->staticEval = eval = VALUE_NONE;
         improving = false;
         improvement = 0;
         complexity = 0;
@@ -729,9 +729,9 @@ namespace {
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
-        ss->staticEval = ss->ttValue = eval = tte->eval();
+        ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = ss->ttValue = eval = evaluate(pos, &complexity);
+            ss->staticEval = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
 
@@ -742,7 +742,7 @@ namespace {
     }
     else
     {
-        ss->staticEval = ss->ttValue = eval = evaluate(pos, &complexity);
+        ss->staticEval = eval = evaluate(pos, &complexity);
 
         // Save static evaluation into transposition table
         if (!excludedMove)
