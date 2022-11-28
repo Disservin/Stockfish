@@ -720,7 +720,7 @@ namespace {
     if (ss->inCheck)
     {
         // Skip early pruning when in check
-        ss->staticEval = eval = VALUE_NONE;
+        ss->staticEval = ss->ttValue = ss->ttValue = eval = VALUE_NONE;
         improving = false;
         improvement = 0;
         complexity = 0;
@@ -729,9 +729,9 @@ namespace {
     else if (ss->ttHit)
     {
         // Never assume anything about values stored in TT
-        ss->staticEval = eval = tte->eval();
+        ss->staticEval = ss->ttValue = eval = tte->eval();
         if (eval == VALUE_NONE)
-            ss->staticEval = eval = evaluate(pos, &complexity);
+            ss->staticEval = ss->ttValue = eval = evaluate(pos, &complexity);
         else // Fall back to (semi)classical complexity for TT hits, the NNUE complexity is lost
             complexity = abs(ss->staticEval - pos.psq_eg_stm());
 
@@ -742,7 +742,7 @@ namespace {
     }
     else
     {
-        ss->staticEval = eval = evaluate(pos, &complexity);
+        ss->staticEval = ss->ttValue = eval = evaluate(pos, &complexity);
 
         // Save static evaluation into transposition table
         if (!excludedMove)
@@ -762,8 +762,8 @@ namespace {
     // static evaluation and the previous static evaluation at our turn (if we were
     // in check at our previous move we look at the move prior to it). The improvement
     // margin and the improving flag are used in various pruning heuristics.
-    improvement =   (ss-2)->staticEval != VALUE_NONE ? ss->staticEval - (ss-2)->staticEval
-                  : (ss-4)->staticEval != VALUE_NONE ? ss->staticEval - (ss-4)->staticEval
+    improvement =   (ss-2)->ttValue != VALUE_NONE ? ss->ttValue - (ss-2)->ttValue
+                  : (ss-4)->ttValue != VALUE_NONE ? ss->ttValue - (ss-4)->ttValue
                   :                                    168;
     improving = improvement > 0;
 
