@@ -313,9 +313,11 @@ string UCI::value(Value v) {
   assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
 
   stringstream ss;
-
-  if (abs(v) < VALUE_MATE_IN_MAX_PLY)
+  
+  if (abs(v) < VALUE_TB_WIN_IN_MAX_PLY)
       ss << "cp " << v * 100 / NormalizeToPawnValue;
+  else if (abs(v) < VALUE_MATE_IN_MAX_PLY)
+      ss << "cp " << v;
   else
       ss << "mate " << (v > 0 ? VALUE_MATE - v + 1 : -VALUE_MATE - v) / 2;
 
