@@ -1032,14 +1032,14 @@ moves_loop: // When in check, search starts here
                   && ss->staticEval + 103 + 136 * lmrDepth + history / 53 <= alpha)
                   continue;
 
-              // Prune moves with negative SEE (~4 Elo)
-              if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 16 * lmrDepth)))
-                  continue;
-
               if (   !ss->inCheck 
                   && lmrDepth < 7
                   && type_of(movedPiece) == KING
-                  && ss->staticEval - 100 * depth > beta)
+                  && ss->staticEval + 100 * lmrDepth + history / 50 <= alpha)
+                  continue;
+
+              // Prune moves with negative SEE (~4 Elo)
+              if (!pos.see_ge(move, Value(-25 * lmrDepth * lmrDepth - 16 * lmrDepth)))
                   continue;
           }
       }
