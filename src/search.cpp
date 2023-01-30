@@ -1164,7 +1164,7 @@ moves_loop: // When in check, search starts here
       if ((ss+1)->cutoffCnt > 3)
           r++;
       
-      if (ss->ply < 4 && type_of(movedPiece) == KING)
+      if (depth < 4 && type_of(movedPiece) == KING)
           r++;
 
       ss->statScore =  2 * thisThread->mainHistory[us][from_to(move)]
