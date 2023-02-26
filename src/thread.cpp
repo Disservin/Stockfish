@@ -26,6 +26,9 @@
 #include "syzygy/tbprobe.h"
 #include "tt.h"
 
+#ifdef _WIN64
+  #include <windows.h>
+#endif // _WIN64
 namespace Stockfish {
 
 ThreadPool Threads; // Global object
@@ -35,7 +38,9 @@ ThreadPool Threads; // Global object
 /// in idle_loop(). Note that 'searching' and 'exit' should be already set.
 
 Thread::Thread(size_t n) : idx(n), stdThread(&Thread::idle_loop, this) {
-
+  #ifdef _WIN64
+  SetPriorityClass(GetCurrentProcess(), ABOVE_NORMAL_PRIORITY_CLASS);
+  #endif
   wait_for_search_finished();
 }
 
