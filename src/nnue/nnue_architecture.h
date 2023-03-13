@@ -33,7 +33,36 @@
 
 #include "../misc.h"
 
+#ifdef _WIN32
+#include <thread>
+#include <unordered_map>
+#endif
+
 namespace Stockfish::Eval::NNUE {
+
+#ifdef _WIN32
+template <typename T, std::size_t alignas_size>
+class ThreadLocal {
+  public:
+    T &get() {
+        std::thread::id threadId = std::this_thread::get_id();
+
+        if (values_.find(threadId) == values_.end()) {
+            values_[threadId] = AlignedValue();
+        }
+
+        return values_[threadId].value;
+    }
+
+  private:
+    struct alignas(alignas_size) AlignedValue {
+        alignas(alignas_size) T value;
+        AlignedValue() : value() {}
+    };
+
+    std::unordered_map<std::thread::id, AlignedValue> values_;
+};
+#endif
 
 // Input features used in evaluation function
 using FeatureSet = Features::HalfKAv2_hm;
@@ -110,6 +139,9 @@ struct Network
     static thread_local auto tlsBuffer = std::make_unique<Buffer>();
     // Access TLS only once, cache result.
     Buffer& buffer = *tlsBuffer;
+#elif defined(_WIN32)
+    static ThreadLocal<Buffer, CacheLineSize> tlsBuffer;
+    alignas(CacheLineSize) auto &buffer = tlsBuffer.get();
 #else
     alignas(CacheLineSize) static thread_local Buffer buffer;
 #endif
