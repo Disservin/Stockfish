@@ -193,7 +193,7 @@ void MainThread::search() {
 
   Color us = rootPos.side_to_move();
   Time.init(Limits, us, rootPos.game_ply());
-  TT.new_search();
+  TT.increment_generation();
 
   Eval::NNUE::verify();
 
@@ -450,6 +450,9 @@ void Thread::search() {
 
       if (!mainThread)
           continue;
+
+      if (TT.hashfull() > 600)
+          TT.increment_generation();
 
       // If skill level is enabled and time is up, pick a sub-optimal best move
       if (skill.enabled() && skill.time_to_pick(rootDepth))
