@@ -448,6 +448,8 @@ void Thread::search() {
           && VALUE_MATE - bestValue <= 2 * Limits.mate)
           Threads.stop = true;
 
+      lastHashfull = TT.hashfull();
+
       if (!mainThread)
           continue;
 
@@ -1072,9 +1074,10 @@ moves_loop: // When in check, search starts here
           // a reduced search on all the other moves but the ttMove and if the
           // result is lower than ttValue minus a margin, then we will extend the ttMove.
           if (   !rootNode
-              &&  depth >= 4 - (thisThread->completedDepth > 21) + 2 * (PvNode && tte->is_pv())
+              &&  thisThread->lastHashfull > 120
               &&  move == ttMove
               && !excludedMove // Avoid recursive singular search
+              &&  depth >= 4 - (thisThread->completedDepth > 21) + 2 * (PvNode && tte->is_pv())
            /* &&  ttValue != VALUE_NONE Already implicit in the next condition */
               &&  abs(ttValue) < VALUE_KNOWN_WIN
               && (tte->bound() & BOUND_LOWER)

@@ -64,7 +64,8 @@ public:
   int selDepth, nmpMinPly;
   Color nmpColor;
   Value bestValue, optimism[COLOR_NB];
-
+  
+  int lastHashfull;
   Position rootPos;
   StateInfo rootState;
   Search::RootMoves rootMoves;
