@@ -320,6 +320,7 @@ void Thread::search() {
 
   int searchAgainCounter = 0;
 
+  lastHashfull = 0;
   // Iterative deepening loop until requested to stop or the target depth is reached
   while (   ++rootDepth < MAX_PLY
          && !Threads.stop
