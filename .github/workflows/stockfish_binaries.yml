@@ -106,3 +106,9 @@ jobs:
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar
+
+      - name: Release
+        if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar
