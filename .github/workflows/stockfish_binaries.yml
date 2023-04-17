@@ -24,7 +24,7 @@ jobs:
             compiler: clang++
             comp: clang
             shell: bash {0}
-          - name: Windows 2022 Mingw-w64 GCC x86_64
+          - name: Windows Mingw-w64 GCC x86_64
             os: windows-2022
             compiler: g++
             comp: mingw
@@ -75,19 +75,17 @@ jobs:
 
       - name: Compile ${{ matrix.binaries }} build
         run: |
-          make clean
           make -j2 profile-build ARCH=$BINARY COMP=$COMP
           make strip ARCH=$BINARY COMP=$COMP
           mv ./stockfish$EXT ../stockfish-$OS-$BINARY$EXT
 
       - name: Remove non src files
-        run: rm -f *.o .depend *.nnue
+        run: git clean -fx
 
       - name: Download wiki
         run: |
           git clone https://github.com/official-stockfish/Stockfish.wiki.git ../wiki
-          cd ../wiki
-          rm -rf .git
+          rm -rf ../wiki/.git
 
       - name: Create tar archive.
         run: |
@@ -106,3 +104,9 @@ jobs:
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar
+
+      - name: Release
+        if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}.tar

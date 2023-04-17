@@ -50,7 +50,7 @@ jobs:
             comp: gcc
             run_64bit_tests: true
             shell: bash {0}
-          - name: Windows 2022 Mingw-w64 GCC x86_64
+          - name: Windows Mingw-w64 GCC x86_64
             os: windows-2022
             compiler: g++
             comp: mingw
@@ -58,7 +58,7 @@ jobs:
             msys_sys: mingw64
             msys_env: x86_64-gcc
             shell: msys2 {0}
-          - name: Windows 2022 Mingw-w64 GCC i686
+          - name: Windows Mingw-w64 GCC i686
             os: windows-2022
             compiler: g++
             comp: mingw
@@ -66,7 +66,7 @@ jobs:
             msys_sys: mingw32
             msys_env: i686-gcc
             shell: msys2 {0}
-          - name: Windows 2022 Mingw-w64 Clang x86_64
+          - name: Windows Mingw-w64 Clang x86_64
             os: windows-2022
             compiler: clang++
             comp: clang

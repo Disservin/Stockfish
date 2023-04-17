@@ -31,14 +31,14 @@ jobs:
             compiler: g++-11
             comp: gcc
             shell: bash {0}
-          - name: Windows 2022 Mingw-w64 GCC x86_64
+          - name: Windows Mingw-w64 GCC x86_64
             os: windows-2022
             compiler: g++
             comp: mingw
             msys_sys: mingw64
             msys_env: x86_64-gcc
             shell: msys2 {0}
-          - name: Windows 2022 Mingw-w64 Clang x86_64
+          - name: Windows Mingw-w64 Clang x86_64
             os: windows-2022
             compiler: clang++
             comp: clang
