@@ -19,10 +19,8 @@ jobs:
             shell: bash {0}
           - name: Windows 2022 Mingw-w64 GCC x86_64
             os: windows-2022
-            compiler: g++
-            comp: mingw
-            msys_sys: mingw64
-            msys_env: x86_64-gcc
+            compiler: clang++
+            comp: clang
             shell: msys2 {0}
             ext: .exe
         sanitizers:
@@ -62,7 +60,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.config.msys_sys }}
-          install: mingw-w64-${{ matrix.config.msys_env }} make git
+          install: mingw-w64-x86_64-clang make git
 
       - name: Download the used network from the fishtest framework
         run: make net
@@ -83,5 +81,5 @@ jobs:
         run: |
           export CXXFLAGS="-O1 -fno-inline"
           make clean
-          make -j2 ARCH=x86-64-modern ${{ matrix.sanitizers.make_option }} debug=yes optimize=no build > /dev/null
+          make -j2 ARCH=x86-64-modern COMP=$COMP ${{ matrix.sanitizers.make_option }} debug=yes optimize=no build > /dev/null
           ../tests/instrumented.sh --${{ matrix.sanitizers.instrumented_option }}
