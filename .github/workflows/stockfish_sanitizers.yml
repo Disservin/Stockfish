@@ -22,6 +22,7 @@ jobs:
             compiler: clang++
             comp: clang
             msys_sys: mingw64
+            msys_env: x86_64-clang
             shell: msys2 {0}
             ext: .exe
         sanitizers:
