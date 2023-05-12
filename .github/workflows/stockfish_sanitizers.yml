@@ -63,15 +63,19 @@ jobs:
           install: mingw-w64-${{ matrix.config.msys_env }} make git
 
       - name: Download the used network from the fishtest framework
+        if: runner.os != 'Windows' || (runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer')
         run: make net
 
       - name: Check compiler
+        if: runner.os != 'Windows' || (runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer')
         run: $COMPILER -v
 
       - name: Test help target
+        if: runner.os != 'Windows' || (runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer')
         run: make help
 
       - name: Check git
+        if: runner.os != 'Windows' || (runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer')
         run: git --version
 
       # Sanitizers
