@@ -51,9 +51,17 @@ jobs:
           fetch-depth: 0
 
       - name: Download required linux packages
+        if: runner.os != 'Windows'
         run: |
           sudo apt update
           sudo apt install expect valgrind g++-multilib
+
+      - name: Setup msys and install required packages
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.config.msys_sys }}
+          install: mingw-w64-${{ matrix.config.msys_env }} make git
 
       - name: Download the used network from the fishtest framework
         run: make net
