@@ -21,6 +21,7 @@ jobs:
             os: windows-2022
             compiler: clang++
             comp: clang
+            msys_sys: mingw64
             shell: msys2 {0}
             ext: .exe
         sanitizers:
