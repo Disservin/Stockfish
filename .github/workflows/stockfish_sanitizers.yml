@@ -78,7 +78,7 @@ jobs:
       # Sanitizers
 
       - name: ${{ matrix.sanitizers.name }}
-        if: runner.os != 'Windows' || (runner.os == 'Windowss' && ${{ matrix.sanitizers.name }} == 'Run with address sanitizer')
+        if: runner.os != 'Windows' || (runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer')
         run: |
           export CXXFLAGS="-O1 -fno-inline"
           make clean
