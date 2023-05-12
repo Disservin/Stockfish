@@ -45,7 +45,6 @@ jobs:
         shell: ${{ matrix.config.shell }}
     steps:
       - uses: actions/checkout@v3
-        if: runner.os == 'Windows' && matrix.sanitizers.name == 'Run with address sanitizer'
         with:
           fetch-depth: 0
 
