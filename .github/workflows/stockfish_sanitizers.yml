@@ -24,6 +24,9 @@ jobs:
           - name: Run with UB sanitizer
             make_option: sanitize=undefined
             instrumented_option: sanitizer-undefined
+          - name: Run with address sanitizer
+            make_option: sanitize=address
+            instrumented_option: sanitizer-undefined
           - name: Run under valgrind
             make_option: ""
             instrumented_option: valgrind
