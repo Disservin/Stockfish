@@ -12,6 +12,22 @@ on:
       - master
       - tools
 jobs:
+  Prerelease:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Create Prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag -d stockfish-prerelease
+          git push origin :refs/tags/stockfish-prerelease
+          git tag stockfish-prerelease
+          git pull
+          git push origin stockfish-prerelease
+    
   Sanitizers:
     uses: ./.github/workflows/stockfish_sanitizers.yml
   Tests:
