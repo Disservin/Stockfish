@@ -130,3 +130,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: stockfish-android-${{ matrix.binaries }}.tar
+
+      - name: Prerelease
+        if: github.ref_name == 'master'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: stockfish-prerelease
+          prerelease: true
+          files: stockfish-android-${{ matrix.binaries }}.tar
