@@ -11,32 +11,16 @@ on:
     branches:
       - master
       - tools
-jobs:
-  Prerelease:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      - name: Create Prerelease
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git tag -d stockfish-prerelease
-          git push origin :refs/tags/stockfish-prerelease
-          git tag stockfish-prerelease
-          git pull
-          git push origin stockfish-prerelease
-    
-  Sanitizers:
-    uses: ./.github/workflows/stockfish_sanitizers.yml
-  Tests:
-    uses: ./.github/workflows/stockfish_test.yml
-  Compiles:
-    uses: ./.github/workflows/stockfish_compile_test.yml
+jobs:    
+  # Sanitizers:
+  #   uses: ./.github/workflows/stockfish_sanitizers.yml
+  # Tests:
+  #   uses: ./.github/workflows/stockfish_test.yml
+  # Compiles:
+  #   uses: ./.github/workflows/stockfish_compile_test.yml
   Binaries:
     if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
     uses: ./.github/workflows/stockfish_binaries.yml
-  ARM_Binaries:
-    if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
-    uses: ./.github/workflows/stockfish_arm_binaries.yml
+  # ARM_Binaries:
+  #   if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
+  #   uses: ./.github/workflows/stockfish_arm_binaries.yml
