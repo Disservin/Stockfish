@@ -36,7 +36,7 @@ jobs:
       #     tag: stockfish-prerelease
       #     assets: 'stockfish-*.tar'
       
-      - uses: dev-drprasad/delete-tag-and-release@v1.0 #
+      - uses: dev-drprasad/delete-tag-and-release@v1.0 #fast
         with:
           tag_name: stockfish-prerelease
           github_token: ${{ secrets.GITHUB_TOKEN }}
