@@ -40,8 +40,8 @@ jobs:
         if: env.TAG_EXISTS == 'true'
         run: |
           git push origin :refs/tags/stockfish-prerelease
-          git tag -fa stockfish-prerelease
-          git push origin --tags
+          git tag -f stockfish-prerelease
+          git push origin stockfish-prerelease
     
   # Sanitizers:
   #   uses: ./.github/workflows/stockfish_sanitizers.yml
