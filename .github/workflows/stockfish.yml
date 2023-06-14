@@ -36,7 +36,7 @@ jobs:
       #     tag: stockfish-prerelease
       #     assets: 'stockfish-*.tar'
       
-      - uses: dev-drprasad/delete-tag-and-release@v1.0 # PRERELEASE is v1.0 and can also be used to test and give us feedback
+      - uses: dev-drprasad/delete-tag-and-release@v1.0 #
         with:
           tag_name: stockfish-prerelease
           github_token: ${{ secrets.GITHUB_TOKEN }}
