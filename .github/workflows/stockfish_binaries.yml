@@ -116,6 +116,15 @@ jobs:
         with:
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
+      - name: Check if release tag matches the current commit
+        id: check_tag
+        run: |
+          if !(git tag -l | grep -q stockfish-prerelease) || [ "$(git rev-parse HEAD)" = "$(git rev-list -n 1 stockfish-prerelease)" ]; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
       - name: Prerelease
         if: github.ref_name == 'master'
         uses: softprops/action-gh-release@v1
