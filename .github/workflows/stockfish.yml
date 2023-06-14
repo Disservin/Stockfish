@@ -19,10 +19,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      # - name: Check if tag exists
+      # - name: Check if tag exists 2
       #   id: check_tag
       #   run: |
-      #     if git tag -l | grep -q stockfish-prerelease; then
+      #     if git tag -l | grep -q stockfish-prerelease; then 
       #       echo "TAG_EXISTS=true" >> $GITHUB_ENV
       #     else
       #       echo "TAG_EXISTS=false" >> $GITHUB_ENV
