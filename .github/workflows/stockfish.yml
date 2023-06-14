@@ -36,7 +36,7 @@ jobs:
       #     tag: stockfish-prerelease
       #     assets: 'stockfish-*.tar'
       
-      # - name: Get last commit sha
+      # - name: Get last commit sha 2
       #   id: last_commit
       #   run: echo "COMMIT_SHA=$(git rev-parse HEAD~1 | cut -c 1-8)" >> $GITHUB_ENV
 
