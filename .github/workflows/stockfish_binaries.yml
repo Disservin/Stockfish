@@ -125,6 +125,6 @@ jobs:
         continue-on-error: true
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: stockfish-prerelease-{{ env.COMMIT_SHA }}
+          tag_name: stockfish-prerelease-${{ env.COMMIT_SHA }}
           prerelease: true
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
