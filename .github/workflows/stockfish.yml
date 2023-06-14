@@ -41,7 +41,7 @@ jobs:
           tag_name: stockfish-prerelease
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
-       # two fast
+       # two fast commits after eachother
 
       # - name: Move tag to latest commit 
       #   run: |
