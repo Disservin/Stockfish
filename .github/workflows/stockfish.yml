@@ -35,6 +35,13 @@ jobs:
           token: ${{ github.token }}
           tag: stockfish-prerelease
           assets: 'stockfish-*.tar'
+      
+      - name: Move tag to latest commit
+        if: env.TAG_EXISTS == 'true'
+        run: |
+          git push origin :refs/tags/stockfish-prerelease
+          git tag -fa stockfish-prerelease
+          git push origin --tags
     
   # Sanitizers:
   #   uses: ./.github/workflows/stockfish_sanitizers.yml
