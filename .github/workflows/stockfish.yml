@@ -19,22 +19,22 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if tag exists
-        id: check_tag
-        run: |
-          if git tag -l | grep -q stockfish-prerelease; then
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
+      # - name: Check if tag exists
+      #   id: check_tag
+      #   run: |
+      #     if git tag -l | grep -q stockfish-prerelease; then
+      #       echo "TAG_EXISTS=true" >> $GITHUB_ENV
+      #     else
+      #       echo "TAG_EXISTS=false" >> $GITHUB_ENV
+      #     fi
 
-      - name: Delete old release assets
-        uses: mknejp/delete-release-assets@v1
-        if: env.TAG_EXISTS == 'true'
-        with:
-          token: ${{ github.token }}
-          tag: stockfish-prerelease
-          assets: 'stockfish-*.tar'
+      # - name: Delete old release assets
+      #   uses: mknejp/delete-release-assets@v1
+      #   if: env.TAG_EXISTS == 'true'
+      #   with:
+      #     token: ${{ github.token }}
+      #     tag: stockfish-prerelease
+      #     assets: 'stockfish-*.tar'
       
       - name: Move tag to latest commit
         if: env.TAG_EXISTS == 'true'
