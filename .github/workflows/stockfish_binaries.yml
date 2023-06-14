@@ -116,21 +116,15 @@ jobs:
         with:
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
-
-      - name: Check if release tag matches the current commit
-        id: check_tag
-        run: |
-          git fetch
-          if !(git tag -l | grep -q stockfish-prerelease) || [ "$(git rev-parse HEAD)" = "$(git rev-list -n 1 stockfish-prerelease)" ]; then
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
+      - name: Get last commit sha
+        id: last_commit
+        run: echo "COMMIT_SHA=$(git rev-parse HEAD | cut -c 1-8)" >> $GITHUB_ENV
 
       - name: Prerelease
         if: github.ref_name == 'master'
+        continue-on-error: true
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: stockfish-prerelease
+          tag_name: stockfish-prerelease-{{ env.COMMIT_SHA }}
           prerelease: true
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar

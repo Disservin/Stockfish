@@ -36,9 +36,13 @@ jobs:
       #     tag: stockfish-prerelease
       #     assets: 'stockfish-*.tar'
       
+      - name: Get last commit sha
+        id: last_commit
+        run: echo "COMMIT_SHA=$(git rev-parse HEAD | cut -c 1-8)" >> $GITHUB_ENV
+
       - uses: dev-drprasad/delete-tag-and-release@v1.0 #fast 2 3 3
         with:
-          tag_name: stockfish-prerelease
+          tag_name: stockfish-prerelease-{{ env.COMMIT_SHA }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
        # two fast commits after eachother
