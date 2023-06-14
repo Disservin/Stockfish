@@ -46,12 +46,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y curl jq
 
-          response=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/latest")
-
-          commit_sha=$(echo "$response" | jq -r '.html_url | split("/") | .[-1]')
-
-          echo "COMMIT_SHA=$commit_sha" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$(jq -r 'map(select(.prerelease)) | first | .tag_name' <<< $(curl -s https://api.github.com/repos/${{ github.repository_owner }}/Stockfish/releases))" >> $GITHUB_ENV
 
       - uses: dev-drprasad/delete-tag-and-release@v1.0 #fast 2 3 3
         with:
