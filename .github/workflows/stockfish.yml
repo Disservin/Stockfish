@@ -40,8 +40,10 @@ jobs:
         with:
           tag_name: stockfish-prerelease
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          
-      # - name: Move tag to latest commit
+
+       # two fast
+
+      # - name: Move tag to latest commit 
       #   run: |
       #     git push origin :refs/tags/stockfish-prerelease
       #     git tag -f stockfish-prerelease
