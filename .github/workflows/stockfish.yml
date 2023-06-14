@@ -19,6 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
+      # dummy change to showcase that only the latest pre-release exists, even while the old ci still runs
       # returns null if no pre-release exists
       - name: Get Commit SHA of Latest Pre-release
         run: |
