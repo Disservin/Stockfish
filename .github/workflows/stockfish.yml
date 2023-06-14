@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      # - name: Check if tag exists 2
+      # - name: Check if tag exists 2 2
       #   id: check_tag
       #   run: |
       #     if git tag -l | grep -q stockfish-prerelease; then 
