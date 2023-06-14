@@ -50,7 +50,7 @@ jobs:
 
       - uses: dev-drprasad/delete-tag-and-release@v1.0 #fast 2 3 3
         with:
-          tag_name: stockfish-prerelease-${{ env.COMMIT_SHA }}
+          tag_name: ${{ env.COMMIT_SHA }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
        # two fast commits after eachother
