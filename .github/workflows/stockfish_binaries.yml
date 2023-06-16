@@ -169,6 +169,7 @@ jobs:
           prerelease: true
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
+      # duplicated because variable file extension seems to fail
       - name: Prerelease
         if: github.ref_name == 'master' && env.CHANGES == '0' && runner.os == 'Windows'
         continue-on-error: true
