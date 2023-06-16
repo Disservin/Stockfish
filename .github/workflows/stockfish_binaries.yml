@@ -124,12 +124,14 @@ jobs:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
+      # duplicated because variable file extension seems to fail, artifacts automatically get zipped
+      # to avoid double zipping, we use the unzipped directory
       - name: Upload binaries
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.zip
+          path: stockfish
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag' && runner.os != 'Windows'
@@ -137,6 +139,7 @@ jobs:
         with:
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
+      # duplicated because variable file extension seems to fail
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag' && runner.os == 'Windows'
         uses: softprops/action-gh-release@v1
