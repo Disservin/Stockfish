@@ -132,10 +132,16 @@ jobs:
           path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.zip
 
       - name: Release
-        if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
+        if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag' && runner.os != 'Windows'
         uses: softprops/action-gh-release@v1
         with:
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.ext_dir }}
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
+
+      - name: Release
+        if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag' && runner.os == 'Windows'
+        uses: softprops/action-gh-release@v1
+        with:
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.zip
 
       - name: Get last commit sha
         id: last_commit
@@ -154,11 +160,21 @@ jobs:
           echo "CHANGES=$CHANGES" >> $GITHUB_ENV
 
       - name: Prerelease
-        if: github.ref_name == 'master' && env.CHANGES == '0'
+        if: github.ref_name == 'master' && env.CHANGES == '0' && runner.os != 'Windows'
         continue-on-error: true
         uses: softprops/action-gh-release@v1
         with:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.ext_dir }}
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
+
+      - name: Prerelease
+        if: github.ref_name == 'master' && env.CHANGES == '0' && runner.os == 'Windows'
+        continue-on-error: true
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
+          tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
+          prerelease: true
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.zip
