@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}
+          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.zip
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
