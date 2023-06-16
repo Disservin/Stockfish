@@ -20,12 +20,14 @@ jobs:
             compiler: g++
             comp: gcc
             shell: bash {0}
+            ext_dir: tar
           - name: MacOS 12 Apple Clang
             os: macos-12
             simple_name: macos
             compiler: clang++
             comp: clang
             shell: bash {0}
+            ext_dir: tar
           - name: Windows 2022 Mingw-w64 GCC x86_64
             os: windows-2022
             simple_name: windows
@@ -60,7 +62,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.config.msys_sys }}
-          install: mingw-w64-${{ matrix.config.msys_env }} make git
+          install: mingw-w64-${{ matrix.config.msys_env }} make git zip
 
       - name: Download the used network from the fishtest framework
         run: make net
@@ -102,19 +104,38 @@ jobs:
           cp AUTHORS stockfish/
           cp CITATION.cff stockfish/
           cp README.md stockfish/
+
+      - name: Create tar
+        if: runner.os != 'Windows'
+        run: |
+          cd ..
           tar -cvf stockfish-$NAME-$BINARY.tar stockfish
 
+      - name: Create zip
+        if: runner.os == 'Windows'
+        run: |
+          cd ..
+          zip -r stockfish-$NAME-$BINARY.zip stockfish
+
       - name: Upload binaries
+        if: runner.os != 'Windows'
         uses: actions/upload-artifact@v3
         with:
           name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
+      - name: Upload binaries
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v3
+        with:
+          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
+          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}
+
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
         uses: softprops/action-gh-release@v1
         with:
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.ext_dir }}
 
       - name: Get last commit sha
         id: last_commit
@@ -140,4 +161,4 @@ jobs:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.ext_dir }}
