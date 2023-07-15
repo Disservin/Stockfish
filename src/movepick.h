@@ -19,6 +19,8 @@
 #ifndef MOVEPICK_H_INCLUDED
 #define MOVEPICK_H_INCLUDED
 
+#include <cassert>
+#include <cstdint>
 #include <array>
 #include <limits>
 #include <type_traits>

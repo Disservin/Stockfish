@@ -21,9 +21,17 @@
 #ifndef NNUE_EVALUATE_NNUE_H_INCLUDED
 #define NNUE_EVALUATE_NNUE_H_INCLUDED
 
-#include "nnue_feature_transformer.h"
-
+#include <cstdint>
 #include <memory>
+#include <iosfwd>
+#include <optional>
+#include <string>
+
+#include "nnue_feature_transformer.h"
+#include "nnue_architecture.h"
+#include "../misc.h"
+#include "../types.h"
+#include "../position.h"
 
 namespace Stockfish::Eval::NNUE {
 

@@ -17,15 +17,19 @@
 */
 
 #include <iostream>
+#include <map>
+#include <string>
 
 #include "bitboard.h"
 #include "position.h"
 #include "psqt.h"
 #include "search.h"
-#include "syzygy/tbprobe.h"
 #include "thread.h"
-#include "tt.h"
 #include "uci.h"
+#include "evaluate.h"
+#include "misc.h"
+#include "tune.h"
+#include "types.h"
 
 using namespace Stockfish;
 

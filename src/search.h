@@ -19,7 +19,9 @@
 #ifndef SEARCH_H_INCLUDED
 #define SEARCH_H_INCLUDED
 
+#include <cstdint>
 #include <vector>
+#include <algorithm>
 
 #include "misc.h"
 #include "movepick.h"
@@ -30,7 +32,6 @@ namespace Stockfish {
 class Position;
 
 namespace Search {
-
 
 /// Stack struct keeps track of the information we need to remember from nodes
 /// shallower and deeper in the tree during the search. Each search thread has

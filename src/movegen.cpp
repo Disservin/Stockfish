@@ -16,10 +16,13 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cassert>
-
 #include "movegen.h"
+
+#include <cassert>
+#include <initializer_list>
+
 #include "position.h"
+#include "bitboard.h"
 
 namespace Stockfish {
 

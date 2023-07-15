@@ -23,6 +23,9 @@
 #include <string>
 #include <type_traits>
 #include <vector>
+#include <utility>
+
+#include "types.h"
 
 namespace Stockfish {
 

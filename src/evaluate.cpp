@@ -16,23 +16,21 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "evaluate.h"
+
 #include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iomanip>
-#include <sstream>
-#include <iostream>
-#include <streambuf>
 #include <vector>
+#include <map>
 
-#include "bitboard.h"
-#include "evaluate.h"
 #include "misc.h"
 #include "thread.h"
-#include "timeman.h"
 #include "uci.h"
 #include "incbin/incbin.h"
 #include "nnue/evaluate_nnue.h"
+#include "position.h"
 
 // Macro to embed the default efficiently updatable neural network (NNUE) file
 // data in the engine binary (using incbin.h, by Dale Weiler).

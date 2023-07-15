@@ -19,6 +19,7 @@
 #ifndef THREAD_H_INCLUDED
 #define THREAD_H_INCLUDED
 
+#include <cstdint>
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
@@ -29,6 +30,7 @@
 #include "position.h"
 #include "search.h"
 #include "thread_win32_osx.h"
+#include "types.h"
 
 namespace Stockfish {
 

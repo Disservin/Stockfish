@@ -18,8 +18,10 @@
 
 #include <algorithm>
 #include <cassert>
-#include <ostream>
 #include <sstream>
+#include <map>
+#include <string>
+#include <utility>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -28,6 +30,7 @@
 #include "tt.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
+#include "types.h"
 
 using std::string;
 

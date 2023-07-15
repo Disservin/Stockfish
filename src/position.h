@@ -23,12 +23,12 @@
 #include <deque>
 #include <memory> // For std::unique_ptr
 #include <string>
+#include <iosfwd>
 
 #include "bitboard.h"
 #include "evaluate.h"
 #include "psqt.h"
 #include "types.h"
-
 #include "nnue/nnue_accumulator.h"
 
 namespace Stockfish {

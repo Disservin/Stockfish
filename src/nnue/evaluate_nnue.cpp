@@ -18,19 +18,19 @@
 
 // Code for calculating NNUE evaluation function
 
+#include "evaluate_nnue.h"
+
 #include <fstream>
 #include <iomanip>
-#include <iostream>
-#include <set>
-#include <sstream>
 #include <string_view>
+#include <cstring>
 
 #include "../evaluate.h"
 #include "../position.h"
 #include "../uci.h"
 #include "../types.h"
-
-#include "evaluate_nnue.h"
+#include "nnue_accumulator.h"
+#include "nnue_common.h"
 
 namespace Stockfish::Eval::NNUE {
 

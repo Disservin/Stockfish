@@ -21,6 +21,7 @@
 
 #include <map>
 #include <string>
+#include <iosfwd>
 
 #include "types.h"
 

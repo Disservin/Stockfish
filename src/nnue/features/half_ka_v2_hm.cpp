@@ -21,6 +21,8 @@
 #include "half_ka_v2_hm.h"
 
 #include "../../position.h"
+#include "../../bitboard.h"
+#include "../nnue_common.h"
 
 namespace Stockfish::Eval::NNUE::Features {
 

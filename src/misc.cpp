@@ -27,6 +27,7 @@
 #endif
 
 #include <windows.h>
+
 // The needed Windows API for processor groups could be missed from old Windows
 // versions, so instead of calling them directly (forcing the linker to resolve
 // the calls at compile time), try to load them at runtime. To do this we need
@@ -49,9 +50,9 @@ using fun8_t = bool(*)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <sstream>
 #include <string_view>
-#include <vector>
+#include <atomic>
+#include <mutex>
 
 #if defined(__linux__) && !defined(__ANDROID__)
 #include <stdlib.h>
@@ -64,7 +65,6 @@ using fun8_t = bool(*)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES
 #endif
 
 #include "misc.h"
-#include "thread.h"
 
 using namespace std;
 
@@ -730,9 +730,11 @@ void bindThisThread(size_t idx) {
 
 #ifdef _WIN32
 #include <direct.h>
+
 #define GETCWD _getcwd
 #else
 #include <unistd.h>
+
 #define GETCWD getcwd
 #endif
 

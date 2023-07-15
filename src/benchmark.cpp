@@ -18,10 +18,9 @@
 
 #include "benchmark.h"
 
-#include <fstream>
 #include <iostream>
-#include <istream>
 #include <vector>
+#include <fstream>
 
 #include "position.h"
 

@@ -19,7 +19,10 @@
 #ifndef BITBOARD_H_INCLUDED
 #define BITBOARD_H_INCLUDED
 
+#include <cassert>
+#include <cstdint>
 #include <string>
+#include <algorithm>
 
 #include "types.h"
 

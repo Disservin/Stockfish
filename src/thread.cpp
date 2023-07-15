@@ -16,15 +16,23 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <cassert>
+#include "thread.h"
 
+#include <cassert>
 #include <algorithm> // For std::count
+#include <cstdint>
+#include <deque>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <utility>
+
 #include "movegen.h"
 #include "search.h"
-#include "thread.h"
 #include "uci.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
+#include "misc.h"
 
 namespace Stockfish {
 

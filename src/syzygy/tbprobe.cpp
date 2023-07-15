@@ -16,18 +16,23 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <cassert>
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstring>   // For std::memset and std::memcpy
 #include <deque>
-#include <fstream>
 #include <iostream>
-#include <list>
 #include <mutex>
-#include <sstream>
 #include <string_view>
 #include <type_traits>
+#include <initializer_list>
+#include <map>
+#include <memory>
+#include <utility>
+#include <vector>
+#include <fstream>
+#include <sstream>
 
 #include "../bitboard.h"
 #include "../movegen.h"
@@ -35,8 +40,8 @@
 #include "../search.h"
 #include "../types.h"
 #include "../uci.h"
-
 #include "tbprobe.h"
+#include "../misc.h"
 
 #ifndef _WIN32
 #include <fcntl.h>
