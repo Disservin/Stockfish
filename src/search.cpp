@@ -1118,7 +1118,7 @@ moves_loop: // When in check, search starts here
                    && (*contHist[0])[movedPiece][to_sq(move)] >= 5168)
               extension = 1;
           
-          if (ss->inCheck && (ss-1)->moveCount == 1 && ss->moveCount == 1)
+          if (ss->inCheck && (ss-1)->moveCount == 1 && ss->moveCount == 1 && depth < 4)
               extension = 1;
       }
 
