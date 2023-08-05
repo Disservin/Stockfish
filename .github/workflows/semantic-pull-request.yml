@@ -16,12 +16,6 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      # ?
-      # - name: Set up Node.js
-      #   uses: actions/setup-node@v2
-      #   with:
-      #     node-version: '14'
-
       - name: Check PR body for bench
         run: |
           pr_body=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -32,5 +26,14 @@ jobs:
 
           if [ -z "$bench" ] && ! echo "$pr_body" | grep -qi "No functional change."; then
               echo "No bench found and 'No functional change.' not found."
-              gh pr comment ${{ github.event.pull_request.number }} -b "Please include a bench in the PR body or add 'No functional change.'"
+              gh pr comment ${{ github.event.pull_request.number }} -b "Hello there! 👋 \
+              I noticed that your pull request doesn't meet our requirements for the 'Bench' or 'Non functional change' criteria. Here's some guidance to help you address this: \
+
+              - If you're making a functional change, make sure to include the appropriate 'Bench' information in the pull request body. The format for the bench information should be: `Bench: [bench_number]`. \
+
+              - If your change is non-functional, please include the phrase 'No functional change.' somewhere in the pull request body. \
+
+              This helps us ensure the quality of our codebase and streamline the review process. \
+
+              If you have any questions or need further assistance, don't hesitate to ask. Thanks for your contribution! 🙌" \
           fi
