@@ -11,6 +11,11 @@ on:
     branches:
       - master
       - tools
+    types:
+      - opened
+      - edited
+      - synchronize
+
 jobs:
   Prerelease:
     if: github.ref == 'refs/heads/master'
