@@ -4,7 +4,7 @@
 
   <h3>Stockfish</h3>
 
-  A free and strong UCI chess engine.2
+  A free and strong UCI chess engine.22
   <br>
   <strong>[Explore Stockfish docs »][wiki-link]</strong>
   <br>
