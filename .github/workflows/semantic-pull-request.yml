@@ -1,0 +1,35 @@
+name: PR Bench Check
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - edited
+
+jobs:
+  check_bench:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+
+      # ?
+      # - name: Set up Node.js
+      #   uses: actions/setup-node@v2
+      #   with:
+      #     node-version: '14'
+
+      - name: Check PR body for bench
+        run: |
+          pr_body=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" \
+            | jq -r .body)
+
+          bench=$(git show -s $hash | tac | grep -m 1 -o -x '[[:space:]]*\b[Bb]ench[ :]\+[1-9][0-9]\{5,7\}\b[[:space:]]*' | sed 's/[^0-9]//g')
+
+          if [ -z "$bench" ] && ! echo "$pr_body" | grep -qi "No functional change."; then
+              echo "No bench found and 'No functional change.' not found."
+              gh pr comment ${{ github.event.pull_request.number }} -b "Please include a bench in the PR body or add 'No functional change.'"
+          fi
