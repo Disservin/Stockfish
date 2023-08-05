@@ -9,6 +9,7 @@ jobs:
       COMPILER: ${{ matrix.config.compiler }}
       COMP: ${{ matrix.config.comp }}
       CXXFLAGS: "-Werror"
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       matrix:
         config:
@@ -88,6 +89,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt install expect valgrind g++-multilib qemu-user
+          gh pr comment ${{ github.event.pull_request.number }} -b \
 
       - name: Install NDK
         if: runner.os == 'Linux'
