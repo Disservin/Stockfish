@@ -15,8 +15,8 @@ jobs:
     strategy:
       matrix:
         config:
-          - name: Ubuntu 20.04 GCC
-            os: ubuntu-20.04
+          - name: Ubuntu 22.04 GCC
+            os: ubuntu-22.04
             simple_name: ubuntu
             compiler: g++
             comp: gcc
@@ -53,7 +53,7 @@ jobs:
           - x86-64-vnni512
         exclude:
           - binaries: x86-64-avxvnni
-            config: { ubuntu-20.04 }
+            config: { ubuntu-22.04 }
           - binaries: x86-32
             config: { os: windows-2022}
           - binaries: x86-32

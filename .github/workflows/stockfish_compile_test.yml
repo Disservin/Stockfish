@@ -12,12 +12,12 @@ jobs:
       matrix:
         config:
           - name: Ubuntu 20.04 GCC
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             compiler: g++
             comp: gcc
             shell: bash
           - name: Ubuntu 20.04 Clang
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             compiler: clang++
             comp: clang
             shell: bash
