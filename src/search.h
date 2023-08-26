@@ -37,6 +37,7 @@ namespace Search {
 /// its own array of Stack objects, indexed by the current ply.
 
 struct Stack {
+  Key key;
   Move* pv;
   PieceToHistory* continuationHistory;
   int ply;

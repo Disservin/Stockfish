@@ -281,6 +281,7 @@ void Thread::search() {
   {
       (ss-i)->continuationHistory = &this->continuationHistory[0][0][NO_PIECE][0]; // Use as a sentinel
       (ss-i)->staticEval = VALUE_NONE;
+      (ss-i)->key = 0;
   }
 
   for (int i = 0; i <= MAX_PLY + 2; ++i)
@@ -607,6 +608,8 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture_stage(ttMove);
+
+    ss->key = posKey;
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
     // to save indentation, we list the condition in all code between here and there.
@@ -1148,6 +1151,12 @@ moves_loop: // When in check, search starts here
       if (   move == (ss-4)->currentMove
           && pos.has_repeated())
           r += 2;
+
+      if (ss->key == (ss-4)->key && moveCount == 1)
+      {
+          r += 2;
+          depth++;
+      }
 
       // Increase reduction if next ply has a lot of fail high (~5 Elo)
       if ((ss+1)->cutoffCnt > 3)
