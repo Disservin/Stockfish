@@ -1,12 +1,18 @@
 [
     # Mappings for libcxx's internal headers
+    { include: [ "<__fwd/array.h>", private, "<array>", public ] },
     { include: [ "<__fwd/fstream.h>", private, "<iosfwd>", public ] },
+    { include: [ "<__fwd/get.h>", private, "<tuple>", public ] },
+    { include: [ "<__fwd/hash.h>", private, "<functional>", public ] },
     { include: [ "<__fwd/ios.h>", private, "<iosfwd>", public ] },
     { include: [ "<__fwd/istream.h>", private, "<iosfwd>", public ] },
     { include: [ "<__fwd/ostream.h>", private, "<iosfwd>", public ] },
+    { include: [ "<__fwd/pair.h>", private, "<utility>", public ] },
     { include: [ "<__fwd/sstream.h>", private, "<iosfwd>", public ] },
     { include: [ "<__fwd/streambuf.h>", private, "<iosfwd>", public ] },
+    { include: [ "<__fwd/string.h>", private, "<string>", public ] },
     { include: [ "<__fwd/string_view.h>", private, "<string_view>", public ] },
+    { include: [ "<__fwd/tuple.h>", private, "<tuple>", public ] },
 
     # Mappings for includes between public headers
     { include: [ "<ios>", public, "<iostream>", public ] },
