@@ -1056,6 +1056,6 @@ icx-profile-use:
 .depend: $(SRCS)
 	-@$(CXX) $(DEPENDFLAGS) -MM $(SRCS) > $@ 2> /dev/null
 
-ifeq (, $(filter $(MAKECMDGOALS), help strip install clean net objclean profileclean config-sanity))
+ifeq (, $(filter $(MAKECMDGOALS), help analyze strip install clean net objclean profileclean config-sanity))
 -include .depend
 endif
