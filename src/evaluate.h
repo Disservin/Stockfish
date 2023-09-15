@@ -26,6 +26,7 @@
 namespace Stockfish {
 
 class Position;
+enum Value : int;
 
 namespace Eval {
 
