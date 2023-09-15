@@ -45,3 +45,12 @@ jobs:
           COMP=clang
           CXX=include-what-you-use
           CXXFLAGS="-stdlib=libc++ -Xiwyu --comment_style=long -Xiwyu --mapping='${{ github.workspace }}/Stockfish/.github/workflows/libcxx17.imp' -Xiwyu --error"
+
+      - name: Comment PR
+        if: ${{ failure() && github.event_name == 'pull_request' }}
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          message: |
+            👋 Thanks for contributing!
+            Please fix the include errors in this PR.
+            You can find the errors in the CI run.
