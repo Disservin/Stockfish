@@ -668,6 +668,21 @@ int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
     return value + 1;
 }
 
+// custom std::max_element implementation to fix clang bug
+template <typename T>
+T& fix_max_element(T* arr, int size, bool (*comparator)(T, T)) {
+    T* maxElement = &arr[0];
+
+    for (int i = 1; i < size; ++i) {
+        if (comparator(arr[i], *maxElement)) {
+            maxElement = &arr[i];
+        }
+    }
+
+    return *maxElement;
+}
+
+
 // Compute a unique index out of a position and use it to probe the TB file. To
 // encode k pieces of same type and color, first sort the pieces by square in
 // ascending order s1 <= s2 <= ... <= sk then compute the unique index as:
@@ -719,7 +734,8 @@ Ret do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* resu
 
         leadPawnsCnt = size;
 
-        std::swap(squares[0], *std::max_element(squares, squares + leadPawnsCnt, pawns_comp));
+        assert(leadPawnsCnt < 8);
+        std::swap(squares[0], fix_max_element(squares, leadPawnsCnt, pawns_comp));
 
         tbFile = File(edge_distance(file_of(squares[0])));
     }
