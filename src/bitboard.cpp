@@ -22,6 +22,7 @@
 #include <bitset>
 #include <initializer_list>
 #include <future>
+#include <cstdint>
 
 #include "misc.h"
 
