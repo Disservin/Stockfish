@@ -20,9 +20,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: '👋 Thanks for contributing!\nPlease fix the include errors in this PR.\nYou can find the errors in the CI run.'
-            })
+            for (const pull_request of context.payload.workflow_run.pull_requests) {
+              github.rest.issues.createComment({
+                issue_number: pull_request.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: '👋 Thanks for contributing!\nPlease fix the include errors in this PR.\nYou can find the errors in the CI run.'
+              })
+            }
