@@ -11,8 +11,7 @@ on:
 jobs:
   Comment:
     runs-on: ubuntu-latest
-    if: >
-      github.event.workflow_run.event == 'pull_request'
+    if: github.event.workflow_run.event == 'pull_request'
     steps:
       - name: 'Comment on PR'
         uses: actions/github-script@v6
