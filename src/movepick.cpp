@@ -110,6 +110,14 @@ void MovePicker::score() {
 
   static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
+  const auto dist = std::distance(cur, endMoves);
+    
+  if (dist <= 1) {
+      if (dist == 1)
+          cur->value = 0;
+      return;
+  }
+    
   [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook, threatenedPieces;
   if constexpr (Type == QUIETS)
   {
