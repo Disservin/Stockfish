@@ -1,6 +1,7 @@
 # This workflow will run clang-format and comment on the PR.
 # Because of security reasons, it is crucial that this workflow
 # executes no shell script nor runs make.
+# Read this before editing: https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 
 name: Format Check
 on:
@@ -12,18 +13,8 @@ on:
       - '**.h'
 jobs:
   Stockfish:
-    name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }}
-    strategy:
-      matrix:
-        config:
-          - name: Ubuntu 20.04 GCC
-            os: ubuntu-20.04
-            shell: bash
-    defaults:
-      run:
-        working-directory: src
-        shell: ${{ matrix.config.shell }}
+    name: Ubuntu 20.04 GCC
+    runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
         with:
