@@ -48,4 +48,4 @@ jobs:
         if: steps.clang-format.outcome == 'failure'
         with:
           name: pr
-          path: pr/
+          path: src/pr/
