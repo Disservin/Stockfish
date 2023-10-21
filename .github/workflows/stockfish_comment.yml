@@ -1,7 +1,7 @@
 name: Comment on the pull request
 
-# read-write repo token
-# access to secrets
+# Read-write repo token
+# Access to secrets
 on:
   workflow_run:
     workflows: ["Receive PR"]
@@ -15,14 +15,26 @@ jobs:
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     steps:
-      - name: 'Download artifact'
+      - name: 'Check if artifact exists'
+        id: check-artifact
         uses: actions/github-script@v3.1.0
         with:
           script: |
             var artifacts = await github.actions.listWorkflowRunArtifacts({
                owner: context.repo.owner,
                repo: context.repo.repo,
-               run_id: ${{github.event.workflow_run.id }},
+               run_id: ${{ github.event.workflow_run.id }},
+            });
+            core.setOutput('artifact_exists', artifacts.data.artifacts.some(artifact => artifact.name === "pr"));
+      - name: 'Download artifact'
+        if: steps.check-artifact.outputs.artifact_exists == 'true'
+        uses: actions/github-script@v3.1.0
+        with:
+          script: |
+            var artifacts = await github.actions.listWorkflowRunArtifacts({
+               owner: context.repo.owner,
+               repo: context.repo.repo,
+               run_id: ${{ github.event.workflow_run.id }},
             });
             var matchArtifact = artifacts.data.artifacts.filter((artifact) => {
               return artifact.name == "pr"
@@ -34,10 +46,11 @@ jobs:
                archive_format: 'zip',
             });
             var fs = require('fs');
-            fs.writeFileSync('${{github.workspace}}/pr.zip', Buffer.from(download.data));
+            fs.writeFileSync('${{ github.workspace }}/pr.zip', Buffer.from(download.data));
       - run: unzip pr.zip
 
       - name: 'Comment on PR'
+        if: steps.check-artifact.outputs.artifact_exists == 'true'
         uses: actions/github-script@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -48,5 +61,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue_number,
-              body: 'clang-format needs to be run.'
+              body: 'Everything is OK. Thank you for the PR!'
             });
