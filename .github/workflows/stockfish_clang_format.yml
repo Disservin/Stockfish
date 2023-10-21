@@ -1,0 +1,51 @@
+name: Stockfish
+on:
+  workflow_call:
+jobs:
+  Stockfish:
+    name: ${{ matrix.config.name }} ${{ matrix.binaries }}
+    runs-on: ${{ matrix.config.os }}
+    env:
+      COMPILER: ${{ matrix.config.compiler }}
+      COMP: ${{ matrix.config.comp }}
+      EXT: ${{ matrix.config.ext }}
+      SDE: ${{ matrix.config.sde }}
+      NAME: ${{ matrix.config.simple_name }}
+      BINARY: ${{ matrix.binaries }}
+    strategy:
+      matrix:
+        config:
+          - name: Ubuntu 20.04 GCC
+            os: ubuntu-20.04
+            simple_name: ubuntu
+            compiler: g++
+            comp: gcc
+            shell: bash
+    defaults:
+      run:
+        working-directory: src
+        shell: ${{ matrix.config.shell }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run clang-format style check for C/C++/Protobuf programs.
+        uses: jidicula/clang-format-action@v4.11.0
+        id: clang-format
+        continue-on-error: true
+        with:
+          clang-format-version: '17'
+          exclude-regexp: 'incbin.h'
+
+      - name: ave clang-format return code
+        if: steps.clang-format.outcome == 'failure'
+        run: |
+          mkdir -p ./pr
+          echo 1 > ./pr/ret
+
+      - uses: actions/upload-artifact@v3
+        if: steps.clang-format.outcome == 'failure'
+        with:
+          name: pr
+          path: pr/
