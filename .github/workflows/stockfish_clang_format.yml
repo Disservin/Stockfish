@@ -36,7 +36,7 @@ jobs:
         continue-on-error: true
         with:
           clang-format-version: '17'
-          exclude-regexp: 'incbin.h'
+          exclude-regexp: 'incbin/incbin.h'
 
       - name: ave clang-format return code
         if: steps.clang-format.outcome == 'failure'
