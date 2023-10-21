@@ -42,7 +42,7 @@ jobs:
         if: steps.clang-format.outcome == 'failure'
         run: |
           mkdir -p ./pr
-          echo 1 > ./pr/ret
+          echo ${{ github.event.number }} > ./pr/NR
 
       - uses: actions/upload-artifact@v3
         if: steps.clang-format.outcome == 'failure'
