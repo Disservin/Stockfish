@@ -47,6 +47,8 @@
 
 namespace Stockfish {
 
+int x = 2;
+
 namespace Search {
 
 LimitsType Limits;
