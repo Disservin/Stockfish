@@ -25,20 +25,16 @@ jobs:
         id: clang-format
         continue-on-error: true
         with:
-          clang-format-version: '17'
+          clang-format-version: '17=17.0.3'
           exclude-regex: 'incbin'
-
-      - name: Extract clang-format version
-        run: |
-          CLANG_FORMAT_VERSION="$(clang-format --version)"
-          echo "CLANG_VER=$CLANG_FORMAT_VERSION" >> $GITHUB_ENV
 
       - name: Comment on PR
         if: steps.clang-format.outcome == 'failure'
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            ${{ env.CLANG_VER }} needs to be run on this PR.
+            clang-format needs to be run on this PR.
             If you don't have clang-format installed, the maintainer will handle it when merging.
+            Version used: 17.0.3
 
 
