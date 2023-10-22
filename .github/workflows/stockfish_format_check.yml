@@ -33,16 +33,19 @@ jobs:
         uses: thollander/actions-comment-pull-request@v2
         with:
           message: |
-            _(execution **${{ github.run_id }}** / attempt **${{ github.run_attempt }}**)_
             clang-format 17 needs to be run on this PR.
             If you do not have clang-format installed, the maintainer will run it when merging.
             For the exact version please see https://packages.ubuntu.com/mantic/clang-format-17.
+
+            _(execution **${{ github.run_id }}** / attempt **${{ github.run_attempt }}**)_
           comment_tag: execution
 
       - name: Comment on PR
         if: steps.clang-format.outcome != 'failure'
         uses: thollander/actions-comment-pull-request@v2
         with:
+          message: |
+            _(execution **${{ github.run_id }}** / attempt **${{ github.run_attempt }}**)_
           create_if_not_exists: false
           comment_tag: execution
           mode: delete
