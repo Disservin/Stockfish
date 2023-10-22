@@ -3,7 +3,7 @@
 # executes no shell script nor runs make.
 # Read this before editing: https://securitylab.github.com/research/github-actions-preventing-pwn-requests/
 
-name: clang-format check
+name: Stockfish
 on:
   pull_request_target:
     branches:
@@ -13,7 +13,7 @@ on:
       - '**.h'
 jobs:
   Stockfish:
-    name: Formatting Check
+    name: clang-format check
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
