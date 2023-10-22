@@ -29,7 +29,9 @@ jobs:
           exclude-regex: 'incbin'
 
       - name: Extract clang-format version
-        run: echo "CLANG_VER=$(echo clang-format --version)" >> $GITHUB_ENV
+        run: |
+          CLANG_FORMAT_VERSION="$(clang-format --version)"
+          echo "CLANG_VER=$CLANG_FORMAT_VERSION" >> $GITHUB_ENV
 
       - name: Comment on PR
         if: steps.clang-format.outcome == 'failure'
