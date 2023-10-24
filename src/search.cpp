@@ -1673,6 +1673,8 @@ void update_all_stats(const Position& pos,
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
 
+        thisThread->pawnHistory.get(pos, pos.pawn_key(), bestMove) << quietMoveBonus;
+
 
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
@@ -1685,8 +1687,6 @@ void update_all_stats(const Position& pos,
     }
     else
     {
-        thisThread->pawnHistory.get(pos, pos.pawn_key(), bestMove) << quietMoveBonus;
-
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
@@ -1703,8 +1703,6 @@ void update_all_stats(const Position& pos,
     // Decrease stats for all non-best capture moves
     for (int i = 0; i < captureCount; ++i)
     {
-        thisThread->pawnHistory.get(pos, pos.pawn_key(), capturesSearched[i]) << -quietMoveBonus;
-
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured    = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -quietMoveBonus;

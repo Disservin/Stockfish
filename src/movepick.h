@@ -93,7 +93,7 @@ enum StatsType {
 
 class PawnHistory {
     static constexpr int max_size = 512;
-    using pawn_type               = Stats<int16_t, 16384, max_size, PIECE_TYPE_NB, SQUARE_NB>;
+    using pawn_type = Stats<int16_t, 16384, COLOR_NB, max_size, PIECE_TYPE_NB, SQUARE_NB>;
 
    public:
     auto& get(const Position& pos, Key pawn_key, Move m) {
@@ -118,13 +118,10 @@ class PawnHistory {
         return entry[pos.side_to_move()][pawn_index][pt][to];
     }
 
-    void fill(int val) {
-        entry[0].fill(val);
-        entry[1].fill(val);
-    }
+    void fill(int val) { entry.fill(val); }
 
    private:
-    pawn_type entry[2];
+    pawn_type entry;
 };
 
 // ButterflyHistory records how often quiet moves have been successful or
