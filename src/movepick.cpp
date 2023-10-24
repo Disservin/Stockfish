@@ -171,10 +171,13 @@ void MovePicker::score() {
     {
 
         if constexpr (Type == CAPTURES)
+        {
             m.value =
               (7 * int(PieceValue[pos.piece_on(to_sq(m))])
                + (*captureHistory)[pos.moved_piece(m)][to_sq(m)][type_of(pos.piece_on(to_sq(m)))])
               / 16;
+            m.value += pawnHistory.get(pos, pos.pawn_key(), m);
+        }
 
         else if constexpr (Type == QUIETS)
         {
@@ -211,8 +214,6 @@ void MovePicker::score() {
                           : pt != PAWN ? bool(to & threatenedByPawn) * 15000
                                        : 0)
                        : 0;
-
-            m.value += pawnHistory.get(pos, pos.pawn_key(), m);
         }
 
         else  // Type == EVASIONS
