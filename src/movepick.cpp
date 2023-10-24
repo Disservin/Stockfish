@@ -211,6 +211,8 @@ void MovePicker::score() {
                           : pt != PAWN ? bool(to & threatenedByPawn) * 15000
                                        : 0)
                        : 0;
+
+            m.value += pawnHistory.get(pos, pos.pawn_key(), m);
         }
 
         else  // Type == EVASIONS
@@ -222,8 +224,6 @@ void MovePicker::score() {
                 m.value = (*mainHistory)[pos.side_to_move()][from_to(m)]
                         + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)];
         }
-
-        m.value += pawnHistory.get(pos, pos.pawn_key(), m);
     }
 }
 
