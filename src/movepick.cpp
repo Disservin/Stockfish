@@ -89,12 +89,14 @@ MovePicker::MovePicker(const Position&              p,
                        const ButterflyHistory*      mh,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
+                       const PawnHistory&           ph,
                        Move                         cm,
                        const Move*                  killers) :
     pos(p),
     mainHistory(mh),
     captureHistory(cph),
     continuationHistory(ch),
+    pawnHistory(ph),
     ttMove(ttm),
     refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}},
     depth(d) {
@@ -110,11 +112,13 @@ MovePicker::MovePicker(const Position&              p,
                        const ButterflyHistory*      mh,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
+                       const PawnHistory&           ph,
                        Square                       rs) :
     pos(p),
     mainHistory(mh),
     captureHistory(cph),
     continuationHistory(ch),
+    pawnHistory(ph),
     ttMove(ttm),
     recaptureSquare(rs),
     depth(d) {
@@ -125,9 +129,11 @@ MovePicker::MovePicker(const Position&              p,
 
 // Constructor for ProbCut: we generate captures with SEE greater
 // than or equal to the given threshold.
-MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph) :
+MovePicker::MovePicker(
+  const Position& p, Move ttm, Value th, const CapturePieceToHistory* cph, const PawnHistory& ph) :
     pos(p),
     captureHistory(cph),
+    pawnHistory(ph),
     ttMove(ttm),
     threshold(th) {
     assert(!pos.checkers());
@@ -162,6 +168,8 @@ void MovePicker::score() {
     }
 
     for (auto& m : *this)
+    {
+
         if constexpr (Type == CAPTURES)
             m.value =
               (7 * int(PieceValue[pos.piece_on(to_sq(m))])
@@ -214,6 +222,9 @@ void MovePicker::score() {
                 m.value = (*mainHistory)[pos.side_to_move()][from_to(m)]
                         + (*continuationHistory[0])[pos.moved_piece(m)][to_sq(m)];
         }
+
+        m.value += pawnHistory.get(pos, pos.pawn_key(), m);
+    }
 }
 
 // Returns the next move satisfying a predicate function.

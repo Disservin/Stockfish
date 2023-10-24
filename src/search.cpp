@@ -848,7 +848,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     {
         assert(probCutBeta < VALUE_INFINITE);
 
-        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory);
+        MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &captureHistory,
+                      thisThread->pawnHistory);
 
         while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
@@ -904,7 +905,7 @@ moves_loop:  // When in check, search starts here
       prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &captureHistory, contHist,
-                  countermove, ss->killers);
+                  thisThread->pawnHistory, countermove, ss->killers);
 
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1463,7 +1464,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // will be generated.
     Square     prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
-                  contHist, prevSq);
+                  contHist, thisThread->pawnHistory, prevSq);
 
     int quietCheckEvasions = 0;
 
@@ -1672,9 +1673,11 @@ void update_all_stats(const Position& pos,
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
 
+
         // Decrease stats for all non-best quiet moves
         for (int i = 0; i < quietCount; ++i)
         {
+            thisThread->pawnHistory.get(pos, pos.pawn_key(), quietsSearched[i]) << -bestMoveBonus;
             thisThread->mainHistory[us][from_to(quietsSearched[i])] << -bestMoveBonus;
             update_continuation_histories(ss, pos.moved_piece(quietsSearched[i]),
                                           to_sq(quietsSearched[i]), -bestMoveBonus);
@@ -1682,6 +1685,8 @@ void update_all_stats(const Position& pos,
     }
     else
     {
+        thisThread->pawnHistory.get(pos, pos.pawn_key(), bestMove) << quietMoveBonus;
+
         // Increase stats for the best move in case it was a capture move
         captured = type_of(pos.piece_on(to_sq(bestMove)));
         captureHistory[moved_piece][to_sq(bestMove)][captured] << quietMoveBonus;
@@ -1698,6 +1703,8 @@ void update_all_stats(const Position& pos,
     // Decrease stats for all non-best capture moves
     for (int i = 0; i < captureCount; ++i)
     {
+        thisThread->pawnHistory.get(pos, pos.pawn_key(), capturesSearched[i]) << -quietMoveBonus;
+
         moved_piece = pos.moved_piece(capturesSearched[i]);
         captured    = type_of(pos.piece_on(to_sq(capturesSearched[i])));
         captureHistory[moved_piece][to_sq(capturesSearched[i])][captured] << -quietMoveBonus;
