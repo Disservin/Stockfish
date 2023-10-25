@@ -770,18 +770,26 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
     // Step 8. Futility pruning: child node (~40 Elo)
     // The depth condition is important for mate finding.
-    if (!ss->ttPv && depth < 9
+    if (!ss->ttPv     //
+        && depth < 9  //
         && eval - futility_margin(depth, cutNode && !ss->ttHit, improving)
                - (ss - 1)->statScore / 321
              >= beta
-        && eval >= beta && eval < 29462  // smaller than TB wins
+        && eval >= beta  //
+        && eval < 29462  // smaller than TB wins
         && !(!ttCapture && ttMove))
         return eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != MOVE_NULL && (ss - 1)->statScore < 17257 && eval >= beta
-        && eval >= ss->staticEval && ss->staticEval >= beta - 24 * depth + 281 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
+    if (!PvNode                                       //
+        && (ss - 1)->currentMove != MOVE_NULL         //
+        && (ss - 1)->statScore < 17257                //
+        && eval >= beta                               //
+        && eval >= ss->staticEval                     //
+        && ss->staticEval >= beta - 24 * depth + 281  //
+        && !excludedMove                              //
+        && pos.non_pawn_material(us)                  //
+        && ss->ply >= thisThread->nmpMinPly           //
         && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
@@ -888,9 +896,14 @@ moves_loop:  // When in check, search starts here
 
     // Step 12. A small Probcut idea, when we are in check (~4 Elo)
     probCutBeta = beta + 416;
-    if (ss->inCheck && !PvNode && ttCapture && (tte->bound() & BOUND_LOWER)
-        && tte->depth() >= depth - 4 && ttValue >= probCutBeta
-        && abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && abs(beta) < VALUE_TB_WIN_IN_MAX_PLY)
+    if (ss->inCheck                                //
+        && !PvNode                                 //
+        && ttCapture                               //
+        && (tte->bound() & BOUND_LOWER)            //
+        && tte->depth() >= depth - 4               //
+        && ttValue >= probCutBeta                  //
+        && abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY  //
+        && abs(beta) < VALUE_TB_WIN_IN_MAX_PLY)
         return probCutBeta;
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
@@ -1024,9 +1037,12 @@ moves_loop:  // When in check, search starts here
             // scaling. Their values are optimized to time controls of 180+1.8 and longer
             // so changing them requires tests at this type of time controls.
             // Recursive singular search is avoided.
-            if (!rootNode && move == ttMove && !excludedMove
-                && depth >= 4 - (thisThread->completedDepth > 24) + 2 * (PvNode && tte->is_pv())
-                && abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && (tte->bound() & BOUND_LOWER)
+            if (!rootNode                                                                         //
+                && move == ttMove                                                                 //
+                && !excludedMove                                                                  //
+                && depth >= 4 - (thisThread->completedDepth > 24) + 2 * (PvNode && tte->is_pv())  //
+                && abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY                                         //
+                && (tte->bound() & BOUND_LOWER)                                                   //
                 && tte->depth() >= depth - 3)
             {
                 Value singularBeta  = ttValue - (64 + 57 * (ss->ttPv && !PvNode)) * depth / 64;
@@ -1747,8 +1763,8 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 // using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
 Move Skill::pick_best(size_t multiPV) {
 
-    const RootMoves& rootMoves = Threads.main()->rootMoves;
-    static PRNG      rng(now());  // PRNG sequence should be non-deterministic
+    const auto& rootMoves = Threads.main()->rootMoves;
+    static PRNG rng(now());  // PRNG sequence should be non-deterministic
 
     // RootMoves are already sorted by score in descending order
     Value  topScore = rootMoves[0].score;
@@ -1817,7 +1833,7 @@ string UCI::pv(const Position& pos, Depth depth) {
 
     std::stringstream ss;
     TimePoint         elapsed       = Time.elapsed() + 1;
-    const RootMoves&  rootMoves     = pos.this_thread()->rootMoves;
+    const auto&       rootMoves     = pos.this_thread()->rootMoves;
     size_t            pvIdx         = pos.this_thread()->pvIdx;
     size_t            multiPV       = std::min(size_t(Options["MultiPV"]), rootMoves.size());
     uint64_t          nodesSearched = Threads.nodes_searched();

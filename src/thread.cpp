@@ -177,9 +177,11 @@ void ThreadPool::start_thinking(Position&                 pos,
     main()->wait_for_search_finished();
 
     main()->stopOnPonderhit = stop = false;
-    increaseDepth                  = true;
     main()->ponder                 = ponderMode;
-    Search::Limits                 = limits;
+
+    increaseDepth = true;
+
+    Search::Limits = limits;
     Search::RootMoves rootMoves;
 
     for (const auto& m : MoveList<LEGAL>(pos))

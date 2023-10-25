@@ -66,8 +66,8 @@ ExtMove* generate_pawn_moves(const Position& pos, ExtMove* moveList, Bitboard ta
     const Bitboard emptySquares = ~pos.pieces();
     const Bitboard enemies      = Type == EVASIONS ? pos.checkers() : pos.pieces(Them);
 
-    Bitboard pawnsOn7    = pos.pieces(Us, PAWN) & TRank7BB;
-    Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & ~TRank7BB;
+    const Bitboard pawnsOn7    = pos.pieces(Us, PAWN) & TRank7BB;
+    const Bitboard pawnsNotOn7 = pos.pieces(Us, PAWN) & ~TRank7BB;
 
     // Single and double pawn pushes, no promotions
     if constexpr (Type != CAPTURES)

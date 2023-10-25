@@ -111,16 +111,16 @@ namespace Stockfish {
 std::vector<std::string> setup_bench(const Position& current, std::istream& is) {
 
     std::vector<std::string> fens, list;
-    std::string              go, token;
+    std::string              token;
 
     // Assign default values to missing arguments
-    std::string ttSize    = (is >> token) ? token : "16";
-    std::string threads   = (is >> token) ? token : "1";
-    std::string limit     = (is >> token) ? token : "13";
-    std::string fenFile   = (is >> token) ? token : "default";
-    std::string limitType = (is >> token) ? token : "depth";
+    auto ttSize    = (is >> token) ? token : "16";
+    auto threads   = (is >> token) ? token : "1";
+    auto limit     = (is >> token) ? token : "13";
+    auto fenFile   = (is >> token) ? token : "default";
+    auto limitType = (is >> token) ? token : "depth";
 
-    go = limitType == "eval" ? "eval" : "go " + limitType + " " + limit;
+    auto go = limitType == "eval" ? "eval" : "go " + limitType + " " + limit;
 
     if (fenFile == "default")
         fens = Defaults;
