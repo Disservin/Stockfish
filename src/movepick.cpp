@@ -90,7 +90,8 @@ MovePicker::MovePicker(const Position&              p,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
                        Move                         cm,
-                       const Move*                  killers) :
+                       const Move*                  killers,
+                       bool                         fe) :
     pos(p),
     mainHistory(mh),
     captureHistory(cph),
@@ -99,6 +100,8 @@ MovePicker::MovePicker(const Position&              p,
     refutations{{killers[0], 0}, {killers[1], 0}, {cm, 0}},
     depth(d) {
     assert(d > 0);
+
+    isFallingEval = fe;
 
     stage = (pos.checkers() ? EVASION_TT : MAIN_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
@@ -110,7 +113,8 @@ MovePicker::MovePicker(const Position&              p,
                        const ButterflyHistory*      mh,
                        const CapturePieceToHistory* cph,
                        const PieceToHistory**       ch,
-                       Square                       rs) :
+                       Square                       rs,
+                       bool                         fe) :
     pos(p),
     mainHistory(mh),
     captureHistory(cph),
@@ -120,7 +124,8 @@ MovePicker::MovePicker(const Position&              p,
     depth(d) {
     assert(d <= 0);
 
-    stage = (pos.checkers() ? EVASION_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
+    isFallingEval = fe;
+    stage         = (pos.checkers() ? EVASION_TT : QSEARCH_TT) + !(ttm && pos.pseudo_legal(ttm));
 }
 
 // Constructor for ProbCut: we generate captures with SEE greater
@@ -203,6 +208,12 @@ void MovePicker::score() {
                           : pt != PAWN ? bool(to & threatenedByPawn) * 15000
                                        : 0)
                        : 0;
+
+            if (isFallingEval)
+            {
+                m.value +=
+                  pt == PAWN ? (6 - edge_distance(rank_of(to), pos.side_to_move())) * 3000 : 0;
+            }
         }
 
         else  // Type == EVASIONS

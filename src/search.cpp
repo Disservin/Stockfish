@@ -305,7 +305,8 @@ void Thread::search() {
 
     ss->pv = pv;
 
-    bestValue = -VALUE_INFINITE;
+    bestValue     = -VALUE_INFINITE;
+    isFallingEval = false;
 
     if (mainThread)
     {
@@ -449,6 +450,8 @@ void Thread::search() {
         if (Limits.mate && bestValue >= VALUE_MATE_IN_MAX_PLY
             && VALUE_MATE - bestValue <= 2 * Limits.mate)
             Threads.stop = true;
+
+        isFallingEval = rootMoves[0].score < rootMoves[0].previousScore;
 
         if (!mainThread)
             continue;
@@ -904,7 +907,7 @@ moves_loop:  // When in check, search starts here
       prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &captureHistory, contHist,
-                  countermove, ss->killers);
+                  countermove, ss->killers, thisThread->isFallingEval);
 
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
@@ -1463,7 +1466,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // will be generated.
     Square     prevSq = is_ok((ss - 1)->currentMove) ? to_sq((ss - 1)->currentMove) : SQ_NONE;
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
-                  contHist, prevSq);
+                  contHist, prevSq, thisThread->isFallingEval);
 
     int quietCheckEvasions = 0;
 

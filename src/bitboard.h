@@ -210,6 +210,8 @@ inline int distance<Square>(Square x, Square y) {
 
 inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
+inline int edge_distance(Rank r, Color c) { return c == WHITE ? RANK_8 - r : r; }
+
 // Returns the pseudo attacks of the given piece type
 // assuming an empty board.
 template<PieceType Pt>

@@ -60,6 +60,7 @@ class Thread {
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
     int                   selDepth, nmpMinPly;
     Value                 bestValue, optimism[COLOR_NB];
+    bool                  isFallingEval;
 
     Position              rootPos;
     StateInfo             rootState;
