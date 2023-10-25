@@ -212,7 +212,7 @@ void MovePicker::score() {
                                        : 0)
                        : 0;
 
-            m.value += pawnHistory.get(pos, pos.pawn_key(), m);
+            m.value += pawnHistory.get(pos, m);
         }
 
         else  // Type == EVASIONS

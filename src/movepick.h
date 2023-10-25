@@ -96,8 +96,8 @@ class PawnHistory {
     using pawn_type = Stats<int16_t, 16384, COLOR_NB, max_size, PIECE_TYPE_NB, SQUARE_NB>;
 
    public:
-    auto& get(const Position& pos, Key pawn_key, Move m) {
-        const int pawn_index = pawn_key & (max_size - 1);
+    auto& get(const Position& pos, Move m) {
+        const int pawn_index = pos.pawn_key() & (max_size - 1);
         const int pt         = type_of(pos.moved_piece(m));
         const int to         = to_sq(m);
 
@@ -107,8 +107,8 @@ class PawnHistory {
         return entry[pos.side_to_move()][pawn_index][pt][to];
     }
 
-    const auto& get(const Position& pos, Key pawn_key, Move m) const {
-        const int pawn_index = pawn_key & (max_size - 1);
+    const auto& get(const Position& pos, Move m) const {
+        const int pawn_index = pos.pawn_key() & (max_size - 1);
         const int pt         = type_of(pos.moved_piece(m));
         const int to         = to_sq(m);
 
