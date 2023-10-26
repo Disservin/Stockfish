@@ -23,7 +23,6 @@
 
 #include "misc.h"
 #include "search.h"
-#include "thread.h"
 #include "types.h"
 
 namespace Stockfish {
@@ -33,11 +32,9 @@ namespace Stockfish {
 class TimeManagement {
    public:
     void      init(Search::LimitsType& limits, Color us, int ply);
-    TimePoint optimum() const { return optimumTime; }
-    TimePoint maximum() const { return maximumTime; }
-    TimePoint elapsed() const {
-        return Search::Limits.npmsec ? TimePoint(Threads.nodes_searched()) : now() - startTime;
-    }
+    TimePoint optimum() const;
+    TimePoint maximum() const;
+    TimePoint elapsed() const;
 
     int64_t availableNodes;  // When in 'nodes as time' mode
 
@@ -45,9 +42,8 @@ class TimeManagement {
     TimePoint startTime;
     TimePoint optimumTime;
     TimePoint maximumTime;
+    TimePoint npmsec;
 };
-
-extern TimeManagement Time;
 
 }  // namespace Stockfish
 

@@ -163,7 +163,9 @@ void go(Position& pos, std::istringstream& is, StateListPtr& states) {
         else if (token == "ponder")
             ponderMode = true;
 
-    Threads.start_thinking(pos, states, limits, ponderMode);
+    Threads->init(limits, pos.side_to_move(), pos.game_ply());
+
+    Threads.start_thinking(pos, states, ponderMode);
 }
 
 

@@ -166,27 +166,25 @@ void ThreadPool::clear() {
     main()->bestPreviousScore        = VALUE_INFINITE;
     main()->bestPreviousAverageScore = VALUE_INFINITE;
     main()->previousTimeReduction    = 1.0;
+
+    shared.time.availableNodes = 0;
 }
 
 
 // Wakes up main thread waiting in idle_loop() and
 // returns immediately. Main thread will wake up other threads and start the search.
-void ThreadPool::start_thinking(Position&                 pos,
-                                StateListPtr&             states,
-                                const Search::LimitsType& limits,
-                                bool                      ponderMode) {
+void ThreadPool::start_thinking(Position& pos, StateListPtr& states, bool ponderMode) {
 
     main()->wait_for_search_finished();
 
     main()->stopOnPonderhit = stop = false;
     increaseDepth                  = true;
     main()->ponder                 = ponderMode;
-    Search::Limits                 = limits;
     Search::RootMoves rootMoves;
 
     for (const auto& m : MoveList<LEGAL>(pos))
-        if (limits.searchmoves.empty()
-            || std::count(limits.searchmoves.begin(), limits.searchmoves.end(), m))
+        if (shared.limits.searchmoves.empty()
+            || std::count(shared.limits.searchmoves.begin(), shared.limits.searchmoves.end(), m))
             rootMoves.emplace_back(m);
 
     if (!rootMoves.empty())

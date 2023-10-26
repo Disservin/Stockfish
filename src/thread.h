@@ -31,6 +31,7 @@
 #include "search.h"
 #include "thread_win32_osx.h"
 #include "types.h"
+#include "timeman.h"
 
 namespace Stockfish {
 
@@ -93,18 +94,37 @@ struct MainThread: public Thread {
 // ThreadPool struct handles all the threads-related stuff like init, starting,
 // parking and, most importantly, launching a thread. All the access to threads
 // is done through this class.
-struct ThreadPool {
+class ThreadPool {
+    class Shared {
+        TimeManagement     time;
+        Search::LimitsType limits;
 
-    void start_thinking(Position&, StateListPtr&, const Search::LimitsType&, bool = false);
+       public:
+        void init(const Search::LimitsType& lim, Color us, int ply) {
+            limits = lim;
+
+            time.init(limits, us, ply);
+        }
+
+        friend class Thread;
+        friend class MainThread;
+        friend class ThreadPool;
+    };
+
+   public:
+    void start_thinking(Position&, StateListPtr&, bool = false);
     void clear();
     void set(size_t);
 
     MainThread* main() const { return static_cast<MainThread*>(threads.front()); }
     uint64_t    nodes_searched() const { return accumulate(&Thread::nodes); }
     uint64_t    tb_hits() const { return accumulate(&Thread::tbHits); }
+    TimePoint   elapsed() const { return shared.time.elapsed(); }
     Thread*     get_best_thread() const;
     void        start_searching();
     void        wait_for_search_finished() const;
+
+    Shared* operator->() { return &shared; }
 
     std::atomic_bool stop, increaseDepth;
 
@@ -118,6 +138,7 @@ struct ThreadPool {
    private:
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
+    Shared               shared;
 
     uint64_t accumulate(std::atomic<uint64_t> Thread::*member) const {
 
