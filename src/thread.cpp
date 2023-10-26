@@ -65,7 +65,6 @@ Thread::~Thread() {
 
 // Reset histories, usually before a new game
 void Thread::clear() {
-
     counterMoves.fill(MOVE_NONE);
     mainHistory.fill(0);
     captureHistory.fill(0);
@@ -167,22 +166,25 @@ void ThreadPool::clear() {
     main()->bestPreviousScore        = VALUE_INFINITE;
     main()->bestPreviousAverageScore = VALUE_INFINITE;
     main()->previousTimeReduction    = 1.0;
+    main()->tm.availableNodes        = 0;
 }
 
 
 // Wakes up main thread waiting in idle_loop() and
 // returns immediately. Main thread will wake up other threads and start the search.
-void ThreadPool::start_thinking(Position&                 pos,
-                                StateListPtr&             states,
-                                const Search::LimitsType& limits,
-                                bool                      ponderMode) {
+void ThreadPool::start_thinking(Position&          pos,
+                                StateListPtr&      states,
+                                Search::LimitsType limits,
+                                bool               ponderMode) {
 
     main()->wait_for_search_finished();
 
     main()->stopOnPonderhit = stop = false;
-    increaseDepth                  = true;
     main()->ponder                 = ponderMode;
-    Search::Limits                 = limits;
+    main()->tm.init(limits, pos.side_to_move(), pos.game_ply());
+
+    increaseDepth = true;
+
     Search::RootMoves rootMoves;
 
     for (const auto& m : MoveList<LEGAL>(pos))
@@ -207,6 +209,7 @@ void ThreadPool::start_thinking(Position&                 pos,
     // since they are read-only.
     for (Thread* th : threads)
     {
+        th->limits = limits;
         th->nodes = th->tbHits = th->nmpMinPly = th->bestMoveChanges = 0;
         th->rootDepth = th->completedDepth = 0;
         th->rootMoves                      = rootMoves;
