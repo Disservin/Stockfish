@@ -64,7 +64,7 @@ Thread::~Thread() {
 
 // Reset histories, usually before a new game
 void Thread::clear() {
-
+    nodeCountDistr.clear();
     counterMoves.fill(MOVE_NONE);
     mainHistory.fill(0);
     captureHistory.fill(0);
@@ -226,13 +226,30 @@ Thread* ThreadPool::get_best_thread() const {
     for (Thread* th : threads)
         minScore = std::min(minScore, th->rootMoves[0].score);
 
+
     // Vote according to score and depth, and select the best thread
     auto thread_value = [minScore](Thread* th) {
         return (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
     };
 
     for (Thread* th : threads)
+    {
         votes[th->rootMoves[0].pv[0]] += thread_value(th);
+
+        std::vector<MoveIndex> values;
+
+        for (const auto& [move, entry] : th->nodeCountDistr)
+            if (entry.index < 3)
+                values.push_back(entry);
+
+        const auto score =
+          double(std::accumulate(values.begin(), values.end(), 0,
+                                 [](uint64_t a, MoveIndex b) { return a + b.count; }))
+          / th->nodes;
+
+        votes[th->rootMoves[0].pv[0]] *= 1 + score * 0.2;
+    }
+
 
     for (Thread* th : threads)
         if (abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)

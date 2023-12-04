@@ -1119,6 +1119,8 @@ moves_loop:  // When in check, search starts here
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
+        const auto count = rootNode ? thisThread->nodes.load(std::memory_order_relaxed) : 0;
+
         // Step 16. Make the move
         pos.do_move(move, st, givesCheck);
 
@@ -1227,6 +1229,14 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         pos.undo_move(move);
+
+        if (rootNode)
+        {
+            thisThread->nodeCountDistr[move] =
+              MoveIndex(thisThread->nodeCountDistr[move].count
+                          + (thisThread->nodes.load(std::memory_order_relaxed) - count),
+                        moveCount);
+        }
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 

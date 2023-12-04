@@ -25,6 +25,8 @@
 #include <cstdint>
 #include <mutex>
 #include <vector>
+#include <unordered_map>
+#include <numeric>
 
 #include "movepick.h"
 #include "position.h"
@@ -33,6 +35,17 @@
 #include "types.h"
 
 namespace Stockfish {
+
+struct MoveIndex {
+    MoveIndex() = default;
+    MoveIndex(uint64_t c, int i) :
+        count(c),
+        index(i) {}
+    uint64_t count = 0;
+    int      index = 0;
+
+    bool operator<(const MoveIndex& rhs) const { return count < rhs.count; }
+};
 
 // Thread class keeps together all the thread-related stuff.
 class Thread {
@@ -69,6 +82,8 @@ class Thread {
     CapturePieceToHistory captureHistory;
     ContinuationHistory   continuationHistory[2][2];
     PawnHistory           pawnHistory;
+
+    std::unordered_map<Move, MoveIndex> nodeCountDistr;
 };
 
 
