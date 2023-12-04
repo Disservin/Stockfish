@@ -1050,6 +1050,7 @@ moves_loop:  // When in check, search starts here
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
                 ss->excludedMove = MOVE_NONE;
+                ss->moveCount    = moveCount + 1;
 
                 if (value < singularBeta)
                 {
