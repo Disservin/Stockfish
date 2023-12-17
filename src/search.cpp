@@ -267,7 +267,7 @@ void MainThread::search() {
     if (bestThread != this)
         sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth) << sync_endl;
 
-    sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+    sync_cout << "bestmove " << UCI::move(bestThread->bestmove, rootPos.is_chess960());
 
     if (bestThread->rootMoves[0].pv.size() > 1
         || bestThread->rootMoves[0].extract_ponder_from_tt(rootPos))
@@ -445,6 +445,11 @@ void Thread::search() {
         {
             lastBestMove      = rootMoves[0].pv[0];
             lastBestMoveDepth = rootDepth;
+        }
+
+        if (!Threads.stop)
+        {
+            bestmove = rootMoves[0].pv[0];
         }
 
         // Have we found a "mate in x"?

@@ -58,6 +58,8 @@ class Thread {
     int                   selDepth, nmpMinPly;
     Value                 bestValue, optimism[COLOR_NB];
 
+    Move bestmove;
+
     Position              rootPos;
     StateInfo             rootState;
     Search::RootMoves     rootMoves;
