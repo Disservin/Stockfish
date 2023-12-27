@@ -51,9 +51,13 @@
 // __GNUC__                Compiler is GCC, Clang or ICX
 // __clang__               Compiler is Clang or ICX
 // __INTEL_LLVM_COMPILER   Compiler is ICX
-// _MSC_VER                Compiler is MSVC
+// _MSC_VER                Compiler is MSVC or Clang
 // _WIN32                  Building on Windows (any)
 // _WIN64                  Building on Windows 64 bit
+
+    #if defined(_MSC_VER) && !defined(__clang__)
+        #define TRUELY_MSVC
+    #endif
 
     #if defined(__GNUC__) && (__GNUC__ < 9 || (__GNUC__ == 9 && __GNUC_MINOR__ <= 2)) \
       && defined(_WIN32) && !defined(__clang__)
@@ -62,16 +66,16 @@
 
     #define ASSERT_ALIGNED(ptr, alignment) assert(reinterpret_cast<uintptr_t>(ptr) % alignment == 0)
 
-    #if defined(_WIN64) && defined(_MSC_VER)  // No Makefile used
-        #include <intrin.h>                   // Microsoft header for _BitScanForward64()
+    #if defined(_WIN64) && defined(TRUELY_MSVC)  // No Makefile used
+        #include <intrin.h>                      // Microsoft header for _BitScanForward64()
         #define IS_64BIT
     #endif
 
-    #if defined(USE_POPCNT) && defined(_MSC_VER)
+    #if defined(USE_POPCNT) && defined(TRUELY_MSVC)
         #include <nmmintrin.h>  // Microsoft header for _mm_popcnt_u64()
     #endif
 
-    #if !defined(NO_PREFETCH) && defined(_MSC_VER)
+    #if !defined(NO_PREFETCH) && defined(TRUELY_MSVC)
         #include <xmmintrin.h>  // Microsoft header for _mm_prefetch()
     #endif
 

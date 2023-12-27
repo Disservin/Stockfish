@@ -202,7 +202,7 @@ std::string compiler_info() {
     // __GNUC__                Compiler is GCC, Clang or ICX
     // __clang__               Compiler is Clang or ICX
     // __INTEL_LLVM_COMPILER   Compiler is ICX
-    // _MSC_VER                Compiler is MSVC
+    // _MSC_VER                Compiler is MSVC or Clang
     // _WIN32                  Building on Windows (any)
     // _WIN64                  Building on Windows 64 bit
 

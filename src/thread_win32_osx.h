@@ -26,6 +26,7 @@
 // somewhat more than 1MB stack, so adjust it to TH_STACK_SIZE.
 // The implementation calls pthread_create() with the stack size parameter
 // equal to the Linux 8MB default, on platforms that support it.
+// Note: This also applies to Windows, where the default stack size is 1MB.
 
 #if defined(__APPLE__) || defined(__MINGW32__) || defined(__MINGW64__) || defined(USE_PTHREADS)
 

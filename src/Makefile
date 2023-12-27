@@ -458,11 +458,13 @@ ifeq ($(COMP),clang)
 	comp=clang
 	CXX=clang++
 	ifeq ($(target_windows),yes)
-		CXX=x86_64-w64-mingw32-clang++
+		ifneq ($(shell which x86_64-w64-mingw32-clang++ 2> /dev/null),)
+			CXX=x86_64-w64-mingw32-clang++
+		endif
 	endif
 
 	CXXFLAGS += -pedantic -Wextra -Wshadow -Wmissing-prototypes \
-	            -Wconditional-uninitialized
+	            -Wconditional-uninitialized -pthread
 
 	ifeq ($(filter $(KERNEL),Darwin OpenBSD FreeBSD),)
 	ifeq ($(target_windows),)
