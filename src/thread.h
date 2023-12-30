@@ -35,6 +35,19 @@
 
 namespace Stockfish {
 
+class SharedThreadData {
+   public:
+    SharedThreadData(const Search::LimitsType& lim, Color us, int ply) {
+        limits = lim;
+
+        time.init(limits, us, ply);
+    }
+
+    TimeManagement     time;
+    Search::LimitsType limits;
+};
+
+
 // Thread class keeps together all the thread-related stuff.
 class Thread {
 
@@ -95,21 +108,6 @@ struct MainThread: public Thread {
 // parking and, most importantly, launching a thread. All the access to threads
 // is done through this class.
 class ThreadPool {
-    class Shared {
-        TimeManagement     time;
-        Search::LimitsType limits;
-
-       public:
-        void init(const Search::LimitsType& lim, Color us, int ply) {
-            limits = lim;
-
-            time.init(limits, us, ply);
-        }
-
-        friend class Thread;
-        friend class MainThread;
-        friend class ThreadPool;
-    };
 
    public:
     void start_thinking(Position&, StateListPtr&, bool = false);
@@ -124,7 +122,8 @@ class ThreadPool {
     void        start_searching();
     void        wait_for_search_finished() const;
 
-    Shared* operator->() { return &shared; }
+    // For easier access to shared data
+    SharedThreadData* operator->() { return &shared; }
 
     std::atomic_bool stop, increaseDepth;
 
@@ -138,7 +137,7 @@ class ThreadPool {
    private:
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
-    Shared               shared;
+    SharedThreadData     shared;
 
     uint64_t accumulate(std::atomic<uint64_t> Thread::*member) const {
 

@@ -27,7 +27,6 @@
 
 namespace Stockfish {
 
-TimeManagement Time;  // Our global time management object
 
 TimePoint TimeManagement::optimum() const { return optimumTime; }
 TimePoint TimeManagement::maximum() const { return maximumTime; }
