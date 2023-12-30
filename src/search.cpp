@@ -246,8 +246,8 @@ void MainThread::search() {
         tm.availableNodes += limits.inc[us] - Threads.nodes_searched();
 
     Thread* bestThread = this;
-    Skill   skill      = Skill(Options["Skill Level"],
-                        Options["UCI_Threads->limitstrength"] ? int(Options["UCI_Elo"]) : 0);
+    Skill   skill =
+      Skill(Options["Skill Level"], Options["UCI_LimitStrength"] ? int(Options["UCI_Elo"]) : 0);
 
     if (int(Options["MultiPV"]) == 1 && !limits.depth && !skill.enabled()
         && rootMoves[0].pv[0] != MOVE_NONE)
