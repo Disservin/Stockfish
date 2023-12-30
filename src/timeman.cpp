@@ -34,6 +34,10 @@ TimePoint TimeManagement::elapsed() const {
     return npmsec ? TimePoint(Threads.nodes_searched()) : now() - startTime;
 }
 
+TimeManagement::TimeManagement(Search::LimitsType& limits, Color us, int ply) {
+    init(limits, us, ply);
+}
+
 
 // Called at the beginning of the search and calculates
 // the bounds of time allowed for the current game ply. We currently support:

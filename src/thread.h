@@ -35,18 +35,6 @@
 
 namespace Stockfish {
 
-class SharedThreadData {
-   public:
-    SharedThreadData(const Search::LimitsType& lim, Color us, int ply) {
-        limits = lim;
-
-        time.init(limits, us, ply);
-    }
-
-    TimeManagement     time;
-    Search::LimitsType limits;
-};
-
 
 // Thread class keeps together all the thread-related stuff.
 class Thread {
@@ -66,6 +54,10 @@ class Thread {
     void         start_searching();
     void         wait_for_search_finished();
     size_t       id() const { return idx; }
+
+    Search::LimitsType limits;
+    TimeManagement     tm;
+
 
     size_t                pvIdx, pvLast;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
@@ -94,6 +86,7 @@ struct MainThread: public Thread {
     void search() override;
     void check_time();
 
+
     double           previousTimeReduction;
     Value            bestPreviousScore;
     Value            bestPreviousAverageScore;
@@ -103,27 +96,25 @@ struct MainThread: public Thread {
     std::atomic_bool ponder;
 };
 
-
 // ThreadPool struct handles all the threads-related stuff like init, starting,
 // parking and, most importantly, launching a thread. All the access to threads
 // is done through this class.
 class ThreadPool {
 
    public:
-    void start_thinking(Position&, StateListPtr&, bool = false);
+    void start_thinking(
+      Position&, StateListPtr&, const TimeManagement&, const Search::LimitsType&, bool = false);
     void clear();
     void set(size_t);
 
     MainThread* main() const { return static_cast<MainThread*>(threads.front()); }
     uint64_t    nodes_searched() const { return accumulate(&Thread::nodes); }
     uint64_t    tb_hits() const { return accumulate(&Thread::tbHits); }
-    TimePoint   elapsed() const { return shared.time.elapsed(); }
-    Thread*     get_best_thread() const;
-    void        start_searching();
-    void        wait_for_search_finished() const;
+    // TimePoint   elapsed() const { return limits.time.elapsed(); }
+    Thread* get_best_thread() const;
+    void    start_searching();
+    void    wait_for_search_finished() const;
 
-    // For easier access to shared data
-    SharedThreadData* operator->() { return &shared; }
 
     std::atomic_bool stop, increaseDepth;
 
@@ -137,7 +128,6 @@ class ThreadPool {
    private:
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
-    SharedThreadData     shared;
 
     uint64_t accumulate(std::atomic<uint64_t> Thread::*member) const {
 

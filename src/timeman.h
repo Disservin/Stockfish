@@ -31,6 +31,8 @@ namespace Stockfish {
 // the maximum available time, the game move number, and other parameters.
 class TimeManagement {
    public:
+    TimeManagement() = default;
+    TimeManagement(Search::LimitsType& limits, Color us, int ply);
     void      init(Search::LimitsType& limits, Color us, int ply);
     TimePoint optimum() const;
     TimePoint maximum() const;

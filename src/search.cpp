@@ -200,9 +200,9 @@ void Search::clear() {
 // command. It searches from the root position and outputs the "bestmove".
 void MainThread::search() {
 
-    if (Threads->limits.perft)
+    if (limits.perft)
     {
-        nodes = perft<true>(rootPos, Threads->limits.perft);
+        nodes = perft<true>(rootPos, limits.perft);
         sync_cout << "\nNodes searched: " << nodes << "\n" << sync_endl;
         return;
     }
@@ -230,7 +230,7 @@ void MainThread::search() {
     // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
     // until the GUI sends one of those commands.
 
-    while (!Threads.stop && (ponder || Threads->limits.infinite))
+    while (!Threads.stop && (ponder || limits.infinite))
     {}  // Busy wait for a stop or a ponder reset
 
     // Stop the threads if not already stopped (also raise the stop if
@@ -242,14 +242,14 @@ void MainThread::search() {
 
     // When playing in 'nodes as time' mode, subtract the searched nodes from
     // the available ones before exiting.
-    if (Threads->limits.npmsec)
-        Threads->time.availableNodes += Threads->limits.inc[us] - Threads.nodes_searched();
+    if (limits.npmsec)
+        tm.availableNodes += limits.inc[us] - Threads.nodes_searched();
 
     Thread* bestThread = this;
     Skill   skill      = Skill(Options["Skill Level"],
                         Options["UCI_Threads->limitstrength"] ? int(Options["UCI_Elo"]) : 0);
 
-    if (int(Options["MultiPV"]) == 1 && !Threads->limits.depth && !skill.enabled()
+    if (int(Options["MultiPV"]) == 1 && !limits.depth && !skill.enabled()
         && rootMoves[0].pv[0] != MOVE_NONE)
         bestThread = Threads.get_best_thread();
 
@@ -258,8 +258,7 @@ void MainThread::search() {
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth,
-                             Threads->time.elapsed())
+        sync_cout << UCI::pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed())
                   << sync_endl;
 
     sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
@@ -329,7 +328,7 @@ void Thread::search() {
 
     // Iterative deepening loop until requested to stop or the target depth is reached
     while (++rootDepth < MAX_PLY && !Threads.stop
-           && !(Threads->limits.depth && mainThread && rootDepth > Threads->limits.depth))
+           && !(limits.depth && mainThread && rootDepth > limits.depth))
     {
         // Age out PV variability metric
         if (mainThread)
@@ -399,8 +398,8 @@ void Thread::search() {
                 // When failing high/low give some update (without cluttering
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
-                    && Threads->time.elapsed() > 3000)
-                    sync_cout << UCI::pv(rootPos, rootDepth, Threads->time.elapsed()) << sync_endl;
+                    && tm.elapsed() > 3000)
+                    sync_cout << UCI::pv(rootPos, rootDepth, tm.elapsed()) << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
                 // re-search, otherwise exit the loop.
@@ -429,9 +428,8 @@ void Thread::search() {
             // Sort the PV lines searched so far and update the GUI
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
-            if (mainThread
-                && (Threads.stop || pvIdx + 1 == multiPV || Threads->time.elapsed() > 3000))
-                sync_cout << UCI::pv(rootPos, rootDepth, Threads->time.elapsed()) << sync_endl;
+            if (mainThread && (Threads.stop || pvIdx + 1 == multiPV || tm.elapsed() > 3000))
+                sync_cout << UCI::pv(rootPos, rootDepth, tm.elapsed()) << sync_endl;
         }
 
         if (!Threads.stop)
@@ -444,8 +442,8 @@ void Thread::search() {
         }
 
         // Have we found a "mate in x"?
-        if (Threads->limits.mate && bestValue >= VALUE_MATE_IN_MAX_PLY
-            && VALUE_MATE - bestValue <= 2 * Threads->limits.mate)
+        if (limits.mate && bestValue >= VALUE_MATE_IN_MAX_PLY
+            && VALUE_MATE - bestValue <= 2 * limits.mate)
             Threads.stop = true;
 
         if (!mainThread)
@@ -463,7 +461,7 @@ void Thread::search() {
         }
 
         // Do we have time for the next iteration? Can we stop searching now?
-        if (Threads->limits.use_time_management() && !Threads.stop && !mainThread->stopOnPonderhit)
+        if (limits.use_time_management() && !Threads.stop && !mainThread->stopOnPonderhit)
         {
             double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
                                   + 6 * (mainThread->iterValue[iterIdx] - bestValue))
@@ -475,15 +473,14 @@ void Thread::search() {
             double reduction = (1.4 + mainThread->previousTimeReduction) / (2.17 * timeReduction);
             double bestMoveInstability = 1 + 1.79 * totBestMoveChanges / Threads.size();
 
-            double totalTime =
-              Threads->time.optimum() * fallingEval * reduction * bestMoveInstability;
+            double totalTime = tm.optimum() * fallingEval * reduction * bestMoveInstability;
 
             // Cap used time in case of a single legal move for a better viewer experience
             if (rootMoves.size() == 1)
                 totalTime = std::min(500.0, totalTime);
 
             // Stop the search if we have exceeded the totalTime
-            if (Threads->time.elapsed() > totalTime)
+            if (tm.elapsed() > totalTime)
             {
                 // If we are allowed to ponder do not stop the search now but
                 // keep pondering until the GUI sends "ponderhit" or "stop".
@@ -492,7 +489,7 @@ void Thread::search() {
                 else
                     Threads.stop = true;
             }
-            else if (!mainThread->ponder && Threads->time.elapsed() > totalTime * 0.50)
+            else if (!mainThread->ponder && tm.elapsed() > totalTime * 0.50)
                 Threads.increaseDepth = false;
             else
                 Threads.increaseDepth = true;
@@ -948,7 +945,7 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && thisThread == Threads.main() && Threads.elapsed() > 3000)
+        if (rootNode && thisThread == Threads.main() && thisThread->tm.elapsed() > 3000)
             sync_cout << "info depth " << depth << " currmove "
                       << UCI::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + thisThread->pvIdx << sync_endl;
@@ -1839,12 +1836,12 @@ void MainThread::check_time() {
         return;
 
     // When using nodes, ensure checking rate is not lower than 0.1% of nodes
-    callsCnt = Threads->limits.nodes ? std::min(512, int(Threads->limits.nodes / 1024)) : 512;
+    callsCnt = limits.nodes ? std::min(512, int(limits.nodes / 1024)) : 512;
 
     static TimePoint lastInfoTime = now();
 
-    TimePoint elapsed = Threads->time.elapsed();
-    TimePoint tick    = Threads->limits.startTime + elapsed;
+    TimePoint elapsed = tm.elapsed();
+    TimePoint tick    = limits.startTime + elapsed;
 
     if (tick - lastInfoTime >= 1000)
     {
@@ -1856,10 +1853,9 @@ void MainThread::check_time() {
     if (ponder)
         return;
 
-    if ((Threads->limits.use_time_management()
-         && (elapsed > Threads->time.maximum() || stopOnPonderhit))
-        || (Threads->limits.movetime && elapsed >= Threads->limits.movetime)
-        || (Threads->limits.nodes && Threads.nodes_searched() >= uint64_t(Threads->limits.nodes)))
+    if ((limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
+        || (limits.movetime && elapsed >= limits.movetime)
+        || (limits.nodes && Threads.nodes_searched() >= uint64_t(limits.nodes)))
         Threads.stop = true;
 }
 
