@@ -33,18 +33,21 @@ class TimeManagement {
    public:
     TimeManagement() = default;
     TimeManagement(Search::LimitsType& limits, Color us, int ply);
-    void      init(Search::LimitsType& limits, Color us, int ply);
+
+    void      init(Color us, int ply);
+    
     TimePoint optimum() const;
     TimePoint maximum() const;
     TimePoint elapsed() const;
 
-    int64_t availableNodes;  // When in 'nodes as time' mode
+    int64_t availableNodes = 0;  // When in 'nodes as time' mode
 
    private:
+    Search::LimitsType limits;
+
     TimePoint startTime;
     TimePoint optimumTime;
     TimePoint maximumTime;
-    TimePoint npmsec;
 };
 
 }  // namespace Stockfish

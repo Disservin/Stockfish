@@ -31,11 +31,12 @@ namespace Stockfish {
 TimePoint TimeManagement::optimum() const { return optimumTime; }
 TimePoint TimeManagement::maximum() const { return maximumTime; }
 TimePoint TimeManagement::elapsed() const {
-    return npmsec ? TimePoint(Threads.nodes_searched()) : now() - startTime;
+    return limits.npmsec ? TimePoint(Threads.nodes_searched()) : now() - startTime;
 }
 
-TimeManagement::TimeManagement(Search::LimitsType& limits, Color us, int ply) {
-    init(limits, us, ply);
+TimeManagement::TimeManagement(Search::LimitsType& lim, Color us, int ply) :
+    limits(lim) {
+    init(us, ply);
 }
 
 
@@ -43,7 +44,7 @@ TimeManagement::TimeManagement(Search::LimitsType& limits, Color us, int ply) {
 // the bounds of time allowed for the current game ply. We currently support:
 //      1) x basetime (+ z increment)
 //      2) x moves in y seconds (+ z increment)
-void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
+void TimeManagement::init(Color us, int ply) {
     // If we have no time, no need to initialize TM, except for the start time,
     // which is used by movetime.
     startTime = limits.startTime;
