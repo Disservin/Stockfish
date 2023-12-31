@@ -21,11 +21,12 @@
 
 #include <string>
 
-#include "types.h"
-
 namespace Stockfish {
 
 class Position;
+
+enum Color : uint8_t;
+enum Value : int;
 
 namespace Eval {
 

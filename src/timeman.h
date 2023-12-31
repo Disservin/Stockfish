@@ -24,9 +24,10 @@
 #include "misc.h"
 #include "search.h"
 #include "thread.h"
-#include "types.h"
 
 namespace Stockfish {
+
+enum Color : uint8_t;
 
 // The TimeManagement class computes the optimal time to think depending on
 // the maximum available time, the game move number, and other parameters.
