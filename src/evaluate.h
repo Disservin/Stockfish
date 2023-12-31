@@ -20,6 +20,7 @@
 #define EVALUATE_H_INCLUDED
 
 #include <string>
+#include <cstdint>
 
 namespace Stockfish {
 
