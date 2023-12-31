@@ -120,25 +120,25 @@ constexpr int MAX_PLY   = 246;
 // any normal move destination square is always different from origin square
 // while MOVE_NONE and MOVE_NULL have the same origin and destination square.
 
-enum Move : int {
+enum Move : uint16_t {
     MOVE_NONE,
     MOVE_NULL = 65
 };
 
-enum MoveType {
+enum MoveType : uint16_t {
     NORMAL,
     PROMOTION  = 1 << 14,
     EN_PASSANT = 2 << 14,
     CASTLING   = 3 << 14
 };
 
-enum Color {
+enum Color : uint8_t {
     WHITE,
     BLACK,
     COLOR_NB = 2
 };
 
-enum CastlingRights {
+enum CastlingRights : uint8_t {
     NO_CASTLING,
     WHITE_OO,
     WHITE_OOO = WHITE_OO << 1,
@@ -154,14 +154,14 @@ enum CastlingRights {
     CASTLING_RIGHT_NB = 16
 };
 
-enum Bound {
+enum Bound : uint8_t {
     BOUND_NONE,
     BOUND_UPPER,
     BOUND_LOWER,
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
-enum Value : int {
+enum Value : int16_t {
     VALUE_ZERO     = 0,
     VALUE_DRAW     = 0,
     VALUE_NONE     = 32002,
@@ -186,13 +186,13 @@ enum Value : int {
 };
 
 // clang-format off
-enum PieceType {
+enum PieceType : uint8_t {
     NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING,
     ALL_PIECES = 0,
     PIECE_TYPE_NB = 8
 };
 
-enum Piece {
+enum Piece : uint8_t{
     NO_PIECE,
     W_PAWN = PAWN,     W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
     B_PAWN = PAWN + 8, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING,
