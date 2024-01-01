@@ -291,13 +291,14 @@ void Thread::search() {
     // (ss + 2) is needed for initialization of cutOffCnt and killers.
     Stack       stack[MAX_PLY + 10], *ss = stack + 7;
     Move        pv[MAX_PLY + 1];
-    Value       alpha, beta, delta;
+    Value       alpha, beta;
     Move        lastBestMove      = MOVE_NONE;
     Depth       lastBestMoveDepth = 0;
     MainThread* mainThread        = (this == Threads.main() ? Threads.main() : nullptr);
     double      timeReduction = 1, totBestMoveChanges = 0;
     Color       us      = rootPos.side_to_move();
     int         iterIdx = 0;
+    int         delta;
 
     std::memset(ss - 7, 0, 10 * sizeof(Stack));
     for (int i = 7; i > 0; --i)
@@ -370,10 +371,10 @@ void Thread::search() {
             selDepth = 0;
 
             // Reset aspiration window starting size
-            Value avg = rootMoves[pvIdx].averageScore;
-            delta     = Value(9) + int(avg) * avg / 14847;
-            alpha     = std::max(avg - delta, -VALUE_INFINITE);
-            beta      = std::min(avg + delta, VALUE_INFINITE);
+            int avg = rootMoves[pvIdx].averageScore;
+            delta   = 9 + int(avg) * avg / 14847;
+            alpha   = Value(std::max(avg - delta, int(-VALUE_INFINITE)));
+            beta    = Value(std::min(avg + delta, int(VALUE_INFINITE)));
 
             // Adjust optimism based on root move's averageScore (~4 Elo)
             optimism[us]  = 121 * avg / (std::abs(avg) + 109);
