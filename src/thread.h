@@ -62,7 +62,7 @@ class Thread {
     StateInfo             rootState;
     Search::RootMoves     rootMoves;
     Depth                 rootDepth, completedDepth;
-    Value                 rootDelta;
+    int                   rootDelta;
     Value                 rootSimpleEval;
     CounterMoveHistory    counterMoves;
     ButterflyHistory      mainHistory;

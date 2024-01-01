@@ -83,10 +83,9 @@ Value futility_margin(Depth d, bool noTtCutNode, bool improving) {
 // Reductions lookup table initialized at startup
 int Reductions[MAX_MOVES];  // [depth or moveNumber]
 
-Depth reduction(bool i, Depth d, int mn, Value delta, Value rootDelta) {
+Depth reduction(bool i, Depth d, int mn, int delta, int rootDelta) {
     int reductionScale = Reductions[d] * Reductions[mn];
-    return (reductionScale + 1346 - int(delta) * 896 / int(rootDelta)) / 1024
-         + (!i && reductionScale > 880);
+    return (reductionScale + 1346 - delta * 896 / rootDelta) / 1024 + (!i && reductionScale > 880);
 }
 
 constexpr int futility_move_count(bool improving, Depth depth) {
@@ -989,7 +988,7 @@ moves_loop:  // When in check, search starts here
         // Calculate new depth for this move
         newDepth = depth - 1;
 
-        Value delta = beta - alpha;
+        int delta = beta - alpha;
 
         Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
@@ -1018,7 +1017,7 @@ moves_loop:  // When in check, search starts here
                 }
 
                 // SEE based pruning for captures and checks (~11 Elo)
-                if (!pos.see_ge(move, Value(-187) * depth))
+                if (!pos.see_ge(move, -187 * depth))
                     continue;
             }
             else
@@ -1047,7 +1046,7 @@ moves_loop:  // When in check, search starts here
                 lmrDepth = std::max(lmrDepth, 0);
 
                 // Prune moves with negative SEE (~4 Elo)
-                if (!pos.see_ge(move, Value(-26 * lmrDepth * lmrDepth)))
+                if (!pos.see_ge(move, -26 * lmrDepth * lmrDepth))
                     continue;
             }
         }
@@ -1588,7 +1587,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
                 // If static eval is much lower than alpha and move is not winning material
                 // we can prune this move.
-                if (futilityBase <= alpha && !pos.see_ge(move, VALUE_ZERO + 1))
+                if (futilityBase <= alpha && !pos.see_ge(move, 1))
                 {
                     bestValue = std::max(bestValue, futilityBase);
                     continue;
@@ -1615,7 +1614,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                 continue;
 
             // Do not search moves with bad enough SEE values (~5 Elo)
-            if (!pos.see_ge(move, Value(-77)))
+            if (!pos.see_ge(move, -77))
                 continue;
         }
 
