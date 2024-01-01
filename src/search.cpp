@@ -918,7 +918,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                     if (std::abs(std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY
                                    ? value - (probCutBeta - beta)
                                    : value)
-                        >= ((2 << 16) - 1))
+                        >= VALUE_NONE)
                     {
                         std::cout << "probCut value: " << value << std::endl;
                     }
@@ -1592,8 +1592,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
                 futilityValue = futilityBase + PieceValue[pos.piece_on(to_sq(move))];
 
-                if (std::abs(futilityValue) >= ((2 << 16) - 1)
-                    || std::abs(futilityBase) >= ((2 << 16) - 1))
+                if (std::abs(futilityValue) >= VALUE_NONE || std::abs(futilityBase) >= VALUE_NONE)
                 {
                     std::cout << "futilityValue: " << futilityValue << std::endl;
                 }

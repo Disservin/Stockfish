@@ -154,6 +154,12 @@ Value Eval::simple_eval(const Position& pos, Color c) {
 
     assert(std::abs(val) < VALUE_NONE);
 
+    if (std::abs(val) >= VALUE_NONE)
+    {
+        std::cout << "info string WARNING: simple_eval() overflowed, returning "
+                  << (val > 0 ? "VALUE_MAX" : "VALUE_MIN") << std::endl;
+    }
+
     return Value(val);
 }
 

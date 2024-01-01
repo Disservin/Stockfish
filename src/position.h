@@ -159,7 +159,7 @@ class Position {
     bool    has_repeated() const;
     int     rule50_count() const;
     Value   non_pawn_material(Color c) const;
-    Value   non_pawn_material() const;
+    int     non_pawn_material() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -301,7 +301,7 @@ inline Key Position::material_key() const { return st->materialKey; }
 
 inline Value Position::non_pawn_material(Color c) const { return st->nonPawnMaterial[c]; }
 
-inline Value Position::non_pawn_material() const {
+inline int Position::non_pawn_material() const {
     return non_pawn_material(WHITE) + non_pawn_material(BLACK);
 }
 
