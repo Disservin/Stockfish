@@ -60,7 +60,6 @@ class SqrClippedReLU {
 
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
-
 #if defined(USE_SSE2)
         constexpr IndexType NumChunks = InputDimensions / 16;
 

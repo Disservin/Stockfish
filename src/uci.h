@@ -51,7 +51,6 @@ using OptionsMap = std::map<std::string, Option, CaseInsensitiveLess>;
 
 // The Option class implements each option as specified by the UCI protocol
 class Option {
-
     using OnChange = void (*)(const Option&);
 
    public:

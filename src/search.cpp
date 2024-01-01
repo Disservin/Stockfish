@@ -160,7 +160,6 @@ void  update_all_stats(const Position& pos,
 // to the given depth are generated and counted, and the sum is returned.
 template<bool Root>
 uint64_t perft(Position& pos, Depth depth) {
-
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
@@ -189,7 +188,6 @@ uint64_t perft(Position& pos, Depth depth) {
 
 // Called at startup to initialize various lookup tables
 void Search::init() {
-
     for (int i = 1; i < MAX_MOVES; ++i)
         Reductions[i] = int((20.37 + std::log(Threads.size()) / 2) * std::log(i));
 }
@@ -197,7 +195,6 @@ void Search::init() {
 
 // Resets search state to its initial value
 void Search::clear() {
-
     Threads.main()->wait_for_search_finished();
 
     Time.availableNodes = 0;
@@ -210,7 +207,6 @@ void Search::clear() {
 // Called when the program receives the UCI 'go'
 // command. It searches from the root position and outputs the "bestmove".
 void MainThread::search() {
-
     if (Limits.perft)
     {
         nodes = perft<true>(rootPos, Limits.perft);
@@ -286,7 +282,6 @@ void MainThread::search() {
 // repeatedly with increasing depth until the allocated thinking time has been
 // consumed, the user stops the search, or the maximum search depth is reached.
 void Thread::search() {
-
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
     // (ss + 2) is needed for initialization of cutOffCnt and killers.
@@ -527,7 +522,6 @@ namespace {
 // Main search function for both PV and non-PV nodes
 template<NodeType nodeType>
 Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
-
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
 
@@ -1417,7 +1411,6 @@ moves_loop:  // When in check, search starts here
 // (~155 Elo)
 template<NodeType nodeType>
 Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
-
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
 
@@ -1686,7 +1679,6 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 // to "plies to mate from the current position". Standard scores are unchanged.
 // The function is called before storing a value in the transposition table.
 Value value_to_tt(Value v, int ply) {
-
     assert(v != VALUE_NONE);
 
     return v >= VALUE_TB_WIN_IN_MAX_PLY ? v + ply : v <= VALUE_TB_LOSS_IN_MAX_PLY ? v - ply : v;
@@ -1699,7 +1691,6 @@ Value value_to_tt(Value v, int ply) {
 // However, to avoid potentially false mate or TB scores related to the 50 moves rule
 // and the graph history interaction, we return the highest non-TB score instead.
 Value value_from_tt(Value v, int ply, int r50c) {
-
     if (v == VALUE_NONE)
         return VALUE_NONE;
 
@@ -1737,7 +1728,6 @@ Value value_from_tt(Value v, int ply, int r50c) {
 
 // Adds current move and appends child pv[]
 void update_pv(Move* pv, Move move, const Move* childPv) {
-
     for (*pv++ = move; childPv && *childPv != MOVE_NONE;)
         *pv++ = *childPv++;
     *pv = MOVE_NONE;
@@ -1756,7 +1746,6 @@ void update_all_stats(const Position& pos,
                       Move*           capturesSearched,
                       int             captureCount,
                       Depth           depth) {
-
     Color                  us             = pos.side_to_move();
     Thread*                thisThread     = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
@@ -1817,7 +1806,6 @@ void update_all_stats(const Position& pos,
 // Updates histories of the move pairs formed
 // by moves at ply -1, -2, -3, -4, and -6 with current move.
 void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
-
     for (int i : {1, 2, 3, 4, 6})
     {
         // Only update the first 2 continuation histories if we are in check
@@ -1831,7 +1819,6 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 // Updates move sorting heuristics
 void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
-
     // Update killers
     if (ss->killers[0] != move)
     {
@@ -1855,7 +1842,6 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
 // When playing with strength handicap, choose the best move among a set of RootMoves
 // using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
 Move Skill::pick_best(size_t multiPV) {
-
     const RootMoves& rootMoves = Threads.main()->rootMoves;
     static PRNG      rng(now());  // PRNG sequence should be non-deterministic
 
@@ -1891,7 +1877,6 @@ Move Skill::pick_best(size_t multiPV) {
 // Used to print debug info and, more importantly,
 // to detect when we are out of available time and thus stop the search.
 void MainThread::check_time() {
-
     if (--callsCnt > 0)
         return;
 
@@ -1923,7 +1908,6 @@ void MainThread::check_time() {
 // Formats PV information according to the UCI protocol. UCI requires
 // that all (if any) unsearched PV lines are sent using a previous search score.
 string UCI::pv(const Position& pos, Depth depth) {
-
     std::stringstream ss;
     TimePoint         elapsed       = Time.elapsed() + 1;
     const RootMoves&  rootMoves     = pos.this_thread()->rootMoves;
@@ -1979,7 +1963,6 @@ string UCI::pv(const Position& pos, Depth depth) {
 // We try hard to have a ponder move to return to the GUI,
 // otherwise in case of 'ponder on' we have nothing to think about.
 bool RootMove::extract_ponder_from_tt(Position& pos) {
-
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
@@ -2005,7 +1988,6 @@ bool RootMove::extract_ponder_from_tt(Position& pos) {
 }
 
 void Tablebases::rank_root_moves(Position& pos, Search::RootMoves& rootMoves) {
-
     RootInTB           = false;
     UseRule50          = bool(Options["Syzygy50MoveRule"]);
     ProbeDepth         = int(Options["SyzygyProbeDepth"]);

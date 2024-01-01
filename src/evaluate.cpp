@@ -66,7 +66,6 @@ std::string currentEvalFileName = "None";
 // in the engine directory. Distro packagers may define the DEFAULT_NNUE_DIRECTORY
 // variable to have the engine search in a special directory in their distro.
 void NNUE::init() {
-
     std::string eval_file = std::string(Options["EvalFile"]);
     if (eval_file.empty())
         eval_file = EvalFileDefaultName;
@@ -113,14 +112,12 @@ void NNUE::init() {
 
 // Verifies that the last net used was loaded successfully
 void NNUE::verify() {
-
     std::string eval_file = std::string(Options["EvalFile"]);
     if (eval_file.empty())
         eval_file = EvalFileDefaultName;
 
     if (currentEvalFileName != eval_file)
     {
-
         std::string msg1 =
           "Network evaluation parameters compatible with the engine must be available.";
         std::string msg2 = "The network file " + eval_file + " was not loaded successfully.";
@@ -157,7 +154,6 @@ Value Eval::simple_eval(const Position& pos, Color c) {
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
 Value Eval::evaluate(const Position& pos) {
-
     assert(!pos.checkers());
 
     Value v;
@@ -200,7 +196,6 @@ Value Eval::evaluate(const Position& pos) {
 // descriptions and values of each evaluation term. Useful for debugging.
 // Trace scores are from white's point of view
 std::string Eval::trace(Position& pos) {
-
     if (pos.checkers())
         return "Final evaluation: none (in check)";
 

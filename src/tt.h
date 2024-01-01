@@ -38,7 +38,6 @@ namespace Stockfish {
 // value      16 bit
 // eval value 16 bit
 struct TTEntry {
-
     Move  move() const { return Move(move16); }
     Value value() const { return Value(value16); }
     Value eval() const { return Value(eval16); }
@@ -65,7 +64,6 @@ struct TTEntry {
 // divide the size of a cache line for best performance, as the cacheline is
 // prefetched when possible.
 class TranspositionTable {
-
     static constexpr int ClusterSize = 3;
 
     struct Cluster {

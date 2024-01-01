@@ -198,7 +198,6 @@ class AffineTransformSparseInput {
     }
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
-
 #if (USE_SSSE3 | (USE_NEON >= 8))
     #if defined(USE_AVX512)
         using invec_t  = __m512i;

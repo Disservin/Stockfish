@@ -199,7 +199,6 @@ static constexpr int NumPsqtRegs =
 
 // Input feature converter
 class FeatureTransformer {
-
    private:
     // Number of output dimensions for one side
     static constexpr IndexType HalfDimensions = TransformedFeatureDimensions;
@@ -229,7 +228,6 @@ class FeatureTransformer {
 
     // Read network parameters
     bool read_parameters(std::istream& stream) {
-
         read_leb_128<BiasType>(stream, biases, HalfDimensions);
         read_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
         read_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
@@ -239,7 +237,6 @@ class FeatureTransformer {
 
     // Write network parameters
     bool write_parameters(std::ostream& stream) const {
-
         write_leb_128<BiasType>(stream, biases, HalfDimensions);
         write_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
         write_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
@@ -656,7 +653,6 @@ class FeatureTransformer {
 
     template<Color Perspective>
     void hint_common_access_for_perspective(const Position& pos) const {
-
         // Works like update_accumulator, but performs less work.
         // Updates ONLY the accumulator for pos.
 
@@ -682,7 +678,6 @@ class FeatureTransformer {
 
     template<Color Perspective>
     void update_accumulator(const Position& pos) const {
-
         auto [oldest_st, next] = try_find_computed_accumulator<Perspective>(pos);
 
         if (oldest_st->accumulator.computed[Perspective])

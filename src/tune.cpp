@@ -39,7 +39,6 @@ const UCI::Option*                LastOption = nullptr;
 static std::map<std::string, int> TuneResults;
 
 string Tune::next(string& names, bool pop) {
-
     string name;
 
     do
@@ -58,13 +57,11 @@ string Tune::next(string& names, bool pop) {
 }
 
 static void on_tune(const UCI::Option& o) {
-
     if (!Tune::update_on_last || LastOption == &o)
         Tune::read_options();
 }
 
 static void make_option(const string& n, int v, const SetRange& r) {
-
     // Do not generate option when there is nothing to tune (ie. min = max)
     if (r(v).first == r(v).second)
         return;

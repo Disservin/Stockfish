@@ -54,14 +54,12 @@ namespace Detail {
 // Initialize the evaluation function parameters
 template<typename T>
 void initialize(AlignedPtr<T>& pointer) {
-
     pointer.reset(reinterpret_cast<T*>(std_aligned_alloc(alignof(T), sizeof(T))));
     std::memset(pointer.get(), 0, sizeof(T));
 }
 
 template<typename T>
 void initialize(LargePagePtr<T>& pointer) {
-
     static_assert(alignof(T) <= 4096,
                   "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
     pointer.reset(reinterpret_cast<T*>(aligned_large_pages_alloc(sizeof(T))));
@@ -71,7 +69,6 @@ void initialize(LargePagePtr<T>& pointer) {
 // Read evaluation function parameters
 template<typename T>
 bool read_parameters(std::istream& stream, T& reference) {
-
     std::uint32_t header;
     header = read_little_endian<std::uint32_t>(stream);
     if (!stream || header != T::get_hash_value())
@@ -82,7 +79,6 @@ bool read_parameters(std::istream& stream, T& reference) {
 // Write evaluation function parameters
 template<typename T>
 bool write_parameters(std::ostream& stream, const T& reference) {
-
     write_little_endian<std::uint32_t>(stream, T::get_hash_value());
     return reference.write_parameters(stream);
 }
@@ -92,7 +88,6 @@ bool write_parameters(std::ostream& stream, const T& reference) {
 
 // Initialize the evaluation function parameters
 static void initialize() {
-
     Detail::initialize(featureTransformer);
     for (std::size_t i = 0; i < LayerStacks; ++i)
         Detail::initialize(network[i]);
@@ -123,7 +118,6 @@ static bool write_header(std::ostream& stream, std::uint32_t hashValue, const st
 
 // Read network parameters
 static bool read_parameters(std::istream& stream) {
-
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return false;
@@ -139,7 +133,6 @@ static bool read_parameters(std::istream& stream) {
 
 // Write network parameters
 static bool write_parameters(std::ostream& stream) {
-
     if (!write_header(stream, HashValue, netDescription))
         return false;
     if (!Detail::write_parameters(stream, *featureTransformer))
@@ -156,7 +149,6 @@ void hint_common_parent_position(const Position& pos) {
 
 // Evaluation function. Perform differential calculation.
 Value evaluate(const Position& pos, bool adjusted, int* complexity) {
-
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
 
@@ -199,7 +191,6 @@ struct NnueEvalTrace {
 };
 
 static NnueEvalTrace trace_evaluate(const Position& pos) {
-
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
     constexpr uint64_t alignment = CacheLineSize;
@@ -236,7 +227,6 @@ constexpr std::string_view PieceToChar(" PNBRQK  pnbrqk");
 // Converts a Value into (centi)pawns and writes it in a buffer.
 // The buffer must have capacity for at least 5 chars.
 static void format_cp_compact(Value v, char* buffer) {
-
     buffer[0] = (v < 0 ? '-' : v > 0 ? '+' : ' ');
 
     int cp = std::abs(UCI::to_cp(v));
@@ -272,7 +262,6 @@ static void format_cp_compact(Value v, char* buffer) {
 
 // Converts a Value into pawns, always keeping two decimals
 static void format_cp_aligned_dot(Value v, std::stringstream& stream) {
-
     const double pawns = std::abs(0.01 * UCI::to_cp(v));
 
     stream << (v < 0   ? '-'
@@ -285,7 +274,6 @@ static void format_cp_aligned_dot(Value v, std::stringstream& stream) {
 // Returns a string with the value of each piece on a board,
 // and a table for (PSQT, Layers) values bucket by bucket.
 std::string trace(Position& pos) {
-
     std::stringstream ss;
 
     char board[3 * 8 + 1][8 * 8 + 2];
@@ -380,7 +368,6 @@ std::string trace(Position& pos) {
 
 // Load eval, from a file stream or a memory stream
 bool load_eval(std::string name, std::istream& stream) {
-
     initialize();
     fileName = name;
     return read_parameters(stream);
@@ -388,7 +375,6 @@ bool load_eval(std::string name, std::istream& stream) {
 
 // Save eval, to a file stream or a memory stream
 bool save_eval(std::ostream& stream) {
-
     if (fileName.empty())
         return false;
 
@@ -397,7 +383,6 @@ bool save_eval(std::ostream& stream) {
 
 // Save eval, to a file given by its name
 bool save_eval(const std::optional<std::string>& filename) {
-
     std::string actualFilename;
     std::string msg;
 

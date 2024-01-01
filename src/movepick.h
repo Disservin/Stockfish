@@ -59,7 +59,6 @@ inline int pawn_structure_index(const Position& pos) {
 // tables at caller sites as simple multi-dim arrays.
 template<typename T, int D>
 class StatsEntry {
-
     T entry;
 
    public:
@@ -88,7 +87,6 @@ struct Stats: public std::array<Stats<T, D, Sizes...>, Size> {
     using stats = Stats<T, D, Size, Sizes...>;
 
     void fill(const T& v) {
-
         // For standard-layout 'this' points to the first struct member
         assert(std::is_standard_layout_v<stats>);
 
@@ -146,7 +144,6 @@ using CorrectionHistory =
 // alpha-beta algorithm, MovePicker attempts to return the moves which are most
 // likely to get a cut-off first.
 class MovePicker {
-
     enum PickType {
         Next,
         Best

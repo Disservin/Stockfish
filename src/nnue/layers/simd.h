@@ -60,7 +60,6 @@ namespace Stockfish::Simd {
     */
 [[maybe_unused]] static __m512i
 m512_hadd128x16_interleave(__m512i sum0, __m512i sum1, __m512i sum2, __m512i sum3) {
-
     __m512i sum01a = _mm512_unpacklo_epi32(sum0, sum1);
     __m512i sum01b = _mm512_unpackhi_epi32(sum0, sum1);
 
@@ -77,7 +76,6 @@ m512_hadd128x16_interleave(__m512i sum0, __m512i sum1, __m512i sum2, __m512i sum
 }
 
 [[maybe_unused]] static void m512_add_dpbusd_epi32(__m512i& acc, __m512i a, __m512i b) {
-
     #if defined(USE_VNNI)
     acc = _mm512_dpbusd_epi32(acc, a, b);
     #else
@@ -89,7 +87,6 @@ m512_hadd128x16_interleave(__m512i sum0, __m512i sum1, __m512i sum2, __m512i sum
 
 [[maybe_unused]] static void
 m512_add_dpbusd_epi32x2(__m512i& acc, __m512i a0, __m512i b0, __m512i a1, __m512i b1) {
-
     #if defined(USE_VNNI)
     acc = _mm512_dpbusd_epi32(acc, a0, b0);
     acc = _mm512_dpbusd_epi32(acc, a1, b1);
@@ -114,7 +111,6 @@ m512_add_dpbusd_epi32x2(__m512i& acc, __m512i a0, __m512i b0, __m512i a1, __m512
 }
 
 [[maybe_unused]] static void m256_add_dpbusd_epi32(__m256i& acc, __m256i a, __m256i b) {
-
     #if defined(USE_VNNI)
     acc = _mm256_dpbusd_epi32(acc, a, b);
     #else
@@ -126,7 +122,6 @@ m512_add_dpbusd_epi32x2(__m512i& acc, __m512i a0, __m512i b0, __m512i a1, __m512
 
 [[maybe_unused]] static void
 m256_add_dpbusd_epi32x2(__m256i& acc, __m256i a0, __m256i b0, __m256i a1, __m256i b1) {
-
     #if defined(USE_VNNI)
     acc = _mm256_dpbusd_epi32(acc, a0, b0);
     acc = _mm256_dpbusd_epi32(acc, a1, b1);
@@ -150,7 +145,6 @@ m256_add_dpbusd_epi32x2(__m256i& acc, __m256i a0, __m256i b0, __m256i a1, __m256
 }
 
 [[maybe_unused]] static void m128_add_dpbusd_epi32(__m128i& acc, __m128i a, __m128i b) {
-
     __m128i product0 = _mm_maddubs_epi16(a, b);
     product0         = _mm_madd_epi16(product0, _mm_set1_epi16(1));
     acc              = _mm_add_epi32(acc, product0);
@@ -158,7 +152,6 @@ m256_add_dpbusd_epi32x2(__m256i& acc, __m256i a0, __m256i b0, __m256i a1, __m256
 
 [[maybe_unused]] static void
 m128_add_dpbusd_epi32x2(__m128i& acc, __m128i a0, __m128i b0, __m128i a1, __m128i b1) {
-
     __m128i product0 = _mm_maddubs_epi16(a0, b0);
     __m128i product1 = _mm_maddubs_epi16(a1, b1);
     product0         = _mm_madd_epi16(product0, _mm_set1_epi16(1));
@@ -172,14 +165,12 @@ m128_add_dpbusd_epi32x2(__m128i& acc, __m128i a0, __m128i b0, __m128i a1, __m128
 
 [[maybe_unused]] static void dotprod_m128_add_dpbusd_epi32x2(
   int32x4_t& acc, int8x16_t a0, int8x16_t b0, int8x16_t a1, int8x16_t b1) {
-
     acc = vdotq_s32(acc, a0, b0);
     acc = vdotq_s32(acc, a1, b1);
 }
 
 [[maybe_unused]] static void
 dotprod_m128_add_dpbusd_epi32(int32x4_t& acc, int8x16_t a, int8x16_t b) {
-
     acc = vdotq_s32(acc, a, b);
 }
 #endif
@@ -200,7 +191,6 @@ dotprod_m128_add_dpbusd_epi32(int32x4_t& acc, int8x16_t a, int8x16_t b) {
 
 [[maybe_unused]] static void
 neon_m128_add_dpbusd_epi32x2(int32x4_t& acc, int8x8_t a0, int8x8_t b0, int8x8_t a1, int8x8_t b1) {
-
     int16x8_t product = vmull_s8(a0, b0);
     product           = vmlal_s8(product, a1, b1);
     acc               = vpadalq_s16(acc, product);
@@ -209,7 +199,6 @@ neon_m128_add_dpbusd_epi32x2(int32x4_t& acc, int8x8_t a0, int8x8_t b0, int8x8_t 
 
 #if USE_NEON >= 8
 [[maybe_unused]] static void neon_m128_add_dpbusd_epi32(int32x4_t& acc, int8x16_t a, int8x16_t b) {
-
     int16x8_t product0 = vmull_s8(vget_low_s8(a), vget_low_s8(b));
     int16x8_t product1 = vmull_high_s8(a, b);
     int16x8_t sum      = vpaddq_s16(product0, product1);

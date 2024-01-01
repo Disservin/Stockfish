@@ -59,7 +59,6 @@ ExtMove* generate(const Position& pos, ExtMove* moveList);
 // the lower level generate() function.
 template<GenType T>
 struct MoveList {
-
     explicit MoveList(const Position& pos) :
         last(generate<T>(pos, moveList)) {}
     const ExtMove* begin() const { return moveList; }

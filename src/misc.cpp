@@ -97,7 +97,6 @@ struct Tie: public std::streambuf {  // MSVC requires split streambuf for cin an
     std::streambuf *buf, *logBuf;
 
     int log(int c, const char* prefix) {
-
         static int last = '\n';  // Single log file
 
         if (last == '\n')
@@ -108,7 +107,6 @@ struct Tie: public std::streambuf {  // MSVC requires split streambuf for cin an
 };
 
 class Logger {
-
     Logger() :
         in(std::cin.rdbuf(), file.rdbuf()),
         out(std::cout.rdbuf(), file.rdbuf()) {}
@@ -119,7 +117,6 @@ class Logger {
 
    public:
     static void start(const std::string& fname) {
-
         static Logger l;
 
         if (l.file.is_open())
@@ -193,7 +190,6 @@ std::string engine_info(bool to_uci) {
 
 // Returns a string trying to describe the compiler we use
 std::string compiler_info() {
-
 #define make_version_string(major, minor, patch) \
     stringify(major) "." stringify(minor) "." stringify(patch)
 
@@ -329,27 +325,23 @@ DebugInfo<6> correl[MaxDebugSlots];
 }  // namespace
 
 void dbg_hit_on(bool cond, int slot) {
-
     ++hit[slot][0];
     if (cond)
         ++hit[slot][1];
 }
 
 void dbg_mean_of(int64_t value, int slot) {
-
     ++mean[slot][0];
     mean[slot][1] += value;
 }
 
 void dbg_stdev_of(int64_t value, int slot) {
-
     ++stdev[slot][0];
     stdev[slot][1] += value;
     stdev[slot][2] += value * value;
 }
 
 void dbg_correl_of(int64_t value1, int64_t value2, int slot) {
-
     ++correl[slot][0];
     correl[slot][1] += value1;
     correl[slot][2] += value1 * value1;
@@ -359,7 +351,6 @@ void dbg_correl_of(int64_t value1, int64_t value2, int slot) {
 }
 
 void dbg_print() {
-
     int64_t n;
     auto    E   = [&n](int64_t x) { return double(x) / n; };
     auto    sqr = [](double x) { return x * x; };
@@ -396,7 +387,6 @@ void dbg_print() {
 // Used to serialize access to std::cout
 // to avoid multiple threads writing at the same time.
 std::ostream& operator<<(std::ostream& os, SyncCout sc) {
-
     static std::mutex m;
 
     if (sc == IO_LOCK)
@@ -435,7 +425,6 @@ void prefetch(void* addr) {
 // does not guarantee the availability of aligned_alloc(). Memory allocated with
 // std_aligned_alloc() must be freed with std_aligned_free().
 void* std_aligned_alloc(size_t alignment, size_t size) {
-
 #if defined(POSIXALIGNEDALLOC)
     void* mem;
     return posix_memalign(&mem, alignment, size) ? nullptr : mem;
@@ -449,7 +438,6 @@ void* std_aligned_alloc(size_t alignment, size_t size) {
 }
 
 void std_aligned_free(void* ptr) {
-
 #if defined(POSIXALIGNEDALLOC)
     free(ptr);
 #elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
@@ -466,7 +454,6 @@ void std_aligned_free(void* ptr) {
 #if defined(_WIN32)
 
 static void* aligned_large_pages_alloc_windows([[maybe_unused]] size_t allocSize) {
-
     #if !defined(_WIN64)
     return nullptr;
     #else
@@ -537,7 +524,6 @@ static void* aligned_large_pages_alloc_windows([[maybe_unused]] size_t allocSize
 }
 
 void* aligned_large_pages_alloc(size_t allocSize) {
-
     // Try to allocate large pages
     void* mem = aligned_large_pages_alloc_windows(allocSize);
 
@@ -575,7 +561,6 @@ void* aligned_large_pages_alloc(size_t allocSize) {
 #if defined(_WIN32)
 
 void aligned_large_pages_free(void* mem) {
-
     if (mem && !VirtualFree(mem, 0, MEM_RELEASE))
     {
         DWORD err = GetLastError();
@@ -604,7 +589,6 @@ void bindThisThread(size_t) {}
 // API and returns the best node id for the thread with index idx. Original
 // code from Texel by Peter Österlund.
 static int best_node(size_t idx) {
-
     int   threads      = 0;
     int   nodes        = 0;
     int   cores        = 0;
@@ -672,7 +656,6 @@ static int best_node(size_t idx) {
 
 // Sets the group affinity of the current thread
 void bindThisThread(size_t idx) {
-
     // Use only local variables to be thread-safe
     int node = best_node(idx);
 

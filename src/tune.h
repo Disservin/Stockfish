@@ -76,7 +76,6 @@ struct SetRange {
 // order in which have been defined.
 
 class Tune {
-
     using PostUpdate = void();  // Post-update function
 
     Tune() { read_results(); }
@@ -98,7 +97,6 @@ class Tune {
 
     template<typename T>
     struct Entry: public EntryBase {
-
         static_assert(!std::is_const_v<T>, "Parameter cannot be const!");
 
         static_assert(std::is_same_v<T, int> || std::is_same_v<T, Value>

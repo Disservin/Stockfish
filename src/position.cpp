@@ -63,7 +63,6 @@ constexpr Piece Pieces[] = {W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING,
 
 // Returns an ASCII representation of the position
 std::ostream& operator<<(std::ostream& os, const Position& pos) {
-
     os << "\n +---+---+---+---+---+---+---+---+\n";
 
     for (Rank r = RANK_8; r >= RANK_1; --r)
@@ -115,7 +114,6 @@ Move cuckooMove[8192];
 
 // Initializes at startup the various arrays used to compute hash keys
 void Position::init() {
-
     PRNG rng(1070372);
 
     for (Piece pc : Pieces)
@@ -299,7 +297,6 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
 // Helper function used to set castling
 // rights given the corresponding color and the rook starting square.
 void Position::set_castling_right(Color c, Square rfrom) {
-
     Square         kfrom = square<KING>(c);
     CastlingRights cr    = c & (kfrom < rfrom ? KING_SIDE : QUEEN_SIDE);
 
@@ -317,7 +314,6 @@ void Position::set_castling_right(Color c, Square rfrom) {
 
 // Sets king attacks to detect if a move gives check
 void Position::set_check_info() const {
-
     update_slider_blockers(WHITE);
     update_slider_blockers(BLACK);
 
@@ -336,7 +332,6 @@ void Position::set_check_info() const {
 // data that once computed is updated incrementally as moves are made.
 // The function is only used when a new position is set up
 void Position::set_state() const {
-
     st->key = st->materialKey  = 0;
     st->pawnKey                = Zobrist::noPawns;
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
@@ -374,7 +369,6 @@ void Position::set_state() const {
 // Overload to initialize the position object with the given endgame code string
 // like "KBPKN". It's mainly a helper to get the material key out of an endgame code.
 Position& Position::set(const string& code, Color c, StateInfo* si) {
-
     assert(code[0] == 'K');
 
     string sides[] = {code.substr(code.find('K', 1)),                                // Weak
@@ -395,7 +389,6 @@ Position& Position::set(const string& code, Color c, StateInfo* si) {
 // Returns a FEN representation of the position. In case of
 // Chess960 the Shredder-FEN notation is used. This is mainly a debugging function.
 string Position::fen() const {
-
     int                emptyCnt;
     std::ostringstream ss;
 
@@ -444,7 +437,6 @@ string Position::fen() const {
 // which store respectively the pieces preventing king of color c from being in check
 // and the slider pieces of color ~c pinning pieces of color c to the king.
 void Position::update_slider_blockers(Color c) const {
-
     Square ksq = square<KING>(c);
 
     st->blockersForKing[c] = 0;
@@ -474,7 +466,6 @@ void Position::update_slider_blockers(Color c) const {
 // Computes a bitboard of all pieces which attack a given square.
 // Slider attacks use the occupied bitboard to indicate occupancy.
 Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
-
     return (pawn_attacks_bb(BLACK, s) & pieces(WHITE, PAWN))
          | (pawn_attacks_bb(WHITE, s) & pieces(BLACK, PAWN))
          | (attacks_bb<KNIGHT>(s) & pieces(KNIGHT))
@@ -486,7 +477,6 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 
 // Tests whether a pseudo-legal move is legal
 bool Position::legal(Move m) const {
-
     assert(is_ok(m));
 
     Color  us   = sideToMove;
@@ -547,7 +537,6 @@ bool Position::legal(Move m) const {
 // pseudo-legal. It is used to validate moves from TT that can be corrupted
 // due to SMP concurrent access or hash position key aliasing.
 bool Position::pseudo_legal(const Move m) const {
-
     Color  us   = sideToMove;
     Square from = from_sq(m);
     Square to   = to_sq(m);
@@ -614,7 +603,6 @@ bool Position::pseudo_legal(const Move m) const {
 
 // Tests whether a pseudo-legal move gives a check
 bool Position::gives_check(Move m) const {
-
     assert(is_ok(m));
     assert(color_of(moved_piece(m)) == sideToMove);
 
@@ -663,7 +651,6 @@ bool Position::gives_check(Move m) const {
 // to a StateInfo object. The move is assumed to be legal. Pseudo-legal
 // moves should be filtered out before this function is called.
 void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
-
     assert(is_ok(m));
     assert(&newSt != st);
 
@@ -865,7 +852,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 // Unmakes a move. When it returns, the position should
 // be restored to exactly the same state as before the move was made.
 void Position::undo_move(Move m) {
-
     assert(is_ok(m));
 
     sideToMove = ~sideToMove;
@@ -929,7 +915,6 @@ void Position::undo_move(Move m) {
 // tricky in Chess960 where from/to squares can overlap.
 template<bool Do>
 void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Square& rto) {
-
     bool kingSide = to > from;
     rfrom         = to;  // Castling is encoded as "king captures friendly rook"
     rto           = relative_square(us, kingSide ? SQ_F1 : SQ_D1);
@@ -960,7 +945,6 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
 // Used to do a "null move": it flips
 // the side to move without executing any move on the board.
 void Position::do_null_move(StateInfo& newSt) {
-
     assert(!checkers());
     assert(&newSt != st);
 
@@ -998,7 +982,6 @@ void Position::do_null_move(StateInfo& newSt) {
 
 // Must be used to undo a "null move"
 void Position::undo_null_move() {
-
     assert(!checkers());
 
     st         = st->previous;
@@ -1010,7 +993,6 @@ void Position::undo_null_move() {
 // for speculative prefetch. It doesn't recognize special moves like castling,
 // en passant and promotions.
 Key Position::key_after(Move m) const {
-
     Square from     = from_sq(m);
     Square to       = to_sq(m);
     Piece  pc       = piece_on(from);
@@ -1030,7 +1012,6 @@ Key Position::key_after(Move m) const {
 // value of move is greater or equal to the given threshold. We'll use an
 // algorithm similar to alpha-beta pruning with a null window.
 bool Position::see_ge(Move m, Value threshold) const {
-
     assert(is_ok(m));
 
     // Only deal with normal moves, assume others pass a simple SEE
@@ -1133,7 +1114,6 @@ bool Position::see_ge(Move m, Value threshold) const {
 // Tests whether the position is drawn by 50-move rule
 // or by repetition. It does not detect stalemates.
 bool Position::is_draw(int ply) const {
-
     if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
         return true;
 
@@ -1146,7 +1126,6 @@ bool Position::is_draw(int ply) const {
 // Tests whether there has been at least one repetition
 // of positions since the last capture or pawn move.
 bool Position::has_repeated() const {
-
     StateInfo* stc = st;
     int        end = std::min(st->rule50, st->pliesFromNull);
     while (end-- >= 4)
@@ -1163,7 +1142,6 @@ bool Position::has_repeated() const {
 // Tests if the position has a move which draws by repetition,
 // or an earlier position has a move that directly reaches the current position.
 bool Position::has_game_cycle(int ply) const {
-
     int j;
 
     int end = std::min(st->rule50, st->pliesFromNull);
@@ -1210,7 +1188,6 @@ bool Position::has_game_cycle(int ply) const {
 // Flips position with the white and black sides reversed. This
 // is only useful for debugging e.g. for finding evaluation symmetry bugs.
 void Position::flip() {
-
     string            f, token;
     std::stringstream ss(fen());
 
@@ -1245,7 +1222,6 @@ void Position::flip() {
 // and raise an assert if something wrong is detected.
 // This is meant to be helpful when debugging.
 bool Position::pos_is_ok() const {
-
     constexpr bool Fast = true;  // Quick (default) or full check?
 
     if ((sideToMove != WHITE && sideToMove != BLACK) || piece_on(square<KING>(WHITE)) != W_KING

@@ -116,7 +116,6 @@ inline IntType read_little_endian(std::istream& stream) {
 // ordering of the compiling machine.
 template<typename IntType>
 inline void write_little_endian(std::ostream& stream, IntType value) {
-
     if (IsLittleEndian)
         stream.write(reinterpret_cast<const char*>(&value), sizeof(IntType));
     else
@@ -170,7 +169,6 @@ inline void write_little_endian(std::ostream& stream, const IntType* values, std
 // See https://en.wikipedia.org/wiki/LEB128 for a description of the compression scheme.
 template<typename IntType>
 inline void read_leb_128(std::istream& stream, IntType* out, std::size_t count) {
-
     // Check the presence of our LEB128 magic string
     char leb128MagicString[Leb128MagicStringSize];
     stream.read(leb128MagicString, Leb128MagicStringSize);
@@ -221,7 +219,6 @@ inline void read_leb_128(std::istream& stream, IntType* out, std::size_t count) 
 // See https://en.wikipedia.org/wiki/LEB128 for a description of the compression scheme.
 template<typename IntType>
 inline void write_leb_128(std::ostream& stream, const IntType* values, std::size_t count) {
-
     // Write our LEB128 magic string
     stream.write(Leb128MagicString, Leb128MagicStringSize);
 

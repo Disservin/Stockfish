@@ -270,7 +270,6 @@ enum Rank : int {
 
 // Keep track of what a move changes on the board (used by NNUE)
 struct DirtyPiece {
-
     // Number of changed pieces
     int dirty_num;
 

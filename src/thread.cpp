@@ -46,7 +46,6 @@ ThreadPool Threads;  // Global object
 Thread::Thread(size_t n) :
     idx(n),
     stdThread(&Thread::idle_loop, this) {
-
     wait_for_search_finished();
 }
 
@@ -54,7 +53,6 @@ Thread::Thread(size_t n) :
 // Destructor wakes up the thread in idle_loop() and waits
 // for its termination. Thread should be already waiting.
 Thread::~Thread() {
-
     assert(!searching);
 
     exit = true;
@@ -65,7 +63,6 @@ Thread::~Thread() {
 
 // Reset histories, usually before a new game
 void Thread::clear() {
-
     counterMoves.fill(MOVE_NONE);
     mainHistory.fill(0);
     captureHistory.fill(0);
@@ -92,7 +89,6 @@ void Thread::start_searching() {
 // Blocks on the condition variable
 // until the thread has finished searching.
 void Thread::wait_for_search_finished() {
-
     std::unique_lock<std::mutex> lk(mutex);
     cv.wait(lk, [&] { return !searching; });
 }
@@ -102,7 +98,6 @@ void Thread::wait_for_search_finished() {
 // condition variable, when it has no work to do.
 
 void Thread::idle_loop() {
-
     // If OS already scheduled us on a different group than 0 then don't overwrite
     // the choice, eventually we are one of many one-threaded processes running on
     // some Windows NUMA hardware, for instance in fishtest. To make it simple,
@@ -131,7 +126,6 @@ void Thread::idle_loop() {
 // Created and launched threads will immediately go to sleep in idle_loop.
 // Upon resizing, threads are recreated to allow for binding if necessary.
 void ThreadPool::set(size_t requested) {
-
     if (threads.size() > 0)  // destroy any existing thread(s)
     {
         main()->wait_for_search_finished();
@@ -159,7 +153,6 @@ void ThreadPool::set(size_t requested) {
 
 // Sets threadPool data to initial values
 void ThreadPool::clear() {
-
     for (Thread* th : threads)
         th->clear();
 
@@ -176,7 +169,6 @@ void ThreadPool::start_thinking(Position&                 pos,
                                 StateListPtr&             states,
                                 const Search::LimitsType& limits,
                                 bool                      ponderMode) {
-
     main()->wait_for_search_finished();
 
     main()->stopOnPonderhit = stop = false;
@@ -219,7 +211,6 @@ void ThreadPool::start_thinking(Position&                 pos,
 }
 
 Thread* ThreadPool::get_best_thread() const {
-
     Thread*                 bestThread = threads.front();
     std::map<Move, int64_t> votes;
     Value                   minScore = VALUE_NONE;
@@ -259,7 +250,6 @@ Thread* ThreadPool::get_best_thread() const {
 // Start non-main threads
 
 void ThreadPool::start_searching() {
-
     for (Thread* th : threads)
         if (th != threads.front())
             th->start_searching();
@@ -269,7 +259,6 @@ void ThreadPool::start_searching() {
 // Wait for non-main threads
 
 void ThreadPool::wait_for_search_finished() const {
-
     for (Thread* th : threads)
         if (th != threads.front())
             th->wait_for_search_finished();

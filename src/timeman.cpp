@@ -34,7 +34,6 @@ TimeManagement Time;  // Our global time management object
 //      1) x basetime (+ z increment)
 //      2) x moves in y seconds (+ z increment)
 void TimeManagement::init(Search::LimitsType& limits, Color us, int ply) {
-
     // If we have no time, no need to initialize TM, except for the start time,
     // which is used by movetime.
     startTime = limits.startTime;

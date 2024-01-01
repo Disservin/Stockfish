@@ -36,7 +36,6 @@ namespace Stockfish {
 // board (by calling Position::do_move), a StateInfo object must be passed.
 
 struct StateInfo {
-
     // Copied when making a move
     Key    materialKey;
     Key    pawnKey;
@@ -266,7 +265,6 @@ inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, 
 
 template<PieceType Pt>
 inline Bitboard Position::attacks_by(Color c) const {
-
     if constexpr (Pt == PAWN)
         return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
                           : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
@@ -329,7 +327,6 @@ inline Piece Position::captured_piece() const { return st->capturedPiece; }
 inline Thread* Position::this_thread() const { return thisThread; }
 
 inline void Position::put_piece(Piece pc, Square s) {
-
     board[s] = pc;
     byTypeBB[ALL_PIECES] |= byTypeBB[type_of(pc)] |= s;
     byColorBB[color_of(pc)] |= s;
@@ -338,7 +335,6 @@ inline void Position::put_piece(Piece pc, Square s) {
 }
 
 inline void Position::remove_piece(Square s) {
-
     Piece pc = board[s];
     byTypeBB[ALL_PIECES] ^= s;
     byTypeBB[type_of(pc)] ^= s;
@@ -349,7 +345,6 @@ inline void Position::remove_piece(Square s) {
 }
 
 inline void Position::move_piece(Square from, Square to) {
-
     Piece    pc     = board[from];
     Bitboard fromTo = from | to;
     byTypeBB[ALL_PIECES] ^= fromTo;

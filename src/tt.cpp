@@ -36,7 +36,6 @@ TranspositionTable TT;  // Our global transposition table
 // Populates the TTEntry with a new node's data, possibly
 // overwriting an old position. The update is not atomic and can be racy.
 void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) {
-
     // Preserve any existing move for the same position
     if (m || uint16_t(k) != key16)
         move16 = uint16_t(m);
@@ -60,7 +59,6 @@ void TTEntry::save(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev) 
 // measured in megabytes. Transposition table consists of a power of 2 number
 // of clusters and each cluster consists of ClusterSize number of TTEntry.
 void TranspositionTable::resize(size_t mbSize) {
-
     Threads.main()->wait_for_search_finished();
 
     aligned_large_pages_free(table);
@@ -81,7 +79,6 @@ void TranspositionTable::resize(size_t mbSize) {
 // Initializes the entire transposition table to zero,
 // in a multi-threaded way.
 void TranspositionTable::clear() {
-
     std::vector<std::thread> threads;
 
     for (size_t idx = 0; idx < size_t(Options["Threads"]); ++idx)
@@ -113,7 +110,6 @@ void TranspositionTable::clear() {
 // minus 8 times its relative age. TTEntry t1 is considered more valuable than
 // TTEntry t2 if its replace value is greater than that of t2.
 TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
-
     TTEntry* const tte   = first_entry(key);
     const uint16_t key16 = uint16_t(key);  // Use the low 16 bits as key inside the cluster
 
@@ -148,7 +144,6 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
 // occupation during a search. The hash is x permill full, as per UCI protocol.
 
 int TranspositionTable::hashfull() const {
-
     int cnt = 0;
     for (int i = 0; i < 1000; ++i)
         for (int j = 0; j < ClusterSize; ++j)

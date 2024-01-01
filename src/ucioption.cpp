@@ -54,7 +54,6 @@ static void on_eval_file(const Option&) { Eval::NNUE::init(); }
 
 // Our case insensitive less() function as required by UCI protocol
 bool CaseInsensitiveLess::operator()(const string& s1, const string& s2) const {
-
     return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(),
                                         [](char c1, char c2) { return tolower(c1) < tolower(c2); });
 }
@@ -62,7 +61,6 @@ bool CaseInsensitiveLess::operator()(const string& s1, const string& s2) const {
 
 // Initializes the UCI options to their hard-coded default values
 void init(OptionsMap& o) {
-
     constexpr int MaxHashMB = Is64Bit ? 33554432 : 2048;
 
     o["Debug Log File"] << Option("", on_logger);
@@ -89,7 +87,6 @@ void init(OptionsMap& o) {
 // Used to print all the options default values in chronological
 // insertion order (the idx field) and in the format defined by the UCI protocol.
 std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
-
     for (size_t idx = 0; idx < om.size(); ++idx)
         for (const auto& it : om)
             if (it.second.idx == idx)
@@ -171,7 +168,6 @@ bool Option::operator==(const char* s) const {
 // Inits options and assigns idx in the correct printing order
 
 void Option::operator<<(const Option& o) {
-
     static size_t insert_order = 0;
 
     *this = o;
@@ -183,7 +179,6 @@ void Option::operator<<(const Option& o) {
 // the GUI to check for option's limits, but we could receive the new value
 // from the user by console window, so let's check the bounds anyway.
 Option& Option::operator=(const string& v) {
-
     assert(!type.empty());
 
     if ((type != "button" && type != "string" && v.empty())

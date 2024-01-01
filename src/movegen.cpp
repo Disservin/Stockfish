@@ -30,7 +30,6 @@ namespace {
 
 template<GenType Type, Direction D, bool Enemy>
 ExtMove* make_promotions(ExtMove* moveList, [[maybe_unused]] Square to) {
-
     constexpr bool all = Type == EVASIONS || Type == NON_EVASIONS;
 
     if constexpr (Type == CAPTURES || all)
@@ -49,7 +48,6 @@ ExtMove* make_promotions(ExtMove* moveList, [[maybe_unused]] Square to) {
 
 template<Color Us, GenType Type>
 ExtMove* generate_pawn_moves(const Position& pos, ExtMove* moveList, Bitboard target) {
-
     constexpr Color     Them     = ~Us;
     constexpr Bitboard  TRank7BB = (Us == WHITE ? Rank7BB : Rank2BB);
     constexpr Bitboard  TRank3BB = (Us == WHITE ? Rank3BB : Rank6BB);
@@ -160,7 +158,6 @@ ExtMove* generate_pawn_moves(const Position& pos, ExtMove* moveList, Bitboard ta
 
 template<Color Us, PieceType Pt, bool Checks>
 ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target) {
-
     static_assert(Pt != KING && Pt != PAWN, "Unsupported piece type in generate_moves()");
 
     Bitboard bb = pos.pieces(Us, Pt);
@@ -184,7 +181,6 @@ ExtMove* generate_moves(const Position& pos, ExtMove* moveList, Bitboard target)
 
 template<Color Us, GenType Type>
 ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
-
     static_assert(Type != LEGAL, "Unsupported type in generate_all()");
 
     constexpr bool Checks = Type == QUIET_CHECKS;  // Reduce template instantiations
@@ -237,7 +233,6 @@ ExtMove* generate_all(const Position& pos, ExtMove* moveList) {
 // Returns a pointer to the end of the move list.
 template<GenType Type>
 ExtMove* generate(const Position& pos, ExtMove* moveList) {
-
     static_assert(Type != LEGAL, "Unsupported type in generate()");
     assert((Type == EVASIONS) == bool(pos.checkers()));
 
@@ -259,7 +254,6 @@ template ExtMove* generate<NON_EVASIONS>(const Position&, ExtMove*);
 
 template<>
 ExtMove* generate<LEGAL>(const Position& pos, ExtMove* moveList) {
-
     Color    us     = pos.side_to_move();
     Bitboard pinned = pos.blockers_for_king(us) & pos.pieces(us);
     Square   ksq    = pos.square<KING>(us);

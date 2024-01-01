@@ -61,7 +61,6 @@ enum Stages {
 // Sort moves in descending order up to and including
 // a given limit. The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
-
     for (ExtMove *sortedEnd = begin, *p = begin + 1; p < end; ++p)
         if (p->value >= limit)
         {
@@ -143,7 +142,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Value th, const CapturePiece
 // captures with a good history. Quiets moves are ordered using the history tables.
 template<GenType Type>
 void MovePicker::score() {
-
     static_assert(Type == CAPTURES || Type == QUIETS || Type == EVASIONS, "Wrong type");
 
     [[maybe_unused]] Bitboard threatenedByPawn, threatenedByMinor, threatenedByRook,
@@ -224,7 +222,6 @@ void MovePicker::score() {
 // It never returns the TT move.
 template<MovePicker::PickType T, typename Pred>
 Move MovePicker::select(Pred filter) {
-
     while (cur < endMoves)
     {
         if constexpr (T == Best)
@@ -242,11 +239,9 @@ Move MovePicker::select(Pred filter) {
 // returns a new pseudo-legal move every time it is called until there are no more
 // moves left, picking the move with the highest score from a list of generated moves.
 Move MovePicker::next_move(bool skipQuiets) {
-
 top:
     switch (stage)
     {
-
     case MAIN_TT :
     case EVASION_TT :
     case QSEARCH_TT :

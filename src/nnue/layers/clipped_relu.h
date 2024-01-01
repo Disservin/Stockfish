@@ -60,7 +60,6 @@ class ClippedReLU {
 
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
-
 #if defined(USE_AVX2)
         if constexpr (InputDimensions % SimdWidth == 0)
         {

@@ -29,6 +29,7 @@ Cpp11BracedListStyle: true
 IndentGotoLabels: false
 IndentPPDirectives: BeforeHash
 IndentWidth: 4
+KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 2
 NamespaceIndentation: None
 PackConstructorInitializers: Never

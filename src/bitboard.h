@@ -73,7 +73,6 @@ struct Magic {
 
     // Compute the attack's index using the 'magic bitboards' approach
     unsigned index(Bitboard occupied) const {
-
         if (HasPext)
             return unsigned(pext(occupied, mask));
 
@@ -151,7 +150,6 @@ constexpr Bitboard pawn_attacks_bb(Bitboard b) {
 }
 
 inline Bitboard pawn_attacks_bb(Color c, Square s) {
-
     assert(is_ok(s));
     return PawnAttacks[c][s];
 }
@@ -161,7 +159,6 @@ inline Bitboard pawn_attacks_bb(Color c, Square s) {
 // are not on a same file/rank/diagonal, the function returns 0. For instance,
 // line_bb(SQ_C4, SQ_F7) will return a bitboard with the A2-G8 diagonal.
 inline Bitboard line_bb(Square s1, Square s2) {
-
     assert(is_ok(s1) && is_ok(s2));
 
     return LineBB[s1][s2];
@@ -176,7 +173,6 @@ inline Bitboard line_bb(Square s1, Square s2) {
 // allows to generate non-king evasion moves faster: the defending piece must either
 // interpose itself to cover the check or capture the checking piece.
 inline Bitboard between_bb(Square s1, Square s2) {
-
     assert(is_ok(s1) && is_ok(s2));
 
     return BetweenBB[s1][s2];
@@ -214,7 +210,6 @@ inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 // assuming an empty board.
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s) {
-
     assert((Pt != PAWN) && (is_ok(s)));
 
     return PseudoAttacks[Pt][s];
@@ -226,7 +221,6 @@ inline Bitboard attacks_bb(Square s) {
 // Sliding piece attacks do not continue passed an occupied square.
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s, Bitboard occupied) {
-
     assert((Pt != PAWN) && (is_ok(s)));
 
     switch (Pt)
@@ -246,7 +240,6 @@ inline Bitboard attacks_bb(Square s, Bitboard occupied) {
 // assuming the board is occupied according to the passed Bitboard.
 // Sliding piece attacks do not continue passed an occupied square.
 inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
-
     assert((pt != PAWN) && (is_ok(s)));
 
     switch (pt)
@@ -265,7 +258,6 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 
 // Counts the number of non-zero bits in a bitboard.
 inline int popcount(Bitboard b) {
-
 #ifndef USE_POPCNT
 
     union {

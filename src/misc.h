@@ -95,7 +95,6 @@ static inline const bool IsLittleEndian = (Le.c[0] == 4);
 
 template<typename T, std::size_t MaxSize>
 class ValueList {
-
    public:
     std::size_t size() const { return size_; }
     void        push_back(const T& value) { values_[size_++] = value; }
@@ -125,11 +124,9 @@ class ValueList {
 //   <http://vigna.di.unimi.it/ftp/papers/xorshift.pdf>
 
 class PRNG {
-
     uint64_t s;
 
     uint64_t rand64() {
-
         s ^= s >> 12, s ^= s << 25, s ^= s >> 27;
         return s * 2685821657736338717LL;
     }

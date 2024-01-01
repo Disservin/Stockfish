@@ -189,12 +189,10 @@ class AffineTransform {
     }
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
-
 #if defined(USE_SSSE3)
 
         if constexpr (OutputDimensions > 1)
         {
-
     #if defined(USE_AVX512)
             using vec_t = __m512i;
         #define vec_setzero _mm512_setzero_si512
@@ -255,7 +253,6 @@ class AffineTransform {
         }
         else if constexpr (OutputDimensions == 1)
         {
-
     // We cannot use AVX512 for the last layer because there are only 32 inputs
     // and the buffer is not padded to 64 elements.
     #if defined(USE_AVX2)

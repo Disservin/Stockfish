@@ -57,7 +57,6 @@ inline Bitboard safe_destination(Square s, int step) {
 // Returns an ASCII representation of a bitboard suitable
 // to be printed to standard output. Useful for debugging.
 std::string Bitboards::pretty(Bitboard b) {
-
     std::string s = "+---+---+---+---+---+---+---+---+\n";
 
     for (Rank r = RANK_8; r >= RANK_1; --r)
@@ -76,7 +75,6 @@ std::string Bitboards::pretty(Bitboard b) {
 // Initializes various bitboard tables. It is called at
 // startup and relies on global objects to be already zero-initialized.
 void Bitboards::init() {
-
     for (unsigned i = 0; i < (1 << 16); ++i)
         PopCnt16[i] = uint8_t(std::bitset<16>(i).count());
 
@@ -118,7 +116,6 @@ void Bitboards::init() {
 namespace {
 
 Bitboard sliding_attack(PieceType pt, Square sq, Bitboard occupied) {
-
     Bitboard  attacks             = 0;
     Direction RookDirections[4]   = {NORTH, SOUTH, EAST, WEST};
     Direction BishopDirections[4] = {NORTH_EAST, SOUTH_EAST, SOUTH_WEST, NORTH_WEST};
@@ -139,7 +136,6 @@ Bitboard sliding_attack(PieceType pt, Square sq, Bitboard occupied) {
 // www.chessprogramming.org/Magic_Bitboards. In particular, here we use the so
 // called "fancy" approach.
 void init_magics(PieceType pt, Bitboard table[], Magic magics[]) {
-
     // Optimal PRNG seeds to pick the correct magics in the shortest time
     int seeds[][RANK_NB] = {{8977, 44560, 54343, 38998, 5731, 95205, 104912, 17020},
                             {728, 10316, 55013, 32803, 12281, 15100, 16645, 255}};

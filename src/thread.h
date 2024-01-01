@@ -36,7 +36,6 @@ namespace Stockfish {
 
 // Thread class keeps together all the thread-related stuff.
 class Thread {
-
     std::mutex              mutex;
     std::condition_variable cv;
     size_t                  idx;
@@ -75,7 +74,6 @@ class Thread {
 
 // MainThread is a derived class specific for main thread
 struct MainThread: public Thread {
-
     using Thread::Thread;
 
     void search() override;
@@ -95,7 +93,6 @@ struct MainThread: public Thread {
 // parking and, most importantly, launching a thread. All the access to threads
 // is done through this class.
 struct ThreadPool {
-
     void start_thinking(Position&, StateListPtr&, const Search::LimitsType&, bool = false);
     void clear();
     void set(size_t);
@@ -121,7 +118,6 @@ struct ThreadPool {
     std::vector<Thread*> threads;
 
     uint64_t accumulate(std::atomic<uint64_t> Thread::*member) const {
-
         uint64_t sum = 0;
         for (Thread* th : threads)
             sum += (th->*member).load(std::memory_order_relaxed);

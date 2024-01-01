@@ -58,7 +58,6 @@ struct Stack {
 // we store a score and a PV (really a refutation in the case of moves which
 // fail low). Score is normally set at -VALUE_INFINITE for all non-pv moves.
 struct RootMove {
-
     explicit RootMove(Move m) :
         pv(1, m) {}
     bool extract_ponder_from_tt(Position& pos);
@@ -87,7 +86,6 @@ using RootMoves = std::vector<RootMove>;
 // search the current move, maximum depth/time, or if we are in analysis mode.
 
 struct LimitsType {
-
     // Init explicitly due to broken value-initialization of non POD in MSVC
     LimitsType() {
         time[WHITE] = time[BLACK] = inc[WHITE] = inc[BLACK] = npmsec = movetime = TimePoint(0);

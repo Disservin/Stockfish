@@ -189,7 +189,6 @@ static_assert(sizeof(LR) == 3, "LR tree entry must be 3 bytes");
 // memory mapped for best performance. Files are mapped at first access: at init
 // time only existence of the file is checked.
 class TBFile: public std::ifstream {
-
     std::string fname;
 
    public:
@@ -202,7 +201,6 @@ class TBFile: public std::ifstream {
     static std::string Paths;
 
     TBFile(const std::string& f) {
-
 #ifndef _WIN32
         constexpr char SepChar = ':';
 #else
@@ -303,7 +301,6 @@ class TBFile: public std::ifstream {
     }
 
     static void unmap(void* baseAddress, uint64_t mapping) {
-
 #ifndef _WIN32
         munmap(baseAddress, mapping);
 #else
@@ -381,7 +378,6 @@ struct TBTable {
 template<>
 TBTable<WDL>::TBTable(const std::string& code) :
     TBTable() {
-
     StateInfo st;
     Position  pos;
 
@@ -409,7 +405,6 @@ TBTable<WDL>::TBTable(const std::string& code) :
 template<>
 TBTable<DTZ>::TBTable(const TBTable<WDL>& wdl) :
     TBTable() {
-
     // Use the corresponding WDL table to avoid recalculating all from scratch
     key             = wdl.key;
     key2            = wdl.key2;
@@ -424,7 +419,6 @@ TBTable<DTZ>::TBTable(const TBTable<WDL>& wdl) :
 // each TB file found. It supports a fast, hash-based, table lookup. Populated
 // at init time, accessed at probe time.
 class TBTables {
-
     struct Entry {
         Key           key;
         TBTable<WDL>* wdl;
@@ -496,7 +490,6 @@ TBTables TBTables;
 // If the corresponding file exists two new objects TBTable<WDL> and TBTable<DTZ>
 // are created and added to the lists and hash table. Called at init time.
 void TBTables::add(const std::vector<PieceType>& pieces) {
-
     std::string code;
 
     for (PieceType pt : pieces)
@@ -535,7 +528,6 @@ void TBTables::add(const std::vector<PieceType>& pieces) {
 // will have one table for wtm and one for btm, a TB file with pawns will have tables per
 // file a,b,c,d also, in this case, one set for wtm and one for btm.
 int decompress_pairs(PairsData* d, uint64_t idx) {
-
     // Special case where all table positions store the same value
     if (d->flags & TBFlag::SingleValue)
         return d->minSymLen;
@@ -653,7 +645,6 @@ int decompress_pairs(PairsData* d, uint64_t idx) {
 bool check_dtz_stm(TBTable<WDL>*, int, File) { return true; }
 
 bool check_dtz_stm(TBTable<DTZ>* entry, int stm, File f) {
-
     auto flags = entry->get(stm, f)->flags;
     return (flags & TBFlag::STM) == stm || ((entry->key == entry->key2) && !entry->hasPawns);
 }
@@ -665,7 +656,6 @@ bool check_dtz_stm(TBTable<DTZ>* entry, int stm, File f) {
 WDLScore map_score(TBTable<WDL>*, File, int value, WDLScore) { return WDLScore(value - 2); }
 
 int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
-
     constexpr int WDLMap[] = {1, 3, 0, 2, 0};
 
     auto flags = entry->get(0, f)->flags;
@@ -710,7 +700,6 @@ int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
 template<typename T, typename Ret = typename T::Ret>
 CLANG_AVX512_BUG_FIX Ret
 do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) {
-
     Square     squares[TBPIECES];
     Piece      pieces[TBPIECES];
     uint64_t   idx;
@@ -740,7 +729,6 @@ do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) 
     // MapPawns[] value, that is the one most toward the edges and with lowest rank.
     if (entry->hasPawns)
     {
-
         // In all the 4 tables, pawns are at the beginning of the piece sequence and
         // their color is the reference one. So we just pick the first one.
         Piece pc = Piece(entry->get(0, 0)->pieces[0] ^ flipColor);
@@ -858,7 +846,6 @@ do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) 
     // together.
     if (entry->hasUniquePieces)
     {
-
         int adjust1 = squares[1] > squares[0];
         int adjust2 = (squares[2] > squares[0]) + (squares[2] > squares[1]);
 
@@ -932,7 +919,6 @@ encode_remaining:
 // sequence of pieces in piece[] array.
 template<typename T>
 void set_groups(T& e, PairsData* d, int order[], File f) {
-
     int n = 0, firstLen = e.hasPawns ? 0 : e.hasUniquePieces ? 3 : 2;
     d->groupLen[n] = 1;
 
@@ -987,7 +973,6 @@ void set_groups(T& e, PairsData* d, int order[], File f) {
 // read d->btree[] symbols data and expand each one in his left and right child
 // symbol until reaching the leaves that represent the symbol value.
 uint8_t set_symlen(PairsData* d, Sym s, std::vector<bool>& visited) {
-
     visited[s] = true;  // We can set it now because tree is acyclic
     Sym sr     = d->btree[s].get<LR::Right>();
 
@@ -1006,7 +991,6 @@ uint8_t set_symlen(PairsData* d, Sym s, std::vector<bool>& visited) {
 }
 
 uint8_t* set_sizes(PairsData* d, uint8_t* data) {
-
     d->flags = *data++;
 
     if (d->flags & TBFlag::SingleValue)
@@ -1084,7 +1068,6 @@ uint8_t* set_sizes(PairsData* d, uint8_t* data) {
 uint8_t* set_dtz_map(TBTable<WDL>&, uint8_t* data, File) { return data; }
 
 uint8_t* set_dtz_map(TBTable<DTZ>& e, uint8_t* data, File maxFile) {
-
     e.map = data;
 
     for (File f = FILE_A; f <= maxFile; ++f)
@@ -1119,7 +1102,6 @@ uint8_t* set_dtz_map(TBTable<DTZ>& e, uint8_t* data, File maxFile) {
 // Called at first access.
 template<typename T>
 void set(T& e, uint8_t* data) {
-
     PairsData* d;
 
     enum {
@@ -1141,7 +1123,6 @@ void set(T& e, uint8_t* data) {
 
     for (File f = FILE_A; f <= maxFile; ++f)
     {
-
         for (int i = 0; i < sides; i++)
             *e.get(i, f) = PairsData();
 
@@ -1194,7 +1175,6 @@ void set(T& e, uint8_t* data) {
 // safe and can be called concurrently.
 template<TBType Type>
 void* mapped(TBTable<Type>& e, const Position& pos) {
-
     static std::mutex mutex;
 
     // Use 'acquire' to avoid a thread reading 'ready' == true while
@@ -1229,7 +1209,6 @@ void* mapped(TBTable<Type>& e, const Position& pos) {
 
 template<TBType Type, typename Ret = typename TBTable<Type>::Ret>
 Ret probe_table(const Position& pos, ProbeState* result, WDLScore wdl = WDLDraw) {
-
     if (pos.count<ALL_PIECES>() == 2)  // KvK
         return Ret(WDLDraw);
 
@@ -1256,7 +1235,6 @@ Ret probe_table(const Position& pos, ProbeState* result, WDLScore wdl = WDLDraw)
 // the state to ZEROING_BEST_MOVE.
 template<bool CheckZeroingMoves>
 WDLScore search(Position& pos, ProbeState* result) {
-
     WDLScore  value, bestValue = WDLLoss;
     StateInfo st;
 
@@ -1321,7 +1299,6 @@ WDLScore search(Position& pos, ProbeState* result) {
 // "SyzygyPath" UCI option to (re)create the various tables. It is not thread
 // safe, nor it needs to be.
 void Tablebases::init(const std::string& paths) {
-
     TBTables.clear();
     MaxCardinality = 0;
     TBFile::Paths  = paths;
@@ -1478,7 +1455,6 @@ void Tablebases::init(const std::string& paths) {
 //  1 : win, but draw under 50-move rule
 //  2 : win
 WDLScore Tablebases::probe_wdl(Position& pos, ProbeState* result) {
-
     *result = OK;
     return search<false>(pos, result);
 }
@@ -1510,7 +1486,6 @@ WDLScore Tablebases::probe_wdl(Position& pos, ProbeState* result) {
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
-
     *result      = OK;
     WDLScore wdl = search<true>(pos, result);
 
@@ -1575,7 +1550,6 @@ int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
 //
 // A return value false indicates that not all probes were successful.
 bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
-
     ProbeState result = OK;
     StateInfo  st;
 
@@ -1648,7 +1622,6 @@ bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves) {
 //
 // A return value false indicates that not all probes were successful.
 bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves) {
-
     static const int WDL_to_rank[] = {-MAX_DTZ, -MAX_DTZ + 101, 0, MAX_DTZ - 101, MAX_DTZ};
 
     ProbeState result = OK;

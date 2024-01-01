@@ -54,7 +54,6 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 // the initial position ("startpos") and then makes the moves given in the following
 // move list ("moves").
 void position(Position& pos, std::istringstream& is, StateListPtr& states) {
-
     Move        m;
     std::string token, fen;
 
@@ -85,7 +84,6 @@ void position(Position& pos, std::istringstream& is, StateListPtr& states) {
 // Prints the evaluation of the current position,
 // consistent with the UCI options set so far.
 void trace_eval(Position& pos) {
-
     StateListPtr states(new std::deque<StateInfo>(1));
     Position     p;
     p.set(pos.fen(), Options["UCI_Chess960"], &states->back(), Threads.main());
@@ -100,7 +98,6 @@ void trace_eval(Position& pos) {
 // The function updates the UCI option ("name") to the given value ("value").
 
 void setoption(std::istringstream& is) {
-
     Threads.main()->wait_for_search_finished();
 
     std::string token, name, value;
@@ -126,7 +123,6 @@ void setoption(std::istringstream& is) {
 // thinking time and other parameters from the input string then stars with a search
 
 void go(Position& pos, std::istringstream& is, StateListPtr& states) {
-
     Search::LimitsType limits;
     std::string        token;
     bool               ponderMode = false;
@@ -172,7 +168,6 @@ void go(Position& pos, std::istringstream& is, StateListPtr& states) {
 // parameters, then it is run one by one, printing a summary at the end.
 
 void bench(Position& pos, std::istream& args, StateListPtr& states) {
-
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
 
@@ -224,7 +219,6 @@ void bench(Position& pos, std::istream& args, StateListPtr& states) {
 // The win rate model returns the probability of winning (in per mille units) given an
 // eval and a game ply. It fits the LTC fishtest statistics rather accurately.
 int win_rate_model(Value v, int ply) {
-
     // The model only captures up to 240 plies, so limit the input and then rescale
     double m = std::min(240, ply) / 64.0;
 
@@ -256,7 +250,6 @@ int win_rate_model(Value v, int ply) {
 // like running 'bench', the function returns immediately after the command is executed.
 // In addition to the UCI ones, some additional debug commands are also supported.
 void UCI::loop(int argc, char* argv[]) {
-
     Position     pos;
     std::string  token, cmd;
     StateListPtr states(new std::deque<StateInfo>(1));
@@ -349,7 +342,6 @@ int UCI::to_cp(Value v) { return 100 * v / UCI::NormalizeToPawnValue; }
 // mate <y>  Mate in 'y' moves (not plies). If the engine is getting mated,
 //           uses negative values for 'y'.
 std::string UCI::value(Value v) {
-
     assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
 
     std::stringstream ss;
@@ -371,7 +363,6 @@ std::string UCI::value(Value v) {
 // Reports the win-draw-loss (WDL) statistics given an evaluation
 // and a game ply based on the data gathered for fishtest LTC games.
 std::string UCI::wdl(Value v, int ply) {
-
     std::stringstream ss;
 
     int wdl_w = win_rate_model(v, ply);
@@ -394,7 +385,6 @@ std::string UCI::square(Square s) {
 // standard chess mode and in e1h1 notation it is printed in Chess960 mode.
 // Internally, all castling moves are always encoded as 'king captures rook'.
 std::string UCI::move(Move m, bool chess960) {
-
     if (m == MOVE_NONE)
         return "(none)";
 
@@ -419,7 +409,6 @@ std::string UCI::move(Move m, bool chess960) {
 // Converts a string representing a move in coordinate notation
 // (g1f3, a7a8q) to the corresponding legal Move, if any.
 Move UCI::to_move(const Position& pos, std::string& str) {
-
     if (str.length() == 5)
         str[4] = char(tolower(str[4]));  // The promotion piece character must be lowercased
 
