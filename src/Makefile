@@ -932,6 +932,7 @@ netvariables:
 
 # evaluation network (nnue)
 net: netvariables
+	@echo $(SHELL)
 	@echo "Default net: $(nnuenet)"
 	@if [ "x$(curl_or_wget)" = "x" ]; then \
 		echo "Neither curl nor wget is installed. Install one of these tools unless the net has been downloaded manually"; \
