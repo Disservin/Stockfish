@@ -30,9 +30,9 @@
 </div>
 
 ## Overview
-dsadsddsasdsasadsssadsadssdasda
+dsadsddsasdsasadsssadsadssdasdasd
 [Stockfish][website-link] is a **free and strong UCI chess engine** derived from
-Glaurung 2.1 that analyzes chess positions and computes the optimal moves.
+Glaurung 2.1 that analyzes chess posidtions and computes the optimal moves.
 
 Stockfish **does not include a graphical user interface** (GUI) that is required
 to display a chessboard and to make it easy to input moves. These GUIs are
