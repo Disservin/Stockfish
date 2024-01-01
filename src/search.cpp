@@ -95,7 +95,7 @@ constexpr int futility_move_count(bool improving, Depth depth) {
 
 // Guarantee evaluation does not hit the tablebase range
 constexpr Value to_static_eval(const Value v) {
-    return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+    return std::clamp(int(v), VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
 // History and stats update bonus, based on depth

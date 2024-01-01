@@ -161,7 +161,7 @@ enum Bound {
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
-using Value = int;
+using Value = int16_t;
 
 
 constexpr Value VALUE_ZERO     = 0;

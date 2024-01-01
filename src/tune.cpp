@@ -27,7 +27,7 @@
 #include "uci.h"
 
 namespace Stockfish {
-using Value = int;
+using Value = int16_t;
 }
 
 using std::string;

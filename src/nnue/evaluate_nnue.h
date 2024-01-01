@@ -33,7 +33,7 @@
 
 namespace Stockfish {
 class Position;
-using Value = int;
+using Value = int16_t;
 }
 
 namespace Stockfish::Eval::NNUE {
