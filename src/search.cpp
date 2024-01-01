@@ -76,8 +76,8 @@ enum NodeType {
 };
 
 // Futility margin
-Value futility_margin(Depth d, bool noTtCutNode, bool improving) {
-    return Value((116 - 44 * noTtCutNode) * (d - improving));
+int futility_margin(Depth d, bool noTtCutNode, bool improving) {
+    return (116 - 44 * noTtCutNode) * (d - improving);
 }
 
 // Reductions lookup table initialized at startup
@@ -93,8 +93,10 @@ constexpr int futility_move_count(bool improving, Depth depth) {
 }
 
 // Guarantee evaluation does not hit the tablebase range
-constexpr Value to_static_eval(const Value v) {
-    return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+template<typename T>
+constexpr Value to_static_eval(T v) {
+    return Value(
+      std::clamp(int(v), int(VALUE_TB_LOSS_IN_MAX_PLY + 1), int(VALUE_TB_WIN_IN_MAX_PLY - 1)));
 }
 
 // History and stats update bonus, based on depth
@@ -417,7 +419,7 @@ void Thread::search() {
                 if (bestValue <= alpha)
                 {
                     beta  = (alpha + beta) / 2;
-                    alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                    alpha = Value(std::max(int(bestValue) - delta, int(-VALUE_INFINITE)));
 
                     failedHighCnt = 0;
                     if (mainThread)
@@ -425,7 +427,7 @@ void Thread::search() {
                 }
                 else if (bestValue >= beta)
                 {
-                    beta = std::min(bestValue + delta, VALUE_INFINITE);
+                    beta = Value(std::min(int(bestValue) + delta, int(VALUE_INFINITE)));
                     ++failedHighCnt;
                 }
                 else
@@ -557,7 +559,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     Key      posKey;
     Move     ttMove, move, excludedMove, bestMove;
     Depth    extension, newDepth;
-    Value    bestValue, value, ttValue, eval, maxValue, probCutBeta;
+    Value    bestValue, value, ttValue, eval, maxValue;
+    int      probCutBeta;
     bool     givesCheck, improving, priorCapture, singularQuietLMR;
     bool     capture, moveCountPruning, ttCapture;
     Piece    movedPiece;
@@ -743,9 +746,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         else if (PvNode)
             Eval::NNUE::hint_common_parent_position(pos);
 
-        Value newEval =
-          ss->staticEval
-          + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
+        int newEval = ss->staticEval
+                    + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
 
         ss->staticEval = eval = to_static_eval(newEval);
 
@@ -757,9 +759,8 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     {
         unadjustedStaticEval = ss->staticEval = eval = evaluate(pos);
 
-        Value newEval =
-          ss->staticEval
-          + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
+        int newEval = ss->staticEval
+                    + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
 
         ss->staticEval = eval = to_static_eval(newEval);
 
@@ -899,12 +900,12 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
-                value = -qsearch<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1);
+                value = -qsearch<NonPV>(pos, ss + 1, Value(-probCutBeta), Value(-probCutBeta + 1));
 
                 // If the qsearch held, perform the regular search
                 if (value >= probCutBeta)
-                    value = -search<NonPV>(pos, ss + 1, -probCutBeta, -probCutBeta + 1, depth - 4,
-                                           !cutNode);
+                    value = -search<NonPV>(pos, ss + 1, Value(-probCutBeta),
+                                           Value(-probCutBeta + 1), depth - 4, !cutNode);
 
                 pos.undo_move(move);
 
@@ -913,6 +914,15 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, unadjustedStaticEval);
+
+                    if (std::abs(std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY
+                                   ? value - (probCutBeta - beta)
+                                   : value)
+                        >= ((2 << 16) - 1))
+                    {
+                        std::cout << "probCut value: " << value << std::endl;
+                    }
+
                     return std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY ? value - (probCutBeta - beta)
                                                                      : value;
                 }
@@ -928,7 +938,7 @@ moves_loop:  // When in check, search starts here
     if (ss->inCheck && !PvNode && ttCapture && (tte->bound() & BOUND_LOWER)
         && tte->depth() >= depth - 4 && ttValue >= probCutBeta
         && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && std::abs(beta) < VALUE_TB_WIN_IN_MAX_PLY)
-        return probCutBeta;
+        return Value(probCutBeta);
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
                                         (ss - 2)->continuationHistory,
@@ -1442,7 +1452,8 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     Key      posKey;
     Move     ttMove, move, bestMove;
     Depth    ttDepth;
-    Value    bestValue, value, ttValue, futilityValue, futilityBase;
+    Value    bestValue, value, ttValue;
+    int      futilityValue, futilityBase;
     bool     pvHit, givesCheck, capture;
     int      moveCount;
     Color    us = pos.side_to_move();
@@ -1489,7 +1500,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     // Step 4. Static evaluation of the position
     if (ss->inCheck)
-        bestValue = futilityBase = -VALUE_INFINITE;
+    {
+        bestValue    = -VALUE_INFINITE;
+        futilityBase = int(-VALUE_INFINITE);
+    }
     else
     {
         if (ss->ttHit)
@@ -1498,7 +1512,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             if ((unadjustedStaticEval = ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
                 unadjustedStaticEval = ss->staticEval = bestValue = evaluate(pos);
 
-            Value newEval =
+            int newEval =
               ss->staticEval
               + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
 
@@ -1515,7 +1529,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
             unadjustedStaticEval = ss->staticEval = bestValue =
               (ss - 1)->currentMove != MOVE_NULL ? evaluate(pos) : -(ss - 1)->staticEval;
 
-            Value newEval =
+            int newEval =
               ss->staticEval
               + thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
 
@@ -1578,11 +1592,17 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
                 futilityValue = futilityBase + PieceValue[pos.piece_on(to_sq(move))];
 
+                if (std::abs(futilityValue) >= ((2 << 16) - 1)
+                    || std::abs(futilityBase) >= ((2 << 16) - 1))
+                {
+                    std::cout << "futilityValue: " << futilityValue << std::endl;
+                }
+
                 // If static eval + value of piece we are going to capture is much lower
                 // than alpha we can prune this move.
                 if (futilityValue <= alpha)
                 {
-                    bestValue = std::max(bestValue, futilityValue);
+                    bestValue = std::max(bestValue, Value(futilityValue));
                     continue;
                 }
 
@@ -1590,7 +1610,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
                 // we can prune this move.
                 if (futilityBase <= alpha && !pos.see_ge(move, 1))
                 {
-                    bestValue = std::max(bestValue, futilityBase);
+                    bestValue = std::max(bestValue, Value(futilityBase));
                     continue;
                 }
 

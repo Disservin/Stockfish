@@ -27,7 +27,7 @@
 #include <vector>
 
 namespace Stockfish {
-enum Value : int;
+enum Value : int16_t ;
 
 using Range    = std::pair<int, int>;  // Option's min-max values
 using RangeFun = Range(int);

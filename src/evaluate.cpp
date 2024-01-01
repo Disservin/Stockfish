@@ -149,8 +149,8 @@ void NNUE::verify() {
 // the point of view of the given color. It can be divided by PawnValue to get
 // an approximation of the material advantage on the board in terms of pawns.
 Value Eval::simple_eval(const Position& pos, Color c) {
-    int val = PawnValue * (pos.count<PAWN>(c) - pos.count<PAWN>(~c))
-            + (pos.non_pawn_material(c) - pos.non_pawn_material(~c));
+    int val = int(PawnValue) * (pos.count<PAWN>(c) - pos.count<PAWN>(~c))
+            + (int(pos.non_pawn_material(c)) - int(pos.non_pawn_material(~c)));
 
     assert(std::abs(val) < VALUE_NONE);
 
@@ -167,14 +167,15 @@ Value Eval::evaluate(const Position& pos) {
     int   v;
     Color stm        = pos.side_to_move();
     int   shuffling  = pos.rule50_count();
-    int   simpleEval = simple_eval(pos, stm) + (int(pos.key() & 7) - 3);
+    int   simpleEval = simple_eval(pos, stm) + int(pos.key() & 7) - 3;
 
-    bool lazy = std::abs(simpleEval) >= RookValue + KnightValue + 16 * shuffling * shuffling
+    bool lazy = std::abs(simpleEval) >= int(RookValue) + int(KnightValue)
+                                          + 16 * shuffling * shuffling
                                           + std::abs(pos.this_thread()->bestValue)
                                           + std::abs(pos.this_thread()->rootSimpleEval);
 
     if (lazy)
-        v = Value(simpleEval);
+        v = simpleEval;
     else
     {
         int nnueComplexity;

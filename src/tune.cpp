@@ -27,7 +27,7 @@
 #include "uci.h"
 
 namespace Stockfish {
-enum Value : int;
+enum Value : int16_t ;
 }
 
 using std::string;

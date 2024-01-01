@@ -223,6 +223,16 @@ static NnueEvalTrace trace_evaluate(const Position& pos) {
         const auto materialist = featureTransformer->transform(pos, transformedFeatures, bucket);
         const auto positional  = network[bucket]->propagate(transformedFeatures);
 
+        if (std::abs(materialist / OutputScale) >= ((2 << 16) - 1))
+        {
+            std::cout << "materialist: " << materialist << std::endl;
+        }
+
+        if (std::abs(positional / OutputScale) >= ((2 << 16) - 1))
+        {
+            std::cout << "positional: " << positional << std::endl;
+        }
+
         t.psqt[bucket]       = static_cast<Value>(materialist / OutputScale);
         t.positional[bucket] = static_cast<Value>(positional / OutputScale);
     }

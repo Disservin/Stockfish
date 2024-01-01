@@ -161,7 +161,7 @@ enum Bound {
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
-enum Value : int {
+enum Value : int16_t {
     VALUE_ZERO     = 0,
     VALUE_DRAW     = 0,
     VALUE_NONE     = 32002,
