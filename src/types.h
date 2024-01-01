@@ -161,8 +161,10 @@ enum Bound {
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
+// Value is used as an alias for int16_t, this is done differentiate between
+// a search value and any other integer value. The search value is always supposed
+// to be in the range [-VALUE_NONE, VALUE_NONE] and should not exceed this range.
 using Value = int16_t;
-
 
 constexpr Value VALUE_ZERO     = 0;
 constexpr Value VALUE_DRAW     = 0;
