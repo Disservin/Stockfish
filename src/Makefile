@@ -935,7 +935,7 @@ net: netvariables
 	@echo "Default net: $(nnuenet)"
 	@if [ "x$(curl_or_wget)" = "x" ]; then \
 		echo "Neither curl nor wget is installed. Install one of these tools unless the net has been downloaded manually"; \
-	fi;
+	fi
 	@if [ "x$(shasum_command)" = "x" ]; then \
 		echo "shasum / sha256sum not found, skipping net validation"; \
 	elif test -f "$(nnuenet)"; then \
