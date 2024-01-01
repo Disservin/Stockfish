@@ -1880,7 +1880,7 @@ Move Skill::pick_best(size_t multiPV) {
 
     // RootMoves are already sorted by score in descending order
     Value  topScore = rootMoves[0].score;
-    int    delta    = std::min(topScore - rootMoves[multiPV - 1].score, PawnValue);
+    int    delta    = std::min(int(topScore) - int(rootMoves[multiPV - 1].score), int(PawnValue));
     int    maxScore = -VALUE_INFINITE;
     double weakness = 120 - 2 * level;
 
