@@ -880,6 +880,9 @@ analyze: net config-sanity objclean
 build: net config-sanity
 	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) all
 
+dbuild:
+	$(MAKE) ARCH=$(ARCH) COMP=$(COMP) all
+
 profile-build: net config-sanity objclean profileclean
 	@echo ""
 	@echo "Step 1/4. Building instrumented executable ..."
