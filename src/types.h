@@ -161,7 +161,9 @@ enum Bound {
     BOUND_EXACT = BOUND_UPPER | BOUND_LOWER
 };
 
-enum Value : int {
+using Value = int;
+
+enum : int {
     VALUE_ZERO     = 0,
     VALUE_DRAW     = 0,
     VALUE_NONE     = 32002,
@@ -304,7 +306,6 @@ struct DirtyPiece {
         inline T&     operator*=(T& d, int i) { return d = T(int(d) * i); } \
         inline T&     operator/=(T& d, int i) { return d = T(int(d) / i); }
 
-ENABLE_FULL_OPERATORS_ON(Value)
 ENABLE_FULL_OPERATORS_ON(Direction)
 
 ENABLE_INCR_OPERATORS_ON(PieceType)
