@@ -253,7 +253,9 @@ void MainThread::search() {
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << NewUci::pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed())
+        sync_cout << NewUci::pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed(),
+                                options, threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
+                                TB::RootInTB)
                   << sync_endl;
 
     sync_cout << "bestmove " << NewUci::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
@@ -395,7 +397,9 @@ void Thread::search() {
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
                     && mainThread->tm.elapsed() > 3000)
-                    sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed())
+                    sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed(), options,
+                                            threads.nodes_searched(), threads.tb_hits(),
+                                            tt.hashfull(), TB::RootInTB)
                               << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
@@ -427,7 +431,10 @@ void Thread::search() {
 
             if (mainThread
                 && (threads.stop || pvIdx + 1 == multiPV || mainThread->tm.elapsed() > 3000))
-                sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed()) << sync_endl;
+                sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed(), options,
+                                        threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
+                                        TB::RootInTB)
+                          << sync_endl;
         }
 
         if (!threads.stop)

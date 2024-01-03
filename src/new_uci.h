@@ -36,7 +36,6 @@ namespace Stockfish {
 
 class StateInfo;
 class Position;
-// class ThreadPool;
 using TimePoint    = std::chrono::milliseconds::rep;  // A value in milliseconds
 using StateListPtr = std::unique_ptr<std::deque<StateInfo>>;
 
@@ -49,8 +48,15 @@ class NewUci {
     static std::string value(Value v);
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
-    static std::string pv(const Position& pos, Depth depth, TimePoint elapsed);
-    std::string        wdl(Value v, int ply);
+    static std::string pv(const Position&   pos,
+                          Depth             depth,
+                          TimePoint         elapsed,
+                          const OptionsMap& options,
+                          uint64_t          nodesSearched,
+                          uint64_t          tb_hits,
+                          int               hashfull,
+                          bool              rootInTB);
+    static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 
     OptionsMap         options;

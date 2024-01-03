@@ -335,56 +335,60 @@ std::string NewUci::move(Move m, bool chess960) {
     return move;
 }
 
-std::string NewUci::pv(const Position&, Depth, TimePoint) {
-    // std::stringstream ss;
-    // TimePoint         time          = elapsed + 1;
-    // const RootMoves&  rootMoves     = pos.this_thread()->rootMoves;
-    // size_t            pvIdx         = pos.this_thread()->pvIdx;
-    // size_t            multiPV       = std::min(size_t(options["MultiPV"]), rootMoves.size());
-    // uint64_t          nodesSearched = threads.nodes_searched();
-    // uint64_t          tbHits        = threads.tb_hits() + (TB::RootInTB ? rootMoves.size() : 0);
+std::string NewUci::pv(const Position&   pos,
+                       Depth             depth,
+                       TimePoint         elapsed,
+                       const OptionsMap& options,
+                       uint64_t          nodesSearched,
+                       uint64_t          tb_hits,
+                       int               hashfull,
+                       bool              rootInTB) {
+    std::stringstream ss;
+    TimePoint         time      = elapsed + 1;
+    const auto&       rootMoves = pos.this_thread()->rootMoves;
+    size_t            pvIdx     = pos.this_thread()->pvIdx;
+    size_t            multiPV   = std::min(size_t(options["MultiPV"]), rootMoves.size());
+    uint64_t          tbHits    = tb_hits + (rootInTB ? rootMoves.size() : 0);
 
-    // for (size_t i = 0; i < multiPV; ++i)
-    // {
-    //     bool updated = rootMoves[i].score != -VALUE_INFINITE;
+    for (size_t i = 0; i < multiPV; ++i)
+    {
+        bool updated = rootMoves[i].score != -VALUE_INFINITE;
 
-    //     if (depth == 1 && !updated && i > 0)
-    //         continue;
+        if (depth == 1 && !updated && i > 0)
+            continue;
 
-    //     Depth d = updated ? depth : std::max(1, depth - 1);
-    //     Value v = updated ? rootMoves[i].uciScore : rootMoves[i].previousScore;
+        Depth d = updated ? depth : std::max(1, depth - 1);
+        Value v = updated ? rootMoves[i].uciScore : rootMoves[i].previousScore;
 
-    //     if (v == -VALUE_INFINITE)
-    //         v = VALUE_ZERO;
+        if (v == -VALUE_INFINITE)
+            v = VALUE_ZERO;
 
-    //     bool tb = TB::RootInTB && std::abs(v) <= VALUE_TB;
-    //     v       = tb ? rootMoves[i].tbScore : v;
+        bool tb = rootInTB && std::abs(v) <= VALUE_TB;
+        v       = tb ? rootMoves[i].tbScore : v;
 
-    //     if (ss.rdbuf()->in_avail())  // Not at first line
-    //         ss << "\n";
+        if (ss.rdbuf()->in_avail())  // Not at first line
+            ss << "\n";
 
-    //     ss << "info"
-    //        << " depth " << d << " seldepth " << rootMoves[i].selDepth << " multipv " << i + 1
-    //        << " score " << value(v);
+        ss << "info"
+           << " depth " << d << " seldepth " << rootMoves[i].selDepth << " multipv " << i + 1
+           << " score " << value(v);
 
-    //     if (Options["UCI_ShowWDL"])
-    //         ss << wdl(v, pos.game_ply());
+        if (options["UCI_ShowWDL"])
+            ss << wdl(v, pos.game_ply());
 
-    //     if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
-    //         ss << (rootMoves[i].scoreLowerbound
-    //                  ? " lowerbound"
-    //                  : (rootMoves[i].scoreUpperbound ? " upperbound" : ""));
+        if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
+            ss << (rootMoves[i].scoreLowerbound
+                     ? " lowerbound"
+                     : (rootMoves[i].scoreUpperbound ? " upperbound" : ""));
 
-    //     ss << " nodes " << nodesSearched << " nps " << nodesSearched * 1000 / time << " hashfull "
-    //        << TT.hashfull() << " tbhits " << tbHits << " time " << time << " pv";
+        ss << " nodes " << nodesSearched << " nps " << nodesSearched * 1000 / time << " hashfull "
+           << hashfull << " tbhits " << tbHits << " time " << time << " pv";
 
-    //     for (Move m : rootMoves[i].pv)
-    //         ss << " " << move(m, pos.is_chess960());
-    // }
+        for (Move m : rootMoves[i].pv)
+            ss << " " << move(m, pos.is_chess960());
+    }
 
-    // return ss.str();
-
-    return "";
+    return ss.str();
 }
 
 namespace {
