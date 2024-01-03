@@ -38,10 +38,10 @@ NewUci::NewUci() :
     threads(options, tt) {
 
     options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));
-    options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(size_t(o)); }));
+    options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(o); }));
     options.add("Hash", Option(16, 1, MaxHashMB, [this](const Option& o) {
                     threads.main()->wait_for_search_finished();
-                    tt.resize(size_t(o), size_t(options["Threads"]));
+                    tt.resize(o, options["Threads"]);
                 }));
     options.add("Clear Hash", Option(true, [this](const Option&) { search_clear(); }));
     options.add("Ponder", Option(false));
@@ -57,9 +57,8 @@ NewUci::NewUci() :
     options.add("SyzygyProbeDepth", Option(1, 1, 100));
     options.add("Syzygy50MoveRule", Option(true));
     options.add("SyzygyProbeLimit", Option(7, 0, 7));
-    options.add("EvalFile", Option(EvalFileDefaultName, [this](const Option&) {
-                    Eval::NNUE::init(options["EvalFile"]);
-                }));
+    options.add("EvalFile",
+                Option(EvalFileDefaultName, [this](const Option& o) { Eval::NNUE::init(o); }));
 
     threads.set(size_t(options["Threads"]));
 
