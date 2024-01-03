@@ -64,6 +64,8 @@ class NewUci {
     TranspositionTable tt;
     ThreadPool         threads;
 
+    std::string currentEvalFileName = "None";
+
    private:
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
     void bench(Position& pos, std::istream& args, StateListPtr& states);

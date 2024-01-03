@@ -34,8 +34,6 @@ std::string trace(Position& pos);
 Value simple_eval(const Position& pos, Color c);
 Value evaluate(const Position& pos);
 
-extern std::string currentEvalFileName;
-
 // The default net name MUST follow the format nn-[SHA256 first 12 digits].nnue
 // for the build process (profile-build and fishtest) to work. Do not change the
 // name of the macro, as it is used in the Makefile.
@@ -43,8 +41,8 @@ extern std::string currentEvalFileName;
 
 namespace NNUE {
 
-void init(const std::string&);
-void verify(const std::string&);
+void init(const std::string&, std::string& currentEvalFileName);
+void verify(const std::string&, const std::string& currentEvalFileName);
 
 }  // namespace NNUE
 

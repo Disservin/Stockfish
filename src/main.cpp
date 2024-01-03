@@ -42,7 +42,7 @@ int main(int argc, char* argv[]) {
     Tune::init(uci.options);
     Bitboards::init();
     Position::init();
-    Eval::NNUE::init(uci.options["EvalFile"]);
+    Eval::NNUE::init(uci.options["EvalFile"], uci.currentEvalFileName);
 
     uci.loop(argc, argv);
 

@@ -72,7 +72,7 @@ void        hint_common_parent_position(const Position& pos);
 
 bool load_eval(std::string name, std::istream& stream);
 bool save_eval(std::ostream& stream);
-bool save_eval(const std::optional<std::string>& filename);
+bool save_eval(const std::optional<std::string>& filename, const std::string& currentEvalFileName);
 
 }  // namespace Stockfish::Eval::NNUE
 

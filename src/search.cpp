@@ -202,10 +202,7 @@ void MainThread::search() {
         return;
     }
 
-    Color us = rootPos.side_to_move();
     tt.new_search();
-
-    Eval::NNUE::verify(options["EvalFile"]);
 
     if (rootMoves.empty())
     {
@@ -238,7 +235,7 @@ void MainThread::search() {
     // When playing in 'nodes as time' mode, subtract the searched nodes from
     // the available ones before exiting.
     if (limits.npmsec)
-        tm.availableNodes += limits.inc[us] - threads.nodes_searched();
+        tm.availableNodes += limits.inc[rootPos.side_to_move()] - threads.nodes_searched();
 
     Thread* bestThread = this;
     Skill   skill =

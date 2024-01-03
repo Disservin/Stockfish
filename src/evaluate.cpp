@@ -57,8 +57,6 @@ namespace Stockfish {
 
 namespace Eval {
 
-std::string currentEvalFileName = "None";
-
 // Tries to load a NNUE network at startup time, or when the engine
 // receives a UCI command "setoption name EvalFile value nn-[a-z0-9]{12}.nnue"
 // The name of the NNUE network is always retrieved from the EvalFile option.
@@ -66,7 +64,7 @@ std::string currentEvalFileName = "None";
 // network may be embedded in the binary), in the active working directory and
 // in the engine directory. Distro packagers may define the DEFAULT_NNUE_DIRECTORY
 // variable to have the engine search in a special directory in their distro.
-void NNUE::init(const std::string& uci_eval_file) {
+void NNUE::init(const std::string& uci_eval_file, std::string& currentEvalFileName) {
 
     std::string eval_file = uci_eval_file;
     if (eval_file.empty())
@@ -113,7 +111,7 @@ void NNUE::init(const std::string& uci_eval_file) {
 }
 
 // Verifies that the last net used was loaded successfully
-void NNUE::verify(const std::string& uci_eval_file) {
+void NNUE::verify(const std::string& uci_eval_file, const std::string& currentEvalFileName) {
 
     std::string eval_file = uci_eval_file;
     if (eval_file.empty())

@@ -396,7 +396,7 @@ bool save_eval(std::ostream& stream) {
 }
 
 // Save eval, to a file given by its name
-bool save_eval(const std::optional<std::string>& filename) {
+bool save_eval(const std::optional<std::string>& filename, const std::string& currentEvalFileName) {
 
     std::string actualFilename;
     std::string msg;
