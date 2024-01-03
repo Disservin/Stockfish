@@ -203,64 +203,65 @@ void MainThread::search() {
     }
 
     Color us = rootPos.side_to_move();
-    uci.tt.new_search();
+    tt.new_search();
 
-    Eval::NNUE::verify(uci.options["EvalFile"]);
+    Eval::NNUE::verify(options["EvalFile"]);
 
     if (rootMoves.empty())
     {
         rootMoves.emplace_back(MOVE_NONE);
         sync_cout << "info depth 0 score "
-                  << uci.value(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW) << sync_endl;
+                  << NewUci::value(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW) << sync_endl;
     }
     else
     {
-        uci.threads.start_searching();  // start non-main threads
-        Thread::search();               // main thread start searching
+        threads.start_searching();  // start non-main threads
+        Thread::search();           // main thread start searching
     }
 
     // When we reach the maximum depth, we can arrive here without a raise of
-    // uci.threads.stop. However, if we are pondering or in an infinite search,
+    // threads.stop. However, if we are pondering or in an infinite search,
     // the UCI protocol states that we shouldn't print the best move before the
     // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
     // until the GUI sends one of those commands.
 
-    while (!uci.threads.stop && (ponder || limits.infinite))
+    while (!threads.stop && (ponder || limits.infinite))
     {}  // Busy wait for a stop or a ponder reset
 
     // Stop the threads if not already stopped (also raise the stop if
-    // "ponderhit" just reset uci.threads.ponder).
-    uci.threads.stop = true;
+    // "ponderhit" just reset threads.ponder).
+    threads.stop = true;
 
     // Wait until all threads have finished
-    uci.threads.wait_for_search_finished();
+    threads.wait_for_search_finished();
 
     // When playing in 'nodes as time' mode, subtract the searched nodes from
     // the available ones before exiting.
     if (limits.npmsec)
-        tm.availableNodes += limits.inc[us] - uci.threads.nodes_searched();
+        tm.availableNodes += limits.inc[us] - threads.nodes_searched();
 
     Thread* bestThread = this;
-    Skill   skill      = Skill(uci.options["Skill Level"],
-                        uci.options["UCI_LimitStrength"] ? int(uci.options["UCI_Elo"]) : 0);
+    Skill   skill =
+      Skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
-    if (int(uci.options["MultiPV"]) == 1 && !limits.depth && !skill.enabled()
+    if (int(options["MultiPV"]) == 1 && !limits.depth && !skill.enabled()
         && rootMoves[0].pv[0] != MOVE_NONE)
-        bestThread = uci.threads.get_best_thread();
+        bestThread = threads.get_best_thread();
 
     bestPreviousScore        = bestThread->rootMoves[0].score;
     bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << uci.pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed())
+        sync_cout << NewUci::pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed())
                   << sync_endl;
 
-    sync_cout << "bestmove " << uci.move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+    sync_cout << "bestmove " << NewUci::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
     if (bestThread->rootMoves[0].pv.size() > 1
-        || bestThread->rootMoves[0].extract_ponder_from_tt(uci.tt, rootPos))
-        std::cout << " ponder " << uci.move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+        || bestThread->rootMoves[0].extract_ponder_from_tt(tt, rootPos))
+        std::cout << " ponder "
+                  << NewUci::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
 
     std::cout << sync_endl;
 }
@@ -279,7 +280,7 @@ void Thread::search() {
     Value       alpha, beta, delta;
     Move        lastBestMove      = MOVE_NONE;
     Depth       lastBestMoveDepth = 0;
-    MainThread* mainThread        = (this == uci.threads.main() ? uci.threads.main() : nullptr);
+    MainThread* mainThread        = (this == threads.main() ? threads.main() : nullptr);
     double      timeReduction = 1, totBestMoveChanges = 0;
     Color       us      = rootPos.side_to_move();
     int         iterIdx = 0;
@@ -309,9 +310,8 @@ void Thread::search() {
                 mainThread->iterValue[i] = mainThread->bestPreviousScore;
     }
 
-    size_t multiPV = size_t(uci.options["MultiPV"]);
-    Skill  skill(uci.options["Skill Level"],
-                uci.options["UCI_LimitStrength"] ? int(uci.options["UCI_Elo"]) : 0);
+    size_t multiPV = size_t(options["MultiPV"]);
+    Skill skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     // When playing with strength handicap enable MultiPV search that we will
     // use behind-the-scenes to retrieve a set of possible moves.
@@ -323,7 +323,7 @@ void Thread::search() {
     int searchAgainCounter = 0;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
-    while (++rootDepth < MAX_PLY && !uci.threads.stop
+    while (++rootDepth < MAX_PLY && !threads.stop
            && !(limits.depth && mainThread && rootDepth > limits.depth))
     {
         // Age out PV variability metric
@@ -338,11 +338,11 @@ void Thread::search() {
         size_t pvFirst = 0;
         pvLast         = 0;
 
-        if (!uci.threads.increaseDepth)
+        if (!threads.increaseDepth)
             searchAgainCounter++;
 
         // MultiPV loop. We perform a full root search for each PV line
-        for (pvIdx = 0; pvIdx < multiPV && !uci.threads.stop; ++pvIdx)
+        for (pvIdx = 0; pvIdx < multiPV && !threads.stop; ++pvIdx)
         {
             if (pvIdx == pvLast)
             {
@@ -388,14 +388,15 @@ void Thread::search() {
                 // If search has been stopped, we break immediately. Sorting is
                 // safe because RootMoves is still valid, although it refers to
                 // the previous iteration.
-                if (uci.threads.stop)
+                if (threads.stop)
                     break;
 
                 // When failing high/low give some update (without cluttering
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
                     && mainThread->tm.elapsed() > 3000)
-                    sync_cout << uci.pv(rootPos, rootDepth, mainThread->tm.elapsed()) << sync_endl;
+                    sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed())
+                              << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
                 // re-search, otherwise exit the loop.
@@ -425,11 +426,11 @@ void Thread::search() {
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
             if (mainThread
-                && (uci.threads.stop || pvIdx + 1 == multiPV || mainThread->tm.elapsed() > 3000))
-                sync_cout << uci.pv(rootPos, rootDepth, mainThread->tm.elapsed()) << sync_endl;
+                && (threads.stop || pvIdx + 1 == multiPV || mainThread->tm.elapsed() > 3000))
+                sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed()) << sync_endl;
         }
 
-        if (!uci.threads.stop)
+        if (!threads.stop)
             completedDepth = rootDepth;
 
         if (rootMoves[0].pv[0] != lastBestMove)
@@ -441,24 +442,24 @@ void Thread::search() {
         // Have we found a "mate in x"?
         if (limits.mate && bestValue >= VALUE_MATE_IN_MAX_PLY
             && VALUE_MATE - bestValue <= 2 * limits.mate)
-            uci.threads.stop = true;
+            threads.stop = true;
 
         if (!mainThread)
             continue;
 
         // If the skill level is enabled and time is up, pick a sub-optimal best move
         if (skill.enabled() && skill.time_to_pick(rootDepth))
-            skill.pick_best(uci.threads.main()->rootMoves, multiPV);
+            skill.pick_best(threads.main()->rootMoves, multiPV);
 
         // Use part of the gained time from a previous stable move for the current move
-        for (Thread* th : uci.threads)
+        for (Thread* th : threads)
         {
             totBestMoveChanges += th->bestMoveChanges;
             th->bestMoveChanges = 0;
         }
 
         // Do we have time for the next iteration? Can we stop searching now?
-        if (limits.use_time_management() && !uci.threads.stop && !mainThread->stopOnPonderhit)
+        if (limits.use_time_management() && !threads.stop && !mainThread->stopOnPonderhit)
         {
             double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
                                   + 6 * (mainThread->iterValue[iterIdx] - bestValue))
@@ -468,7 +469,7 @@ void Thread::search() {
             // If the bestMove is stable over several iterations, reduce time accordingly
             timeReduction    = lastBestMoveDepth + 8 < completedDepth ? 1.56 : 0.69;
             double reduction = (1.4 + mainThread->previousTimeReduction) / (2.17 * timeReduction);
-            double bestMoveInstability = 1 + 1.79 * totBestMoveChanges / uci.threads.size();
+            double bestMoveInstability = 1 + 1.79 * totBestMoveChanges / threads.size();
 
             double totalTime =
               mainThread->tm.optimum() * fallingEval * reduction * bestMoveInstability;
@@ -485,12 +486,12 @@ void Thread::search() {
                 if (mainThread->ponder)
                     mainThread->stopOnPonderhit = true;
                 else
-                    uci.threads.stop = true;
+                    threads.stop = true;
             }
             else if (!mainThread->ponder && mainThread->tm.elapsed() > totalTime * 0.50)
-                uci.threads.increaseDepth = false;
+                threads.increaseDepth = false;
             else
-                uci.threads.increaseDepth = true;
+                threads.increaseDepth = true;
         }
 
         mainThread->iterValue[iterIdx] = bestValue;
@@ -507,7 +508,7 @@ void Thread::search() {
         std::swap(rootMoves[0],
                   *std::find(rootMoves.begin(), rootMoves.end(),
                              skill.best ? skill.best
-                                        : skill.pick_best(uci.threads.main()->rootMoves, multiPV)));
+                                        : skill.pick_best(threads.main()->rootMoves, multiPV)));
 }
 
 
@@ -562,7 +563,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     maxValue                                              = VALUE_INFINITE;
 
     // Check for the available remaining time
-    if (thisThread == thisThread->uci.threads.main())
+    if (thisThread == thisThread->threads.main())
         static_cast<MainThread*>(thisThread)->check_time();
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
@@ -572,7 +573,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     if (!rootNode)
     {
         // Step 2. Check for aborted search and immediate draw
-        if (thisThread->uci.threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply)
+        if (thisThread->threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
             return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
                                                         : value_draw(pos.this_thread());
@@ -603,7 +604,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
     posKey       = pos.key();
-    tte          = thisThread->uci.tt.probe(posKey, ss->ttHit);
+    tte          = thisThread->tt.probe(posKey, ss->ttHit);
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
@@ -665,7 +666,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
             TB::WDLScore   wdl = Tablebases::probe_wdl(pos, &err);
 
             // Force check of time on the next occasion
-            if (thisThread == thisThread->uci.threads.main())
+            if (thisThread == thisThread->threads.main())
                 static_cast<MainThread*>(thisThread)->callsCnt = 0;
 
             if (err != TB::ProbeState::FAIL)
@@ -689,7 +690,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6), MOVE_NONE, VALUE_NONE,
-                              thisThread->uci.tt.generation());
+                              thisThread->tt.generation());
 
                     return value;
                 }
@@ -755,7 +756,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
         // Static evaluation is saved as it was before adjustment by correction history
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  unadjustedStaticEval, thisThread->uci.tt.generation());
+                  unadjustedStaticEval, thisThread->tt.generation());
     }
 
     // Use static evaluation difference to improve quiet move ordering (~9 Elo)
@@ -813,7 +814,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         ss->currentMove         = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
-        pos.do_null_move(st, thisThread->uci.tt);
+        pos.do_null_move(st, thisThread->tt);
 
         Value nullValue = -search<NonPV>(pos, ss + 1, -beta, -beta + 1, depth - R, !cutNode);
 
@@ -879,7 +880,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 assert(pos.capture_stage(move));
 
                 // Prefetch the TT entry for the resulting position
-                prefetch(thisThread->uci.tt.first_entry(pos.key_after(move)));
+                prefetch(thisThread->tt.first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
                 ss->continuationHistory =
@@ -902,7 +903,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
-                              move, unadjustedStaticEval, thisThread->uci.tt.generation());
+                              move, unadjustedStaticEval, thisThread->tt.generation());
                     return std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY ? value - (probCutBeta - beta)
                                                                      : value;
                 }
@@ -964,10 +965,10 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && thisThread == thisThread->uci.threads.main()
-            && thisThread->uci.threads.main()->tm.elapsed() > 3000)
+        if (rootNode && thisThread == thisThread->threads.main()
+            && thisThread->threads.main()->tm.elapsed() > 3000)
             sync_cout << "info depth " << depth << " currmove "
-                      << thisThread->uci.move(move, pos.is_chess960()) << " currmovenumber "
+                      << NewUci::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + thisThread->pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;
@@ -1131,7 +1132,7 @@ moves_loop:  // When in check, search starts here
         ss->doubleExtensions = (ss - 1)->doubleExtensions + (extension == 2);
 
         // Speculative prefetch as early as possible
-        prefetch(thisThread->uci.tt.first_entry(pos.key_after(move)));
+        prefetch(thisThread->tt.first_entry(pos.key_after(move)));
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1254,7 +1255,7 @@ moves_loop:  // When in check, search starts here
         // Finished searching the move. If a stop occurred, the return value of
         // the search cannot be trusted, and we return immediately without
         // updating best move, PV and TT.
-        if (thisThread->uci.threads.stop.load(std::memory_order_relaxed))
+        if (thisThread->threads.stop.load(std::memory_order_relaxed))
             return VALUE_ZERO;
 
         if (rootNode)
@@ -1385,7 +1386,7 @@ moves_loop:  // When in check, search starts here
                   bestValue >= beta    ? BOUND_LOWER
                   : PvNode && bestMove ? BOUND_EXACT
                                        : BOUND_UPPER,
-                  depth, bestMove, unadjustedStaticEval, thisThread->uci.tt.generation());
+                  depth, bestMove, unadjustedStaticEval, thisThread->tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && (!bestMove || !pos.capture(bestMove))
@@ -1465,7 +1466,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     // Step 3. Transposition table lookup
     posKey  = pos.key();
-    tte     = thisThread->uci.tt.probe(posKey, ss->ttHit);
+    tte     = thisThread->tt.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
@@ -1518,7 +1519,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         {
             if (!ss->ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
-                          MOVE_NONE, unadjustedStaticEval, thisThread->uci.tt.generation());
+                          MOVE_NONE, unadjustedStaticEval, thisThread->tt.generation());
 
             return bestValue;
         }
@@ -1611,7 +1612,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         }
 
         // Speculative prefetch as early as possible
-        prefetch(thisThread->uci.tt.first_entry(pos.key_after(move)));
+        prefetch(thisThread->tt.first_entry(pos.key_after(move)));
 
         // Update the current move
         ss->currentMove = move;
@@ -1665,7 +1666,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // Static evaluation is saved as it was before adjustment by correction history
     tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, ttDepth, bestMove,
-              unadjustedStaticEval, thisThread->uci.tt.generation());
+              unadjustedStaticEval, thisThread->tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1904,8 +1905,8 @@ void MainThread::check_time() {
 
     if ((limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
         || (limits.movetime && elapsed >= limits.movetime)
-        || (limits.nodes && uci.threads.nodes_searched() >= uint64_t(limits.nodes)))
-        uci.threads.stop = true;
+        || (limits.nodes && threads.nodes_searched() >= uint64_t(limits.nodes)))
+        threads.stop = true;
 }
 
 

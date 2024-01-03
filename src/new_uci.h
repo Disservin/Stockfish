@@ -46,12 +46,12 @@ class NewUci {
     ~NewUci();
     void               loop(int argc, char* argv[]);
     static int         to_cp(Value v);
-    std::string        value(Value v);
+    static std::string value(Value v);
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
-    std::string        pv(const Position& pos, Depth depth, TimePoint elapsed);
+    static std::string pv(const Position& pos, Depth depth, TimePoint elapsed);
     std::string        wdl(Value v, int ply);
-    Move               to_move(const Position& pos, std::string& str);
+    static Move        to_move(const Position& pos, std::string& str);
 
     OptionsMap         options;
     TranspositionTable tt;

@@ -38,10 +38,14 @@ namespace Stockfish {
 
 class NewUci;
 
+class ThreadPool;
+
 // Thread class keeps together all the thread-related stuff.
 class Thread {
    public:
-    NewUci& uci;
+    OptionsMap&         options;
+    TranspositionTable& tt;
+    ThreadPool&         threads;
 
    private:
     std::mutex              mutex;
@@ -51,7 +55,7 @@ class Thread {
     NativeThread            stdThread;
 
    public:
-    Thread(NewUci&, size_t);
+    Thread(OptionsMap&, TranspositionTable&, ThreadPool&, size_t);
     virtual ~Thread();
     virtual void search();
     void         clear();
@@ -108,8 +112,9 @@ struct MainThread: public Thread {
 class ThreadPool {
 
    public:
-    ThreadPool(NewUci& u) :
-        uci(u) {}
+    ThreadPool(OptionsMap& o, TranspositionTable& t) :
+        options(o),
+        tt(t) {}
 
     void start_thinking(Position&, StateListPtr&, Search::LimitsType, bool = false);
     void clear();
@@ -132,7 +137,8 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    NewUci& uci;
+    OptionsMap&         options;
+    TranspositionTable& tt;
 
     StateListPtr         setupStates;
     std::vector<Thread*> threads;

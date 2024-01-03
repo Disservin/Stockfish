@@ -34,7 +34,7 @@ const int      NormalizeToPawnValue = 328;
 
 
 NewUci::NewUci() :
-    threads(*this) {
+    threads(options, tt) {
     constexpr int MaxHashMB = Is64Bit ? 33554432 : 2048;
 
     options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));

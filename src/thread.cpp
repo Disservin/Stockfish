@@ -44,8 +44,10 @@ namespace Stockfish {
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
-Thread::Thread(NewUci& u, size_t n) :
-    uci(u),
+Thread::Thread(OptionsMap& o, TranspositionTable& t, ThreadPool& tp, size_t n) :
+    options(o),
+    tt(t),
+    threads(tp),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 
@@ -109,7 +111,7 @@ void Thread::idle_loop() {
     // some Windows NUMA hardware, for instance in fishtest. To make it simple,
     // just check if running threads are below a threshold, in this case, all this
     // NUMA machinery is not needed.
-    if (uci.options["Threads"] > 8)
+    if (options["Threads"] > 8)
         WinProcGroup::bindThisThread(idx);
 
     while (true)
@@ -143,17 +145,18 @@ void ThreadPool::set(size_t requested) {
 
     if (requested > 0)  // create new thread(s)
     {
-        threads.push_back(new MainThread(uci, 0));
+        threads.push_back(new MainThread(options, tt, *this, 0));
+
 
         while (threads.size() < requested)
-            threads.push_back(new Thread(uci, threads.size()));
+            threads.push_back(new Thread(options, tt, *this, threads.size()));
         clear();
 
-        uci.threads.main()->wait_for_search_finished();
+        main()->wait_for_search_finished();
 
 
         // Reallocate the hash with the new threadpool size
-        uci.tt.resize(size_t(uci.options["Hash"]), requested);
+        tt.resize(size_t(options["Hash"]), requested);
 
 
         // Init thread number dependent search params.
@@ -187,7 +190,7 @@ void ThreadPool::start_thinking(Position&          pos,
 
     main()->stopOnPonderhit = stop = false;
     main()->ponder                 = ponderMode;
-    main()->tm.init(limits, pos.side_to_move(), pos.game_ply(), uci.options);
+    main()->tm.init(limits, pos.side_to_move(), pos.game_ply(), options);
 
     increaseDepth = true;
 
@@ -199,7 +202,7 @@ void ThreadPool::start_thinking(Position&          pos,
             rootMoves.emplace_back(m);
 
     if (!rootMoves.empty())
-        Tablebases::rank_root_moves(uci.options, pos, rootMoves);
+        Tablebases::rank_root_moves(options, pos, rootMoves);
 
     // After ownership transfer 'states' becomes empty, so if we stop the search
     // and call 'go' again without setting a new position states.get() == nullptr.
