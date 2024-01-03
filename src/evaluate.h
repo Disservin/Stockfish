@@ -43,8 +43,8 @@ extern std::string currentEvalFileName;
 
 namespace NNUE {
 
-void init();
-void verify();
+void init(const std::string&);
+void verify(const std::string&);
 
 }  // namespace NNUE
 

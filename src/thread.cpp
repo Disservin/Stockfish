@@ -34,16 +34,18 @@
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
-#include "uci.h"
+#include "new_uci.h"
+
 
 namespace Stockfish {
 
-ThreadPool Threads;  // Global object
+// ThreadPool Threads;  // Global object
 
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
-Thread::Thread(size_t n) :
+Thread::Thread(NewUci& u, size_t n) :
+    uci(u),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 
@@ -107,7 +109,7 @@ void Thread::idle_loop() {
     // some Windows NUMA hardware, for instance in fishtest. To make it simple,
     // just check if running threads are below a threshold, in this case, all this
     // NUMA machinery is not needed.
-    if (Options["Threads"] > 8)
+    if (uci.options["Threads"] > 8)
         WinProcGroup::bindThisThread(idx);
 
     while (true)
@@ -141,17 +143,21 @@ void ThreadPool::set(size_t requested) {
 
     if (requested > 0)  // create new thread(s)
     {
-        threads.push_back(new MainThread(0));
+        threads.push_back(new MainThread(uci, 0));
 
         while (threads.size() < requested)
-            threads.push_back(new Thread(threads.size()));
+            threads.push_back(new Thread(uci, threads.size()));
         clear();
 
+        uci.threads.main()->wait_for_search_finished();
+
+
         // Reallocate the hash with the new threadpool size
-        TT.resize(size_t(Options["Hash"]));
+        uci.tt.resize(size_t(uci.options["Hash"]), requested);
+
 
         // Init thread number dependent search params.
-        Search::init();
+        Search::init(uci);
     }
 }
 
@@ -181,7 +187,7 @@ void ThreadPool::start_thinking(Position&          pos,
 
     main()->stopOnPonderhit = stop = false;
     main()->ponder                 = ponderMode;
-    main()->tm.init(limits, pos.side_to_move(), pos.game_ply());
+    main()->tm.init(limits, pos.side_to_move(), pos.game_ply(), uci.options);
 
     increaseDepth = true;
 
@@ -193,7 +199,7 @@ void ThreadPool::start_thinking(Position&          pos,
             rootMoves.emplace_back(m);
 
     if (!rootMoves.empty())
-        Tablebases::rank_root_moves(pos, rootMoves);
+        Tablebases::rank_root_moves(uci.options, pos, rootMoves);
 
     // After ownership transfer 'states' becomes empty, so if we stop the search
     // and call 'go' again without setting a new position states.get() == nullptr.

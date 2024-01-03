@@ -22,16 +22,22 @@
 #include <cstdint>
 
 #include "misc.h"
-#include "search.h"
 #include "types.h"
+#include "options_map.h"
 
 namespace Stockfish {
+
+namespace Search {
+struct LimitsType;
+}
+
+enum Color;
 
 // The TimeManagement class computes the optimal time to think depending on
 // the maximum available time, the game move number, and other parameters.
 class TimeManagement {
    public:
-    void init(Search::LimitsType& limits, Color us, int ply);
+    void init(Search::LimitsType& limits, Color us, int ply, const OptionsMap& options);
 
     TimePoint optimum() const;
     TimePoint maximum() const;

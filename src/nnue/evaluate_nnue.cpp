@@ -33,7 +33,7 @@
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
-#include "../uci.h"
+#include "../new_uci.h"
 #include "nnue_accumulator.h"
 #include "nnue_common.h"
 
@@ -239,7 +239,7 @@ static void format_cp_compact(Value v, char* buffer) {
 
     buffer[0] = (v < 0 ? '-' : v > 0 ? '+' : ' ');
 
-    int cp = std::abs(UCI::to_cp(v));
+    int cp = std::abs(NewUci::to_cp(v));
     if (cp >= 10000)
     {
         buffer[1] = '0' + cp / 10000;
@@ -273,7 +273,7 @@ static void format_cp_compact(Value v, char* buffer) {
 // Converts a Value into pawns, always keeping two decimals
 static void format_cp_aligned_dot(Value v, std::stringstream& stream) {
 
-    const double pawns = std::abs(0.01 * UCI::to_cp(v));
+    const double pawns = std::abs(0.01 * NewUci::to_cp(v));
 
     stream << (v < 0   ? '-'
                : v > 0 ? '+'

@@ -38,7 +38,8 @@
 #include "syzygy/tbprobe.h"
 #include "thread.h"
 #include "tt.h"
-#include "uci.h"
+#include "new_uci.h"
+
 
 using std::string;
 
@@ -79,7 +80,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
        << std::setw(16) << pos.key() << std::setfill(' ') << std::dec << "\nCheckers: ";
 
     for (Bitboard b = pos.checkers(); b;)
-        os << UCI::square(pop_lsb(b)) << " ";
+        os << NewUci::square(pop_lsb(b)) << " ";
 
     if (int(Tablebases::MaxCardinality) >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
     {
@@ -434,7 +435,7 @@ string Position::fen() const {
     if (!can_castle(ANY_CASTLING))
         ss << '-';
 
-    ss << (ep_square() == SQ_NONE ? " - " : " " + UCI::square(ep_square()) + " ") << st->rule50
+    ss << (ep_square() == SQ_NONE ? " - " : " " + NewUci::square(ep_square()) + " ") << st->rule50
        << " " << 1 + (gamePly - (sideToMove == BLACK)) / 2;
 
     return ss.str();
@@ -959,7 +960,7 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
 
 // Used to do a "null move": it flips
 // the side to move without executing any move on the board.
-void Position::do_null_move(StateInfo& newSt) {
+void Position::do_null_move(StateInfo& newSt, TranspositionTable& tt) {
 
     assert(!checkers());
     assert(&newSt != st);
@@ -982,7 +983,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
     st->key ^= Zobrist::side;
     ++st->rule50;
-    prefetch(TT.first_entry(key()));
+    prefetch(tt.first_entry(key()));
 
     st->pliesFromNull = 0;
 

@@ -28,13 +28,14 @@
 #include <sstream>
 #include <vector>
 
+#include "new_uci.h"
 #include "incbin/incbin.h"
 #include "misc.h"
 #include "nnue/evaluate_nnue.h"
 #include "position.h"
 #include "thread.h"
 #include "types.h"
-#include "uci.h"
+
 
 // Macro to embed the default efficiently updatable neural network (NNUE) file
 // data in the engine binary (using incbin.h, by Dale Weiler).
@@ -65,9 +66,9 @@ std::string currentEvalFileName = "None";
 // network may be embedded in the binary), in the active working directory and
 // in the engine directory. Distro packagers may define the DEFAULT_NNUE_DIRECTORY
 // variable to have the engine search in a special directory in their distro.
-void NNUE::init() {
+void NNUE::init(const std::string& uci_eval_file) {
 
-    std::string eval_file = std::string(Options["EvalFile"]);
+    std::string eval_file = uci_eval_file;
     if (eval_file.empty())
         eval_file = EvalFileDefaultName;
 
@@ -112,9 +113,9 @@ void NNUE::init() {
 }
 
 // Verifies that the last net used was loaded successfully
-void NNUE::verify() {
+void NNUE::verify(const std::string& uci_eval_file) {
 
-    std::string eval_file = std::string(Options["EvalFile"]);
+    std::string eval_file = uci_eval_file;
     if (eval_file.empty())
         eval_file = EvalFileDefaultName;
 
@@ -219,11 +220,11 @@ std::string Eval::trace(Position& pos) {
     Value v;
     v = NNUE::evaluate(pos, false);
     v = pos.side_to_move() == WHITE ? v : -v;
-    ss << "NNUE evaluation        " << 0.01 * UCI::to_cp(v) << " (white side)\n";
+    ss << "NNUE evaluation        " << 0.01 * NewUci::to_cp(v) << " (white side)\n";
 
     v = evaluate(pos);
     v = pos.side_to_move() == WHITE ? v : -v;
-    ss << "Final evaluation       " << 0.01 * UCI::to_cp(v) << " (white side)";
+    ss << "Final evaluation       " << 0.01 * NewUci::to_cp(v) << " (white side)";
     ss << " [with scaled NNUE, ...]";
     ss << "\n";
 

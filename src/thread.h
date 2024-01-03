@@ -26,19 +26,24 @@
 #include <mutex>
 #include <vector>
 
-#include "movepick.h"
+// #include "movepick.h"
 #include "position.h"
-#include "search.h"
 #include "thread_win32_osx.h"
 #include "types.h"
 #include "timeman.h"
+#include "search.h"
+// #include "new_uci.h"
 
 namespace Stockfish {
 
+class NewUci;
 
 // Thread class keeps together all the thread-related stuff.
 class Thread {
+   public:
+    NewUci& uci;
 
+   private:
     std::mutex              mutex;
     std::condition_variable cv;
     size_t                  idx;
@@ -46,7 +51,7 @@ class Thread {
     NativeThread            stdThread;
 
    public:
-    explicit Thread(size_t);
+    Thread(NewUci&, size_t);
     virtual ~Thread();
     virtual void search();
     void         clear();
@@ -54,6 +59,7 @@ class Thread {
     void         start_searching();
     void         wait_for_search_finished();
     size_t       id() const { return idx; }
+
 
     Search::LimitsType limits;
 
@@ -102,6 +108,9 @@ struct MainThread: public Thread {
 class ThreadPool {
 
    public:
+    ThreadPool(NewUci& u) :
+        uci(u) {}
+
     void start_thinking(Position&, StateListPtr&, Search::LimitsType, bool = false);
     void clear();
     void set(size_t);
@@ -123,6 +132,8 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
+    NewUci& uci;
+
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
 
@@ -135,7 +146,7 @@ class ThreadPool {
     }
 };
 
-extern ThreadPool Threads;
+// extern ThreadPool Threads;
 
 }  // namespace Stockfish
 

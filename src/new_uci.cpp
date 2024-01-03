@@ -1,0 +1,429 @@
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2023 The Stockfish developers (see AUTHORS file)
+
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "new_uci.h"
+
+#include <sstream>
+
+#include "nnue/evaluate_nnue.h"
+#include "evaluate.h"
+#include "search.h"
+#include "syzygy/tbprobe.h"
+#include "benchmark.h"
+#include "options_map.h"
+
+
+namespace Stockfish {
+constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+const int      NormalizeToPawnValue = 328;
+
+
+NewUci::NewUci() :
+    threads(*this) {
+    constexpr int MaxHashMB = Is64Bit ? 33554432 : 2048;
+
+    options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));
+    options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(size_t(o)); }));
+    options.add("Hash", Option(16, 1, MaxHashMB, [this](const Option& o) {
+                    threads.main()->wait_for_search_finished();
+                    tt.resize(size_t(o), size_t(options["Threads"]));
+                }));
+    options.add("Clear Hash", Option(true, [this](const Option&) { Search::clear(*this); }));
+    options.add("Ponder", Option(false));
+    options.add("MultiPV", Option(1, 1, 500));
+    options.add("Skill Level", Option(20, 0, 20));
+    options.add("Move Overhead", Option(10, 0, 5000));
+    options.add("nodestime", Option(0, 0, 10000));
+    options.add("UCI_Chess960", Option(false));
+    options.add("UCI_LimitStrength", Option(false));
+    options.add("UCI_Elo", Option(1320, 1320, 3190));
+    options.add("UCI_ShowWDL", Option(false));
+    options.add("SyzygyPath", Option("<empty>", [](const Option& o) { Tablebases::init(o); }));
+    options.add("SyzygyProbeDepth", Option(1, 1, 100));
+    options.add("Syzygy50MoveRule", Option(true));
+    options.add("SyzygyProbeLimit", Option(7, 0, 7));
+    options.add("EvalFile", Option(EvalFileDefaultName, [this](const Option&) {
+                    Eval::NNUE::init(options["EvalFile"]);
+                }));
+
+    threads.set(size_t(options["Threads"]));
+}
+
+NewUci::~NewUci() { threads.set(0); }
+
+
+void NewUci::loop(int argc, char* argv[]) {
+    Position     pos;
+    std::string  token, cmd;
+    StateListPtr states(new std::deque<StateInfo>(1));
+
+    pos.set(StartFEN, false, &states->back(), threads.main());
+
+    for (int i = 1; i < argc; ++i)
+        cmd += std::string(argv[i]) + " ";
+
+    do
+    {
+        if (argc == 1
+            && !getline(std::cin, cmd))  // Wait for an input or an end-of-file (EOF) indication
+            cmd = "quit";
+
+        std::istringstream is(cmd);
+
+        token.clear();  // Avoid a stale if getline() returns nothing or a blank line
+        is >> std::skipws >> token;
+
+        if (token == "quit" || token == "stop")
+            threads.stop = true;
+
+        // The GUI sends 'ponderhit' to tell that the user has played the expected move.
+        // So, 'ponderhit' is sent if pondering was done on the same move that the user
+        // has played. The search should continue, but should also switch from pondering
+        // to the normal search.
+        else if (token == "ponderhit")
+            threads.main()->ponder = false;  // Switch to the normal search
+
+        else if (token == "uci")
+            sync_cout << "id name " << engine_info(true) << "\n"
+                      << options << "\nuciok" << sync_endl;
+
+        else if (token == "setoption")
+            options.setoption(is);
+        else if (token == "go")
+            go(pos, is, states);
+        else if (token == "position")
+            position(pos, is, states);
+        else if (token == "ucinewgame")
+            Search::clear(*this);
+        else if (token == "isready")
+            sync_cout << "readyok" << sync_endl;
+
+        // Add custom non-UCI commands, mainly for debugging purposes.
+        // These commands must not be used during a search!
+        else if (token == "flip")
+            pos.flip();
+        else if (token == "bench")
+            bench(pos, is, states);
+        else if (token == "d")
+            sync_cout << pos << sync_endl;
+        else if (token == "eval")
+            trace_eval(pos);
+        else if (token == "compiler")
+            sync_cout << compiler_info() << sync_endl;
+        else if (token == "export_net")
+        {
+            std::optional<std::string> filename;
+            std::string                f;
+            if (is >> std::skipws >> f)
+                filename = f;
+            Eval::NNUE::save_eval(filename);
+        }
+        else if (token == "--help" || token == "help" || token == "--license" || token == "license")
+            sync_cout
+              << "\nStockfish is a powerful chess engine for playing and analyzing."
+                 "\nIt is released as free software licensed under the GNU GPLv3 License."
+                 "\nStockfish is normally used with a graphical user interface (GUI) and implements"
+                 "\nthe Universal Chess Interface (UCI) protocol to communicate with a GUI, an API, etc."
+                 "\nFor any further information, visit https://github.com/official-stockfish/Stockfish#readme"
+                 "\nor read the corresponding README.md and Copying.txt files distributed along with this program.\n"
+              << sync_endl;
+        else if (!token.empty() && token[0] != '#')
+            sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
+                      << sync_endl;
+
+    } while (token != "quit" && argc == 1);  // The command-line arguments are one-shot
+}
+
+void NewUci::go(Position& pos, std::istringstream& is, StateListPtr& states) {
+
+
+    Search::LimitsType limits;
+    std::string        token;
+    bool               ponderMode = false;
+
+    limits.startTime = now();  // The search starts as early as possible
+
+    while (is >> token)
+        if (token == "searchmoves")  // Needs to be the last command on the line
+            while (is >> token)
+                limits.searchmoves.push_back(to_move(pos, token));
+
+        else if (token == "wtime")
+            is >> limits.time[WHITE];
+        else if (token == "btime")
+            is >> limits.time[BLACK];
+        else if (token == "winc")
+            is >> limits.inc[WHITE];
+        else if (token == "binc")
+            is >> limits.inc[BLACK];
+        else if (token == "movestogo")
+            is >> limits.movestogo;
+        else if (token == "depth")
+            is >> limits.depth;
+        else if (token == "nodes")
+            is >> limits.nodes;
+        else if (token == "movetime")
+            is >> limits.movetime;
+        else if (token == "mate")
+            is >> limits.mate;
+        else if (token == "perft")
+            is >> limits.perft;
+        else if (token == "infinite")
+            limits.infinite = 1;
+        else if (token == "ponder")
+            ponderMode = true;
+
+
+    threads.start_thinking(pos, states, limits, ponderMode);
+}
+
+void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
+    std::string token;
+    uint64_t    num, nodes = 0, cnt = 1;
+
+    std::vector<std::string> list = setup_bench(pos, args);
+
+    num = count_if(list.begin(), list.end(),
+                   [](const std::string& s) { return s.find("go ") == 0 || s.find("eval") == 0; });
+
+    TimePoint elapsed = now();
+
+    for (const auto& cmd : list)
+    {
+        std::istringstream is(cmd);
+        is >> std::skipws >> token;
+
+        if (token == "go" || token == "eval")
+        {
+            std::cerr << "\nPosition: " << cnt++ << '/' << num << " (" << pos.fen() << ")"
+                      << std::endl;
+            if (token == "go")
+            {
+                go(pos, is, states);
+                threads.main()->wait_for_search_finished();
+                nodes += threads.nodes_searched();
+            }
+            else
+                trace_eval(pos);
+        }
+        else if (token == "setoption")
+            options.setoption(is);
+        else if (token == "position")
+            position(pos, is, states);
+        else if (token == "ucinewgame")
+        {
+            Search::clear(*this);
+            elapsed = now();
+        }  // Search::clear() may take a while
+    }
+
+    elapsed = now() - elapsed + 1;  // Ensure positivity to avoid a 'divide by zero'
+
+    dbg_print();
+
+    std::cerr << "\n==========================="
+              << "\nTotal time (ms) : " << elapsed << "\nNodes searched  : " << nodes
+              << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
+}
+
+void NewUci::trace_eval(Position& pos) {
+    StateListPtr states(new std::deque<StateInfo>(1));
+    Position     p;
+    p.set(pos.fen(), options["UCI_Chess960"], &states->back(), threads.main());
+
+    Eval::NNUE::verify(options["EvalFile"]);
+
+    sync_cout << "\n" << Eval::trace(p) << sync_endl;
+}
+
+void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& states) {
+    Move        m;
+    std::string token, fen;
+
+    is >> token;
+
+    if (token == "startpos")
+    {
+        fen = StartFEN;
+        is >> token;  // Consume the "moves" token, if any
+    }
+    else if (token == "fen")
+        while (is >> token && token != "moves")
+            fen += token + " ";
+    else
+        return;
+
+    states = StateListPtr(new std::deque<StateInfo>(1));  // Drop the old state and create a new one
+    pos.set(fen, options["UCI_Chess960"], &states->back(), threads.main());
+
+    // Parse the move list, if any
+    while (is >> token && (m = to_move(pos, token)) != MOVE_NONE)
+    {
+        states->emplace_back();
+        pos.do_move(m, states->back());
+    }
+}
+
+int NewUci::to_cp(Value v) { return 100 * v / NormalizeToPawnValue; }
+
+std::string NewUci::value(Value v) {
+    assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
+
+    std::stringstream ss;
+
+    if (std::abs(v) < VALUE_TB_WIN_IN_MAX_PLY)
+        ss << "cp " << to_cp(v);
+    else if (std::abs(v) <= VALUE_TB)
+    {
+        const int ply = VALUE_TB - std::abs(v);  // recompute ss->ply
+        ss << "cp " << (v > 0 ? 20000 - ply : -20000 + ply);
+    }
+    else
+        ss << "mate " << (v > 0 ? VALUE_MATE - v + 1 : -VALUE_MATE - v) / 2;
+
+    return ss.str();
+}
+
+std::string NewUci::square(Square s) {
+    return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
+}
+
+std::string NewUci::move(Move m, bool chess960) {
+    if (m == MOVE_NONE)
+        return "(none)";
+
+    if (m == MOVE_NULL)
+        return "0000";
+
+    Square from = from_sq(m);
+    Square to   = to_sq(m);
+
+    if (type_of(m) == CASTLING && !chess960)
+        to = make_square(to > from ? FILE_G : FILE_C, rank_of(from));
+
+    std::string move = square(from) + square(to);
+
+    if (type_of(m) == PROMOTION)
+        move += " pnbrqk"[promotion_type(m)];
+
+    return move;
+}
+
+std::string NewUci::pv(const Position&, Depth, TimePoint) {
+    // std::stringstream ss;
+    // TimePoint         time          = elapsed + 1;
+    // const RootMoves&  rootMoves     = pos.this_thread()->rootMoves;
+    // size_t            pvIdx         = pos.this_thread()->pvIdx;
+    // size_t            multiPV       = std::min(size_t(options["MultiPV"]), rootMoves.size());
+    // uint64_t          nodesSearched = threads.nodes_searched();
+    // uint64_t          tbHits        = threads.tb_hits() + (TB::RootInTB ? rootMoves.size() : 0);
+
+    // for (size_t i = 0; i < multiPV; ++i)
+    // {
+    //     bool updated = rootMoves[i].score != -VALUE_INFINITE;
+
+    //     if (depth == 1 && !updated && i > 0)
+    //         continue;
+
+    //     Depth d = updated ? depth : std::max(1, depth - 1);
+    //     Value v = updated ? rootMoves[i].uciScore : rootMoves[i].previousScore;
+
+    //     if (v == -VALUE_INFINITE)
+    //         v = VALUE_ZERO;
+
+    //     bool tb = TB::RootInTB && std::abs(v) <= VALUE_TB;
+    //     v       = tb ? rootMoves[i].tbScore : v;
+
+    //     if (ss.rdbuf()->in_avail())  // Not at first line
+    //         ss << "\n";
+
+    //     ss << "info"
+    //        << " depth " << d << " seldepth " << rootMoves[i].selDepth << " multipv " << i + 1
+    //        << " score " << value(v);
+
+    //     if (Options["UCI_ShowWDL"])
+    //         ss << wdl(v, pos.game_ply());
+
+    //     if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
+    //         ss << (rootMoves[i].scoreLowerbound
+    //                  ? " lowerbound"
+    //                  : (rootMoves[i].scoreUpperbound ? " upperbound" : ""));
+
+    //     ss << " nodes " << nodesSearched << " nps " << nodesSearched * 1000 / time << " hashfull "
+    //        << TT.hashfull() << " tbhits " << tbHits << " time " << time << " pv";
+
+    //     for (Move m : rootMoves[i].pv)
+    //         ss << " " << move(m, pos.is_chess960());
+    // }
+
+    // return ss.str();
+
+    return "";
+}
+
+namespace {
+// The win rate model returns the probability of winning (in per mille units) given an
+// eval and a game ply. It fits the LTC fishtest statistics rather accurately.
+int win_rate_model(Value v, int ply) {
+
+    // The model only captures up to 240 plies, so limit the input and then rescale
+    double m = std::min(240, ply) / 64.0;
+
+    // The coefficients of a third-order polynomial fit is based on the fishtest data
+    // for two parameters that need to transform eval to the argument of a logistic
+    // function.
+    constexpr double as[] = {0.38036525, -2.82015070, 23.17882135, 307.36768407};
+    constexpr double bs[] = {-2.29434733, 13.27689788, -14.26828904, 63.45318330};
+
+    // Enforce that NormalizeToPawnValue corresponds to a 50% win rate at ply 64
+    static_assert(NormalizeToPawnValue == int(as[0] + as[1] + as[2] + as[3]));
+
+    double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
+    double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
+
+    // Transform the eval to centipawns with limited range
+    double x = std::clamp(double(v), -4000.0, 4000.0);
+
+    // Return the win rate in per mille units, rounded to the nearest integer
+    return int(0.5 + 1000 / (1 + std::exp((a - x) / b)));
+}
+}
+
+std::string NewUci::wdl(Value v, int ply) {
+    std::stringstream ss;
+
+    int wdl_w = win_rate_model(v, ply);
+    int wdl_l = win_rate_model(-v, ply);
+    int wdl_d = 1000 - wdl_w - wdl_l;
+    ss << " wdl " << wdl_w << " " << wdl_d << " " << wdl_l;
+
+    return ss.str();
+}
+
+Move NewUci::to_move(const Position& pos, std::string& str) {
+    if (str.length() == 5)
+        str[4] = char(tolower(str[4]));  // The promotion piece character must be lowercased
+
+    for (const auto& m : MoveList<LEGAL>(pos))
+        if (str == move(m, pos.is_chess960()))
+            return m;
+
+    return MOVE_NONE;
+}
+
+}  // namespace Stockfish

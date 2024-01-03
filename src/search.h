@@ -25,10 +25,13 @@
 #include "misc.h"
 #include "movepick.h"
 #include "types.h"
+// #include "new_uci.h"
+#include "tt.h"
 
 namespace Stockfish {
 
 class Position;
+class NewUci;
 
 namespace Search {
 
@@ -61,7 +64,7 @@ struct RootMove {
 
     explicit RootMove(Move m) :
         pv(1, m) {}
-    bool extract_ponder_from_tt(Position& pos);
+    bool extract_ponder_from_tt(TranspositionTable& tt, Position& pos);
     bool operator==(const Move& m) const { return pv[0] == m; }
     // Sort in descending order
     bool operator<(const RootMove& m) const {
@@ -103,8 +106,9 @@ struct LimitsType {
     int64_t           nodes;
 };
 
-void init();
-void clear();
+
+void init(const NewUci& uci);
+void clear(NewUci& uci);
 
 }  // namespace Search
 

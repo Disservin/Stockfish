@@ -27,7 +27,8 @@
 #include "thread.h"
 #include "tune.h"
 #include "types.h"
-#include "uci.h"
+#include "new_uci.h"
+
 
 using namespace Stockfish;
 
@@ -36,16 +37,17 @@ int main(int argc, char* argv[]) {
     std::cout << engine_info() << std::endl;
 
     CommandLine::init(argc, argv);
-    UCI::init(Options);
-    Tune::init();
+
+    NewUci uci = NewUci();
+
+    Tune::init(uci.options);
     Bitboards::init();
     Position::init();
-    Threads.set(size_t(Options["Threads"]));
-    Search::clear();  // After threads are up
-    Eval::NNUE::init();
+    Search::clear(uci);  // After threads are up
+    Eval::NNUE::init(uci.options["EvalFile"]);
 
-    UCI::loop(argc, argv);
 
-    Threads.set(0);
+    uci.loop(argc, argv);
+
     return 0;
 }
