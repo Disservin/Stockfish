@@ -79,7 +79,6 @@ void TranspositionTable::resize(size_t mbSize, int thread_count) {
 // Initializes the entire transposition table to zero,
 // in a multi-threaded way.
 void TranspositionTable::clear(size_t thread_count) {
-
     std::vector<std::thread> threads;
 
     for (size_t idx = 0; idx < size_t(thread_count); ++idx)
@@ -144,7 +143,6 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
 // occupation during a search. The hash is x permill full, as per UCI protocol.
 
 int TranspositionTable::hashfull() const {
-
     int cnt = 0;
     for (int i = 0; i < 1000; ++i)
         for (int j = 0; j < ClusterSize; ++j)

@@ -101,8 +101,8 @@ class TranspositionTable {
     friend struct TTEntry;
 
     size_t   clusterCount;
-    Cluster* table;
-    uint8_t  generation8;  // Size must be not bigger than TTEntry::genBound8
+    Cluster* table = nullptr;
+    uint8_t  generation8 = 0;  // Size must be not bigger than TTEntry::genBound8
 };
 
 }  // namespace Stockfish
