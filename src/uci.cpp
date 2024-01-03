@@ -67,9 +67,6 @@ NewUci::NewUci(int argc, char** argv) :
     search_clear();  // After threads are up
 }
 
-NewUci::~NewUci() { threads.set(0); }
-
-
 void NewUci::loop() {
 
     Position     pos;

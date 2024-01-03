@@ -36,7 +36,6 @@ namespace Stockfish {
 class NewUci {
    public:
     NewUci(int argc, char** argv);
-    ~NewUci();
 
     void loop();
 

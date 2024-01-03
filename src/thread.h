@@ -111,6 +111,16 @@ class ThreadPool {
     ThreadPool(OptionsMap& o, TranspositionTable& t) :
         options(o),
         tt(t) {}
+    ~ThreadPool() {
+        // destroy any existing thread(s)
+        if (threads.size() > 0)
+        {
+            main()->wait_for_search_finished();
+
+            while (threads.size() > 0)
+                delete threads.back(), threads.pop_back();
+        }
+    }
 
     void start_thinking(Position&, StateListPtr&, Search::LimitsType, bool = false);
     void clear();
