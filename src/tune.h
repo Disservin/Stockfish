@@ -28,7 +28,6 @@
 
 #include "options_map.h"
 
-
 namespace Stockfish {
 enum Value : int;
 

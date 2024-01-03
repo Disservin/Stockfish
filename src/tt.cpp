@@ -78,7 +78,7 @@ void TranspositionTable::resize(size_t mbSize, int thread_count) {
 
 // Initializes the entire transposition table to zero,
 // in a multi-threaded way.
-void TranspositionTable::clear(int thread_count) {
+void TranspositionTable::clear(size_t thread_count) {
 
     std::vector<std::thread> threads;
 

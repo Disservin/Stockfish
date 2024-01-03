@@ -40,7 +40,6 @@
 #include "tt.h"
 #include "uci.h"
 
-
 using std::string;
 
 namespace Stockfish {

@@ -89,7 +89,7 @@ class TranspositionTable {
     TTEntry* probe(const Key key, bool& found) const;
     int      hashfull() const;
     void     resize(size_t mbSize, int thread_count);
-    void     clear(int thread_count);
+    void     clear(size_t thread_count);
 
     TTEntry* first_entry(const Key key) const {
         return &table[mul_hi64(key, clusterCount)].entry[0];

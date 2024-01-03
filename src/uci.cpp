@@ -29,13 +29,13 @@
 
 
 namespace Stockfish {
-constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-const int      NormalizeToPawnValue = 328;
 
+constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+constexpr int  NormalizeToPawnValue = 328;
+constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
 NewUci::NewUci() :
     threads(options, tt) {
-    constexpr int MaxHashMB = Is64Bit ? 33554432 : 2048;
 
     options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));
     options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(size_t(o)); }));

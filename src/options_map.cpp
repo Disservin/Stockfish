@@ -26,9 +26,6 @@
 
 namespace Stockfish {
 
-const int      NormalizeToPawnValue = 328;
-constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-
 bool CaseInsensitiveLess::operator()(const std::string& s1, const std::string& s2) const {
 
     return std::lexicographical_compare(s1.begin(), s1.end(), s2.begin(), s2.end(),
