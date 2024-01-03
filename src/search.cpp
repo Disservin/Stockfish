@@ -184,21 +184,10 @@ uint64_t perft(Position& pos, Depth depth) {
 
 
 // Called at startup to initialize various lookup tables
-void Search::init(const NewUci& uci) {
+void Search::init(int size) {
 
     for (int i = 1; i < MAX_MOVES; ++i)
-        Reductions[i] = int((20.37 + std::log(uci.threads.size()) / 2) * std::log(i));
-}
-
-
-// Resets search state to its initial value
-void Search::clear(NewUci& uci) {
-
-    uci.threads.main()->wait_for_search_finished();
-
-    uci.tt.clear(int(uci.options["Threads"]));
-    uci.threads.clear();
-    Tablebases::init(uci.options["SyzygyPath"]);  // Free mapped files
+        Reductions[i] = int((20.37 + std::log(size) / 2) * std::log(i));
 }
 
 

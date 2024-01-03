@@ -43,9 +43,7 @@ int main(int argc, char* argv[]) {
     Tune::init(uci.options);
     Bitboards::init();
     Position::init();
-    Search::clear(uci);  // After threads are up
     Eval::NNUE::init(uci.options["EvalFile"]);
-
 
     uci.loop(argc, argv);
 

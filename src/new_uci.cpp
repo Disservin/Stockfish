@@ -43,7 +43,7 @@ NewUci::NewUci() :
                     threads.main()->wait_for_search_finished();
                     tt.resize(size_t(o), size_t(options["Threads"]));
                 }));
-    options.add("Clear Hash", Option(true, [this](const Option&) { Search::clear(*this); }));
+    options.add("Clear Hash", Option(true, [this](const Option&) { search_clear(); }));
     options.add("Ponder", Option(false));
     options.add("MultiPV", Option(1, 1, 500));
     options.add("Skill Level", Option(20, 0, 20));
@@ -62,12 +62,15 @@ NewUci::NewUci() :
                 }));
 
     threads.set(size_t(options["Threads"]));
+
+    search_clear();  // After threads are up
 }
 
 NewUci::~NewUci() { threads.set(0); }
 
 
 void NewUci::loop(int argc, char* argv[]) {
+
     Position     pos;
     std::string  token, cmd;
     StateListPtr states(new std::deque<StateInfo>(1));
@@ -109,7 +112,7 @@ void NewUci::loop(int argc, char* argv[]) {
         else if (token == "position")
             position(pos, is, states);
         else if (token == "ucinewgame")
-            Search::clear(*this);
+            search_clear();
         else if (token == "isready")
             sync_cout << "readyok" << sync_endl;
 
@@ -227,7 +230,7 @@ void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
             position(pos, is, states);
         else if (token == "ucinewgame")
         {
-            Search::clear(*this);
+            search_clear();
             elapsed = now();
         }  // Search::clear() may take a while
     }
@@ -249,6 +252,14 @@ void NewUci::trace_eval(Position& pos) {
     Eval::NNUE::verify(options["EvalFile"]);
 
     sync_cout << "\n" << Eval::trace(p) << sync_endl;
+}
+
+void NewUci::search_clear() {
+    threads.main()->wait_for_search_finished();
+
+    tt.clear(options["Threads"]);
+    threads.clear();
+    Tablebases::init(options["SyzygyPath"]);  // Free mapped files
 }
 
 void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& states) {

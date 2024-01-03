@@ -62,6 +62,8 @@ class NewUci {
     void bench(Position& pos, std::istream& args, StateListPtr& states);
     void position(Position& pos, std::istringstream& is, StateListPtr& states);
     void trace_eval(Position& pos);
+
+    void search_clear();
 };
 
 }  // namespace Stockfish

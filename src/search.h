@@ -25,13 +25,11 @@
 #include "misc.h"
 #include "movepick.h"
 #include "types.h"
-// #include "new_uci.h"
 #include "tt.h"
 
 namespace Stockfish {
 
 class Position;
-class NewUci;
 
 namespace Search {
 
@@ -107,8 +105,7 @@ struct LimitsType {
 };
 
 
-void init(const NewUci& uci);
-void clear(NewUci& uci);
+void init(int);
 
 }  // namespace Search
 

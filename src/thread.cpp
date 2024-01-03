@@ -157,7 +157,7 @@ void ThreadPool::set(size_t requested) {
 
 
         // Init thread number dependent search params.
-        Search::init(uci);
+        Search::init(requested);
     }
 }
 
