@@ -24,8 +24,7 @@
 #include <sstream>
 #include <string>
 
-#include "new_uci.h"
-
+#include "options_map.h"
 
 namespace Stockfish {
 enum Value : int;

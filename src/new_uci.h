@@ -33,7 +33,6 @@
 
 namespace Stockfish {
 
-
 class StateInfo;
 class Position;
 using TimePoint    = std::chrono::milliseconds::rep;  // A value in milliseconds
@@ -43,7 +42,9 @@ class NewUci {
    public:
     NewUci();
     ~NewUci();
-    void               loop(int argc, char* argv[]);
+
+    void loop(int argc, char* argv[]);
+
     static int         to_cp(Value v);
     static std::string value(Value v);
     static std::string square(Square s);

@@ -34,13 +34,8 @@
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
-#include "new_uci.h"
-
 
 namespace Stockfish {
-
-// ThreadPool Threads;  // Global object
-
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.

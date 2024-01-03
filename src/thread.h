@@ -26,17 +26,13 @@
 #include <mutex>
 #include <vector>
 
-// #include "movepick.h"
 #include "position.h"
 #include "thread_win32_osx.h"
 #include "types.h"
 #include "timeman.h"
 #include "search.h"
-// #include "new_uci.h"
 
 namespace Stockfish {
-
-class NewUci;
 
 class ThreadPool;
 
@@ -151,8 +147,6 @@ class ThreadPool {
         return sum;
     }
 };
-
-// extern ThreadPool Threads;
 
 }  // namespace Stockfish
 

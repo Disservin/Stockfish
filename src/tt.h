@@ -105,8 +105,6 @@ class TranspositionTable {
     uint8_t  generation8;  // Size must be not bigger than TTEntry::genBound8
 };
 
-// extern TranspositionTable TT;
-
 }  // namespace Stockfish
 
 #endif  // #ifndef TT_H_INCLUDED
