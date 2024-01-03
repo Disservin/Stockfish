@@ -44,15 +44,18 @@ constexpr int  NormalizeToPawnValue = 328;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
 NewUci::NewUci(int argc, char** argv) :
-    threads(options, tt),
+    threads(options),
     cli(argc, argv) {
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
-    options["Threads"] << Option(1, 1, 1024, [this](const Option& o) { threads.set(o); });
+
+    options["Threads"] << Option(1, 1, 1024, [this](const Option& o) { threads.set(tt, o); });
+
     options["Hash"] << Option(16, 1, MaxHashMB, [this](const Option& o) {
         threads.main()->wait_for_search_finished();
         tt.resize(o, options["Threads"]);
     });
+
     options["Clear Hash"] << Option(true, [this](const Option&) { search_clear(); });
     options["Ponder"] << Option(false);
     options["MultiPV"] << Option(1, 1, 500);
@@ -71,7 +74,7 @@ NewUci::NewUci(int argc, char** argv) :
         Eval::NNUE::init(o, currentEvalFileName, cli.binaryDirectory);
     });
 
-    threads.set(size_t(options["Threads"]));
+    threads.set(tt, options["Threads"]);
 
     search_clear();  // After threads are up
 }

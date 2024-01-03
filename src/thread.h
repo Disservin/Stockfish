@@ -111,9 +111,8 @@ struct MainThread: public Thread {
 class ThreadPool {
 
    public:
-    ThreadPool(OptionsMap& o, TranspositionTable& t) :
-        options(o),
-        tt(t) {}
+    ThreadPool(OptionsMap& o) :
+        options(o) {}
     ~ThreadPool() {
         // destroy any existing thread(s)
         if (threads.size() > 0)
@@ -127,7 +126,7 @@ class ThreadPool {
 
     void start_thinking(Position&, StateListPtr&, Search::LimitsType, bool = false);
     void clear();
-    void set(size_t);
+    void set(TranspositionTable& tt, size_t);
 
     MainThread* main() const { return static_cast<MainThread*>(threads.front()); }
     uint64_t    nodes_searched() const { return accumulate(&Thread::nodes); }
@@ -146,8 +145,7 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    OptionsMap&         options;
-    TranspositionTable& tt;
+    OptionsMap& options;
 
     StateListPtr         setupStates;
     std::vector<Thread*> threads;

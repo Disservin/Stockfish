@@ -129,7 +129,7 @@ void Thread::idle_loop() {
 // Creates/destroys threads to match the requested number.
 // Created and launched threads will immediately go to sleep in idle_loop.
 // Upon resizing, threads are recreated to allow for binding if necessary.
-void ThreadPool::set(size_t requested) {
+void ThreadPool::set(TranspositionTable& tt, size_t requested) {
 
     if (threads.size() > 0)  // destroy any existing thread(s)
     {
@@ -150,10 +150,8 @@ void ThreadPool::set(size_t requested) {
 
         main()->wait_for_search_finished();
 
-
         // Reallocate the hash with the new threadpool size
         tt.resize(options["Hash"], requested);
-
 
         // Init thread number dependent search params.
         Search::init(requested);
