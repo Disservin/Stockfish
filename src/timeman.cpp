@@ -31,7 +31,7 @@ TimePoint TimeManagement::optimum() const { return optimumTime; }
 TimePoint TimeManagement::maximum() const { return maximumTime; }
 TimePoint TimeManagement::elapsed() const {
     // return useNodesTime ? TimePoint(Threads.nodes_searched()) : now() - startTime;
-    // @TODO
+    // @todo: bring back nodes_searched()
     return now() - startTime;
 }
 
