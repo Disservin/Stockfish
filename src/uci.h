@@ -33,11 +33,6 @@
 
 namespace Stockfish {
 
-class StateInfo;
-class Position;
-using TimePoint    = std::chrono::milliseconds::rep;  // A value in milliseconds
-using StateListPtr = std::unique_ptr<std::deque<StateInfo>>;
-
 class NewUci {
    public:
     NewUci(int argc, char** argv);

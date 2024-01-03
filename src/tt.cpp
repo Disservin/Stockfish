@@ -31,8 +31,6 @@
 
 namespace Stockfish {
 
-// TranspositionTable TT;  // Our global transposition table
-
 // Populates the TTEntry with a new node's data, possibly
 // overwriting an old position. The update is not atomic and can be racy.
 void TTEntry::save(
