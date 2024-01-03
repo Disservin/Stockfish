@@ -25,6 +25,7 @@
 #include "tune.h"
 #include "types.h"
 #include "uci.h"
+#include "options_map.h"
 
 using namespace Stockfish;
 

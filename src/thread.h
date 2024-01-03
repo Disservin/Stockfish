@@ -35,7 +35,9 @@
 
 namespace Stockfish {
 
+class OptionsMap;
 class ThreadPool;
+class TranspositionTable;
 
 // Thread class keeps together all the thread-related stuff.
 class Thread {
