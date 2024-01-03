@@ -151,7 +151,7 @@ void ThreadPool::set(size_t requested) {
 
 
         // Reallocate the hash with the new threadpool size
-        tt.resize(size_t(options["Hash"]), requested);
+        tt.resize(options["Hash"], requested);
 
 
         // Init thread number dependent search params.

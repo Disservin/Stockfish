@@ -33,7 +33,6 @@ class Option;
 
 class OptionsMap {
    public:
-    void add(const std::string&, const Option&);
     void setoption(std::istringstream&);
 
     friend std::ostream& operator<<(std::ostream&, const OptionsMap&);

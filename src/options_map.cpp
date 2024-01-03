@@ -32,9 +32,6 @@ bool CaseInsensitiveLess::operator()(const std::string& s1, const std::string& s
                                         [](char c1, char c2) { return tolower(c1) < tolower(c2); });
 }
 
-
-void OptionsMap::add(const std::string& name, const Option& option) { options_map[name] = option; }
-
 void OptionsMap::setoption(std::istringstream& is) {
     std::string token, name, value;
 

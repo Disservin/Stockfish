@@ -38,29 +38,29 @@ NewUci::NewUci(int argc, char** argv) :
     threads(options, tt),
     cli(argc, argv) {
 
-    options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));
-    options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(o); }));
-    options.add("Hash", Option(16, 1, MaxHashMB, [this](const Option& o) {
-                    threads.main()->wait_for_search_finished();
-                    tt.resize(o, options["Threads"]);
-                }));
-    options.add("Clear Hash", Option(true, [this](const Option&) { search_clear(); }));
-    options.add("Ponder", Option(false));
-    options.add("MultiPV", Option(1, 1, 500));
-    options.add("Skill Level", Option(20, 0, 20));
-    options.add("Move Overhead", Option(10, 0, 5000));
-    options.add("nodestime", Option(0, 0, 10000));
-    options.add("UCI_Chess960", Option(false));
-    options.add("UCI_LimitStrength", Option(false));
-    options.add("UCI_Elo", Option(1320, 1320, 3190));
-    options.add("UCI_ShowWDL", Option(false));
-    options.add("SyzygyPath", Option("<empty>", [](const Option& o) { Tablebases::init(o); }));
-    options.add("SyzygyProbeDepth", Option(1, 1, 100));
-    options.add("Syzygy50MoveRule", Option(true));
-    options.add("SyzygyProbeLimit", Option(7, 0, 7));
-    options.add("EvalFile", Option(EvalFileDefaultName, [this](const Option& o) {
-                    Eval::NNUE::init(o, currentEvalFileName, cli.binaryDirectory);
-                }));
+    options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
+    options["Threads"] << Option(1, 1, 1024, [this](const Option& o) { threads.set(o); });
+    options["Hash"] << Option(16, 1, MaxHashMB, [this](const Option& o) {
+        threads.main()->wait_for_search_finished();
+        tt.resize(o, options["Threads"]);
+    });
+    options["Clear Hash"] << Option(true, [this](const Option&) { search_clear(); });
+    options["Ponder"] << Option(false);
+    options["MultiPV"] << Option(1, 1, 500);
+    options["Skill Level"] << Option(20, 0, 20);
+    options["Move Overhead"] << Option(10, 0, 5000);
+    options["nodestime"] << Option(0, 0, 10000);
+    options["UCI_Chess960"] << Option(false);
+    options["UCI_LimitStrength"] << Option(false);
+    options["UCI_Elo"] << Option(1320, 1320, 3190);
+    options["UCI_ShowWDL"] << Option(false);
+    options["SyzygyPath"] << Option("<empty>", [](const Option& o) { Tablebases::init(o); });
+    options["SyzygyProbeDepth"] << Option(1, 1, 100);
+    options["Syzygy50MoveRule"] << Option(true);
+    options["SyzygyProbeLimit"] << Option(7, 0, 7);
+    options["EvalFile"] << Option(EvalFileDefaultName, [this](const Option& o) {
+        Eval::NNUE::init(o, currentEvalFileName, cli.binaryDirectory);
+    });
 
     threads.set(size_t(options["Threads"]));
 
