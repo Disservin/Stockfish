@@ -230,9 +230,9 @@ void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
             position(pos, is, states);
         else if (token == "ucinewgame")
         {
-            search_clear();
+            search_clear();  // Search::clear() may take a while
             elapsed = now();
-        }  // Search::clear() may take a while
+        }
     }
 
     elapsed = now() - elapsed + 1;  // Ensure positivity to avoid a 'divide by zero'
