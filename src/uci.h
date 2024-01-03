@@ -54,15 +54,16 @@ class NewUci {
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 
-    OptionsMap         options;
-    TranspositionTable tt;
-    ThreadPool         threads;
+    const std::string& workingDirectory() const { return cli.workingDirectory; }
 
+    OptionsMap  options;
     std::string currentEvalFileName = "None";
 
-    CommandLine cli;
-
    private:
+    TranspositionTable tt;
+    ThreadPool         threads;
+    CommandLine        cli;
+
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
     void bench(Position& pos, std::istream& args, StateListPtr& states);
     void position(Position& pos, std::istringstream& is, StateListPtr& states);
