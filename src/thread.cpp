@@ -40,10 +40,10 @@ namespace Stockfish {
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
-Thread::Thread(OptionsMap& o, TranspositionTable& t, ThreadPool& tp, size_t n) :
+Thread::Thread(const OptionsMap& o, ThreadPool& tp, TranspositionTable& t, size_t n) :
     options(o),
-    tt(t),
     threads(tp),
+    tt(t),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 
@@ -141,11 +141,11 @@ void ThreadPool::set(TranspositionTable& tt, size_t requested) {
 
     if (requested > 0)  // create new thread(s)
     {
-        threads.push_back(new MainThread(options, tt, *this, 0));
+        threads.push_back(new MainThread(options, *this, tt, 0));
 
 
         while (threads.size() < requested)
-            threads.push_back(new Thread(options, tt, *this, threads.size()));
+            threads.push_back(new Thread(options, *this, tt, threads.size()));
         clear();
 
         main()->wait_for_search_finished();

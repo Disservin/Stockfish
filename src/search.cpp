@@ -557,10 +557,11 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     int      moveCount, captureCount, quietCount;
 
     // Step 1. Initialize node
-    Thread* thisThread = pos.this_thread();
-    ss->inCheck        = pos.checkers();
-    priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
+    Thread*             thisThread = pos.this_thread();
+    TranspositionTable* tt         = &thisThread->tt;
+    ss->inCheck                    = pos.checkers();
+    priorCapture                   = pos.captured_piece();
+    Color us                       = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
@@ -607,7 +608,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
     posKey       = pos.key();
-    tte          = thisThread->tt.probe(posKey, ss->ttHit);
+    tte          = tt->probe(posKey, ss->ttHit);
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
@@ -693,7 +694,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6), MOVE_NONE, VALUE_NONE,
-                              thisThread->tt.generation());
+                              tt->generation());
 
                     return value;
                 }
@@ -759,7 +760,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
         // Static evaluation is saved as it was before adjustment by correction history
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  unadjustedStaticEval, thisThread->tt.generation());
+                  unadjustedStaticEval, tt->generation());
     }
 
     // Use static evaluation difference to improve quiet move ordering (~9 Elo)
@@ -883,7 +884,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 assert(pos.capture_stage(move));
 
                 // Prefetch the TT entry for the resulting position
-                prefetch(thisThread->tt.first_entry(pos.key_after(move)));
+                prefetch(tt->first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
                 ss->continuationHistory =
@@ -906,7 +907,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
-                              move, unadjustedStaticEval, thisThread->tt.generation());
+                              move, unadjustedStaticEval, tt->generation());
                     return std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY ? value - (probCutBeta - beta)
                                                                      : value;
                 }
@@ -1135,7 +1136,7 @@ moves_loop:  // When in check, search starts here
         ss->doubleExtensions = (ss - 1)->doubleExtensions + (extension == 2);
 
         // Speculative prefetch as early as possible
-        prefetch(thisThread->tt.first_entry(pos.key_after(move)));
+        prefetch(tt->first_entry(pos.key_after(move)));
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1389,7 +1390,7 @@ moves_loop:  // When in check, search starts here
                   bestValue >= beta    ? BOUND_LOWER
                   : PvNode && bestMove ? BOUND_EXACT
                                        : BOUND_UPPER,
-                  depth, bestMove, unadjustedStaticEval, thisThread->tt.generation());
+                  depth, bestMove, unadjustedStaticEval, tt->generation());
 
     // Adjust correction history
     if (!ss->inCheck && (!bestMove || !pos.capture(bestMove))
@@ -1449,10 +1450,11 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         ss->pv[0]    = MOVE_NONE;
     }
 
-    Thread* thisThread = pos.this_thread();
-    bestMove           = MOVE_NONE;
-    ss->inCheck        = pos.checkers();
-    moveCount          = 0;
+    Thread*             thisThread = pos.this_thread();
+    TranspositionTable* tt         = &thisThread->tt;
+    bestMove                       = MOVE_NONE;
+    ss->inCheck                    = pos.checkers();
+    moveCount                      = 0;
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -1469,7 +1471,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     // Step 3. Transposition table lookup
     posKey  = pos.key();
-    tte     = thisThread->tt.probe(posKey, ss->ttHit);
+    tte     = tt->probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
@@ -1522,7 +1524,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         {
             if (!ss->ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
-                          MOVE_NONE, unadjustedStaticEval, thisThread->tt.generation());
+                          MOVE_NONE, unadjustedStaticEval, tt->generation());
 
             return bestValue;
         }
@@ -1615,7 +1617,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         }
 
         // Speculative prefetch as early as possible
-        prefetch(thisThread->tt.first_entry(pos.key_after(move)));
+        prefetch(tt->first_entry(pos.key_after(move)));
 
         // Update the current move
         ss->currentMove = move;
@@ -1669,7 +1671,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // Static evaluation is saved as it was before adjustment by correction history
     tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, ttDepth, bestMove,
-              unadjustedStaticEval, thisThread->tt.generation());
+              unadjustedStaticEval, tt->generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 

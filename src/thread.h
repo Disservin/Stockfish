@@ -42,9 +42,9 @@ class TranspositionTable;
 // Thread class keeps together all the thread-related stuff.
 class Thread {
    public:
-    OptionsMap&         options;
-    TranspositionTable& tt;
+    const OptionsMap&   options;
     ThreadPool&         threads;
+    TranspositionTable& tt;
 
    private:
     std::mutex              mutex;
@@ -54,7 +54,7 @@ class Thread {
     NativeThread            stdThread;
 
    public:
-    Thread(OptionsMap&, TranspositionTable&, ThreadPool&, size_t);
+    Thread(const OptionsMap&, ThreadPool&, TranspositionTable&, size_t);
     virtual ~Thread();
     virtual void search();
     void         clear();
@@ -111,7 +111,7 @@ struct MainThread: public Thread {
 class ThreadPool {
 
    public:
-    ThreadPool(OptionsMap& o) :
+    ThreadPool(const OptionsMap& o) :
         options(o) {}
     ~ThreadPool() {
         // destroy any existing thread(s)
@@ -145,7 +145,7 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    OptionsMap& options;
+    const OptionsMap& options;
 
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
