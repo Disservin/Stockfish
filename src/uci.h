@@ -19,15 +19,15 @@
 #ifndef NEW_UCI_H_INCLUDED
 #define NEW_UCI_H_INCLUDED
 
+#include <cstdint>
 #include <string>
-#include <functional>
-#include <map>
 #include <iostream>
-#include <deque>
 
 #include "types.h"
 #include "thread.h"
 #include "tt.h"
+#include "misc.h"
+#include "position.h"
 
 #include "options_map.h"
 

@@ -19,9 +19,11 @@
 #ifndef OPTIONS_MAP_H_INCLUDED
 #define OPTIONS_MAP_H_INCLUDED
 
-#include <string>
+#include <cstddef>
 #include <functional>
+#include <iosfwd>
 #include <map>
+#include <string>
 
 namespace Stockfish {
 // Define a custom comparator, because the UCI options should be case-insensitive

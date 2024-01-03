@@ -18,7 +18,15 @@
 
 #include "uci.h"
 
-#include <sstream>
+#include <cassert>
+#include <cctype>
+#include <cstdlib>
+#include <algorithm>
+#include <cmath>
+#include <deque>
+#include <memory>
+#include <optional>
+#include <vector>
 
 #include "nnue/evaluate_nnue.h"
 #include "evaluate.h"
@@ -26,7 +34,7 @@
 #include "syzygy/tbprobe.h"
 #include "benchmark.h"
 #include "options_map.h"
-
+#include "movegen.h"
 
 namespace Stockfish {
 

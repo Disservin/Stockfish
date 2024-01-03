@@ -27,7 +27,6 @@
 #include <cstring>
 #include <initializer_list>
 #include <iostream>
-#include <sstream>
 #include <string>
 #include <utility>
 
@@ -38,13 +37,13 @@
 #include "movepick.h"
 #include "nnue/evaluate_nnue.h"
 #include "nnue/nnue_common.h"
+#include "options_map.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "thread.h"
 #include "timeman.h"
 #include "tt.h"
 #include "uci.h"
-
 
 namespace Stockfish {
 

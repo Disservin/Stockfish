@@ -26,9 +26,11 @@
 #include <utility>
 #include <vector>
 
-#include "options_map.h"
 
 namespace Stockfish {
+
+class OptionsMap;
+
 enum Value : int;
 
 using Range    = std::pair<int, int>;  // Option's min-max values

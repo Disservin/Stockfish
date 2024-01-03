@@ -23,9 +23,10 @@
 
 #include "misc.h"
 #include "types.h"
-#include "options_map.h"
 
 namespace Stockfish {
+
+class OptionsMap;
 
 namespace Search {
 struct LimitsType;

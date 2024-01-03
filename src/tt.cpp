@@ -26,8 +26,6 @@
 #include <vector>
 
 #include "misc.h"
-#include "thread.h"
-
 
 namespace Stockfish {
 

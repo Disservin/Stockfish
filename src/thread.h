@@ -26,11 +26,12 @@
 #include <mutex>
 #include <vector>
 
+#include "movepick.h"
 #include "position.h"
-#include "thread_win32_osx.h"
-#include "types.h"
-#include "timeman.h"
 #include "search.h"
+#include "thread_win32_osx.h"
+#include "timeman.h"
+#include "types.h"
 
 namespace Stockfish {
 

@@ -31,6 +31,7 @@
 #include "evaluate.h"
 #include "misc.h"
 #include "movegen.h"
+#include "options_map.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
