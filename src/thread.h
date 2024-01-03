@@ -56,12 +56,20 @@ class Thread {
    public:
     Thread(const OptionsMap&, ThreadPool&, TranspositionTable&, size_t);
     virtual ~Thread();
-    virtual void search();
-    void         clear();
-    void         idle_loop();
-    void         start_searching();
-    void         wait_for_search_finished();
-    size_t       id() const { return idx; }
+    void virtual id_loop();
+
+    template<NodeType nodeType>
+    Value
+    search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+    template<NodeType nodeType>
+    Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
+
+    void   clear();
+    void   idle_loop();
+    void   start_searching();
+    void   wait_for_search_finished();
+    size_t id() const { return idx; }
 
 
     Search::LimitsType limits;
@@ -69,7 +77,7 @@ class Thread {
     size_t                pvIdx, pvLast;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
     int                   selDepth, nmpMinPly;
-    Value                 bestValue, optimism[COLOR_NB];
+    Value                 iterBestValue, optimism[COLOR_NB];
 
     Position              rootPos;
     StateInfo             rootState;
@@ -91,7 +99,7 @@ struct MainThread: public Thread {
 
     using Thread::Thread;
 
-    void search() override;
+    void id_loop() override;
     void check_time();
 
     TimeManagement tm;

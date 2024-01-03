@@ -122,7 +122,7 @@ void Thread::idle_loop() {
 
         lk.unlock();
 
-        search();
+        id_loop();
     }
 }
 

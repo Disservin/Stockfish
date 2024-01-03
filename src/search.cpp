@@ -63,12 +63,6 @@ using namespace Search;
 
 namespace {
 
-// Different node types, used as a template parameter
-enum NodeType {
-    NonPV,
-    PV,
-    Root
-};
 
 // Futility margin
 Value futility_margin(Depth d, bool noTtCutNode, bool improving) {
@@ -128,11 +122,11 @@ struct Skill {
     Move   best = MOVE_NONE;
 };
 
-template<NodeType nodeType>
-Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+// template<NodeType nodeType>
+// Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
-template<NodeType nodeType>
-Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
+// template<NodeType nodeType>
+// Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
 
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
@@ -192,7 +186,7 @@ void Search::init(int size) {
 
 // Called when the program receives the UCI 'go'
 // command. It searches from the root position and outputs the "bestmove".
-void MainThread::search() {
+void MainThread::id_loop() {
 
     if (limits.perft)
     {
@@ -212,7 +206,7 @@ void MainThread::search() {
     else
     {
         threads.start_searching();  // start non-main threads
-        Thread::search();           // main thread start searching
+        Thread::id_loop();          // main thread start searching
     }
 
     // When we reach the maximum depth, we can arrive here without a raise of
@@ -268,7 +262,7 @@ void MainThread::search() {
 // Main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
 // consumed, the user stops the search, or the maximum search depth is reached.
-void Thread::search() {
+void Thread::id_loop() {
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
@@ -296,7 +290,7 @@ void Thread::search() {
 
     ss->pv = pv;
 
-    bestValue = -VALUE_INFINITE;
+    iterBestValue = -VALUE_INFINITE;
 
     if (mainThread)
     {
@@ -373,7 +367,7 @@ void Thread::search() {
                 // for every four searchAgain steps (see issue #2717).
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
-                bestValue = Stockfish::search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
+                iterBestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
                 // Bring the best move to the front. It is critical that sorting
                 // is done with a stable algorithm because all the values but the
@@ -391,7 +385,7 @@ void Thread::search() {
 
                 // When failing high/low give some update (without cluttering
                 // the UI) before a re-search.
-                if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
+                if (mainThread && multiPV == 1 && (iterBestValue <= alpha || iterBestValue >= beta)
                     && mainThread->tm.elapsed() > 3000)
                     sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed(), options,
                                             threads.nodes_searched(), threads.tb_hits(),
@@ -400,18 +394,18 @@ void Thread::search() {
 
                 // In case of failing low/high increase aspiration window and
                 // re-search, otherwise exit the loop.
-                if (bestValue <= alpha)
+                if (iterBestValue <= alpha)
                 {
                     beta  = (alpha + beta) / 2;
-                    alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                    alpha = std::max(iterBestValue - delta, -VALUE_INFINITE);
 
                     failedHighCnt = 0;
                     if (mainThread)
                         mainThread->stopOnPonderhit = false;
                 }
-                else if (bestValue >= beta)
+                else if (iterBestValue >= beta)
                 {
-                    beta = std::min(bestValue + delta, VALUE_INFINITE);
+                    beta = std::min(iterBestValue + delta, VALUE_INFINITE);
                     ++failedHighCnt;
                 }
                 else
@@ -443,8 +437,8 @@ void Thread::search() {
         }
 
         // Have we found a "mate in x"?
-        if (limits.mate && bestValue >= VALUE_MATE_IN_MAX_PLY
-            && VALUE_MATE - bestValue <= 2 * limits.mate)
+        if (limits.mate && iterBestValue >= VALUE_MATE_IN_MAX_PLY
+            && VALUE_MATE - iterBestValue <= 2 * limits.mate)
             threads.stop = true;
 
         if (!mainThread)
@@ -464,8 +458,8 @@ void Thread::search() {
         // Do we have time for the next iteration? Can we stop searching now?
         if (limits.use_time_management() && !threads.stop && !mainThread->stopOnPonderhit)
         {
-            double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
-                                  + 6 * (mainThread->iterValue[iterIdx] - bestValue))
+            double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - iterBestValue)
+                                  + 6 * (mainThread->iterValue[iterIdx] - iterBestValue))
                                / 616.6;
             fallingEval = std::clamp(fallingEval, 0.51, 1.51);
 
@@ -497,7 +491,7 @@ void Thread::search() {
                 threads.increaseDepth = true;
         }
 
-        mainThread->iterValue[iterIdx] = bestValue;
+        mainThread->iterValue[iterIdx] = iterBestValue;
         iterIdx                        = (iterIdx + 1) & 3;
     }
 
@@ -515,11 +509,9 @@ void Thread::search() {
 }
 
 
-namespace {
-
 // Main search function for both PV and non-PV nodes
 template<NodeType nodeType>
-Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
+Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
@@ -557,11 +549,10 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     int      moveCount, captureCount, quietCount;
 
     // Step 1. Initialize node
-    Thread*             thisThread = pos.this_thread();
-    TranspositionTable* tt         = &thisThread->tt;
-    ss->inCheck                    = pos.checkers();
-    priorCapture                   = pos.captured_piece();
-    Color us                       = pos.side_to_move();
+    Thread* thisThread = pos.this_thread();
+    ss->inCheck        = pos.checkers();
+    priorCapture       = pos.captured_piece();
+    Color us           = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
@@ -608,7 +599,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
     // Step 4. Transposition table lookup.
     excludedMove = ss->excludedMove;
     posKey       = pos.key();
-    tte          = tt->probe(posKey, ss->ttHit);
+    tte          = tt.probe(posKey, ss->ttHit);
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
@@ -694,7 +685,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
                               std::min(MAX_PLY - 1, depth + 6), MOVE_NONE, VALUE_NONE,
-                              tt->generation());
+                              tt.generation());
 
                     return value;
                 }
@@ -710,7 +701,6 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
         }
     }
 
-    CapturePieceToHistory& captureHistory = thisThread->captureHistory;
 
     Value unadjustedStaticEval = VALUE_NONE;
 
@@ -760,7 +750,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
 
         // Static evaluation is saved as it was before adjustment by correction history
         tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
-                  unadjustedStaticEval, tt->generation());
+                  unadjustedStaticEval, tt.generation());
     }
 
     // Use static evaluation difference to improve quiet move ordering (~9 Elo)
@@ -884,7 +874,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 assert(pos.capture_stage(move));
 
                 // Prefetch the TT entry for the resulting position
-                prefetch(tt->first_entry(pos.key_after(move)));
+                prefetch(tt.first_entry(pos.key_after(move)));
 
                 ss->currentMove = move;
                 ss->continuationHistory =
@@ -907,7 +897,7 @@ Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, boo
                 {
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
-                              move, unadjustedStaticEval, tt->generation());
+                              move, unadjustedStaticEval, tt.generation());
                     return std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY ? value - (probCutBeta - beta)
                                                                      : value;
                 }
@@ -1136,7 +1126,7 @@ moves_loop:  // When in check, search starts here
         ss->doubleExtensions = (ss - 1)->doubleExtensions + (extension == 2);
 
         // Speculative prefetch as early as possible
-        prefetch(tt->first_entry(pos.key_after(move)));
+        prefetch(tt.first_entry(pos.key_after(move)));
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1390,7 +1380,7 @@ moves_loop:  // When in check, search starts here
                   bestValue >= beta    ? BOUND_LOWER
                   : PvNode && bestMove ? BOUND_EXACT
                                        : BOUND_UPPER,
-                  depth, bestMove, unadjustedStaticEval, tt->generation());
+                  depth, bestMove, unadjustedStaticEval, tt.generation());
 
     // Adjust correction history
     if (!ss->inCheck && (!bestMove || !pos.capture(bestMove))
@@ -1412,7 +1402,7 @@ moves_loop:  // When in check, search starts here
 // function with zero depth, or recursively with further decreasing depth per call.
 // (~155 Elo)
 template<NodeType nodeType>
-Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
+Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1450,11 +1440,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         ss->pv[0]    = MOVE_NONE;
     }
 
-    Thread*             thisThread = pos.this_thread();
-    TranspositionTable* tt         = &thisThread->tt;
-    bestMove                       = MOVE_NONE;
-    ss->inCheck                    = pos.checkers();
-    moveCount                      = 0;
+    Thread* thisThread = pos.this_thread();
+    bestMove           = MOVE_NONE;
+    ss->inCheck        = pos.checkers();
+    moveCount          = 0;
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -1471,7 +1460,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     // Step 3. Transposition table lookup
     posKey  = pos.key();
-    tte     = tt->probe(posKey, ss->ttHit);
+    tte     = tt.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
@@ -1524,7 +1513,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         {
             if (!ss->ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
-                          MOVE_NONE, unadjustedStaticEval, tt->generation());
+                          MOVE_NONE, unadjustedStaticEval, tt.generation());
 
             return bestValue;
         }
@@ -1617,7 +1606,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         }
 
         // Speculative prefetch as early as possible
-        prefetch(tt->first_entry(pos.key_after(move)));
+        prefetch(tt.first_entry(pos.key_after(move)));
 
         // Update the current move
         ss->currentMove = move;
@@ -1671,7 +1660,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
     // Static evaluation is saved as it was before adjustment by correction history
     tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER, ttDepth, bestMove,
-              unadjustedStaticEval, tt->generation());
+              unadjustedStaticEval, tt.generation());
 
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
@@ -1679,6 +1668,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 }
 
 
+namespace {
 // Adjusts a mate or TB score from "plies to mate from the root"
 // to "plies to mate from the current position". Standard scores are unchanged.
 // The function is called before storing a value in the transposition table.
@@ -1848,6 +1838,7 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
         thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] = move;
     }
 }
+}
 
 // When playing with strength handicap, choose the best move among a set of RootMoves
 // using a statistical rule dependent on 'level'. Idea by Heinz van Saanen.
@@ -1879,8 +1870,6 @@ Move Skill::pick_best(const RootMoves& rootMoves, size_t multiPV) {
 
     return best;
 }
-
-}  // namespace
 
 
 // Used to print debug info and, more importantly,

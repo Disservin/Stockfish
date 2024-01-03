@@ -28,6 +28,13 @@
 
 namespace Stockfish {
 
+// Different node types, used as a template parameter
+enum NodeType {
+    NonPV,
+    PV,
+    Root
+};
+
 class Position;
 class TranspositionTable;
 
