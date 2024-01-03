@@ -42,28 +42,10 @@ class TranspositionTable;
 // Thread class keeps together all the thread-related stuff.
 class Thread {
    public:
-    const OptionsMap&   options;
-    ThreadPool&         threads;
-    TranspositionTable& tt;
-
-   private:
-    std::mutex              mutex;
-    std::condition_variable cv;
-    size_t                  idx;
-    bool                    exit = false, searching = true;  // Set before starting std::thread
-    NativeThread            stdThread;
-
-   public:
     Thread(const OptionsMap&, ThreadPool&, TranspositionTable&, size_t);
     virtual ~Thread();
+
     void virtual id_loop();
-
-    template<NodeType nodeType>
-    Value
-    search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
-
-    template<NodeType nodeType>
-    Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
 
     void   clear();
     void   idle_loop();
@@ -71,6 +53,12 @@ class Thread {
     void   wait_for_search_finished();
     size_t id() const { return idx; }
 
+    template<NodeType nodeType>
+    Value
+    search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+    template<NodeType nodeType>
+    Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
 
     Search::LimitsType limits;
 
@@ -91,6 +79,18 @@ class Thread {
     ContinuationHistory   continuationHistory[2][2];
     PawnHistory           pawnHistory;
     CorrectionHistory     correctionHistory;
+
+   protected:
+    const OptionsMap&   options;
+    ThreadPool&         threads;
+    TranspositionTable& tt;
+
+   private:
+    std::mutex              mutex;
+    std::condition_variable cv;
+    size_t                  idx;
+    bool                    exit = false, searching = true;  // Set before starting std::thread
+    NativeThread            stdThread;
 };
 
 
