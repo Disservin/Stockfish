@@ -70,6 +70,7 @@ class NewUci {
     void position(Position& pos, std::istringstream& is, StateListPtr& states);
     void trace_eval(Position& pos);
     void search_clear();
+    void setoption(std::istringstream& is);
 };
 
 }  // namespace Stockfish

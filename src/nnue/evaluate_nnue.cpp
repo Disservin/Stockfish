@@ -33,7 +33,7 @@
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
-#include "../new_uci.h"
+#include "../uci.h"
 #include "nnue_accumulator.h"
 #include "nnue_common.h"
 

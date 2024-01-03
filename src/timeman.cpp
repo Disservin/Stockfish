@@ -22,7 +22,7 @@
 #include <cmath>
 
 #include "search.h"
-#include "new_uci.h"
+#include "uci.h"
 #include "thread.h"
 
 namespace Stockfish {

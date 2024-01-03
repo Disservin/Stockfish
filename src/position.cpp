@@ -38,7 +38,7 @@
 #include "syzygy/tbprobe.h"
 #include "thread.h"
 #include "tt.h"
-#include "new_uci.h"
+#include "uci.h"
 
 
 using std::string;

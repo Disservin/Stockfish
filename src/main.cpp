@@ -27,7 +27,7 @@
 #include "thread.h"
 #include "tune.h"
 #include "types.h"
-#include "new_uci.h"
+#include "uci.h"
 
 
 using namespace Stockfish;

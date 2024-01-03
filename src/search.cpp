@@ -43,7 +43,7 @@
 #include "thread.h"
 #include "timeman.h"
 #include "tt.h"
-#include "new_uci.h"
+#include "uci.h"
 
 
 namespace Stockfish {

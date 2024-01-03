@@ -39,9 +39,6 @@ bool CaseInsensitiveLess::operator()(const std::string& s1, const std::string& s
 void OptionsMap::add(const std::string& name, const Option& option) { options_map[name] = option; }
 
 void OptionsMap::setoption(std::istringstream& is) {
-    // @TODO
-    // threads.main()->wait_for_search_finished();
-
     std::string token, name, value;
 
     is >> token;  // Consume the "name" token

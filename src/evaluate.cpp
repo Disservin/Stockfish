@@ -28,7 +28,7 @@
 #include <sstream>
 #include <vector>
 
-#include "new_uci.h"
+#include "uci.h"
 #include "incbin/incbin.h"
 #include "misc.h"
 #include "nnue/evaluate_nnue.h"

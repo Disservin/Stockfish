@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "new_uci.h"
+#include "uci.h"
 
 #include <sstream>
 
@@ -106,7 +106,7 @@ void NewUci::loop(int argc, char* argv[]) {
                       << options << "\nuciok" << sync_endl;
 
         else if (token == "setoption")
-            options.setoption(is);
+            setoption(is);
         else if (token == "go")
             go(pos, is, states);
         else if (token == "position")
@@ -225,7 +225,7 @@ void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
                 trace_eval(pos);
         }
         else if (token == "setoption")
-            options.setoption(is);
+            setoption(is);
         else if (token == "position")
             position(pos, is, states);
         else if (token == "ucinewgame")
@@ -260,6 +260,11 @@ void NewUci::search_clear() {
     tt.clear(options["Threads"]);
     threads.clear();
     Tablebases::init(options["SyzygyPath"]);  // Free mapped files
+}
+
+void NewUci::setoption(std::istringstream& is) {
+    threads.main()->wait_for_search_finished();
+    options.setoption(is);
 }
 
 void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& states) {
