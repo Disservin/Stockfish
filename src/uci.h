@@ -40,10 +40,10 @@ using StateListPtr = std::unique_ptr<std::deque<StateInfo>>;
 
 class NewUci {
    public:
-    NewUci();
+    NewUci(int argc, char** argv);
     ~NewUci();
 
-    void loop(int argc, char* argv[]);
+    void loop();
 
     static int         to_cp(Value v);
     static std::string value(Value v);
@@ -65,6 +65,8 @@ class NewUci {
     ThreadPool         threads;
 
     std::string currentEvalFileName = "None";
+
+    CommandLine cli;
 
    private:
     void go(Position& pos, std::istringstream& is, StateListPtr& states);

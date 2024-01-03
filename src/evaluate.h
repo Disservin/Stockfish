@@ -41,7 +41,7 @@ Value evaluate(const Position& pos);
 
 namespace NNUE {
 
-void init(const std::string&, std::string& currentEvalFileName);
+void init(const std::string&, std::string& currentEvalFileName, const std::string& binaryDirector);
 void verify(const std::string&, const std::string& currentEvalFileName);
 
 }  // namespace NNUE

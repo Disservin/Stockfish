@@ -35,16 +35,14 @@ int main(int argc, char* argv[]) {
 
     std::cout << engine_info() << std::endl;
 
-    CommandLine::init(argc, argv);
-
-    NewUci uci = NewUci();
+    NewUci uci(argc, argv);
 
     Tune::init(uci.options);
     Bitboards::init();
     Position::init();
-    Eval::NNUE::init(uci.options["EvalFile"], uci.currentEvalFileName);
+    Eval::NNUE::init(uci.options["EvalFile"], uci.currentEvalFileName, uci.cli.workingDirectory);
 
-    uci.loop(argc, argv);
+    uci.loop();
 
     return 0;
 }

@@ -34,8 +34,9 @@ constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB
 constexpr int  NormalizeToPawnValue = 328;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
-NewUci::NewUci() :
-    threads(options, tt) {
+NewUci::NewUci(int argc, char** argv) :
+    threads(options, tt),
+    cli(argc, argv) {
 
     options.add("Debug Log File", Option("", [](const Option& o) { start_logger(o); }));
     options.add("threads", Option(1, 1, 1024, [this](const Option& o) { threads.set(o); }));
@@ -58,7 +59,7 @@ NewUci::NewUci() :
     options.add("Syzygy50MoveRule", Option(true));
     options.add("SyzygyProbeLimit", Option(7, 0, 7));
     options.add("EvalFile", Option(EvalFileDefaultName, [this](const Option& o) {
-                    Eval::NNUE::init(o, currentEvalFileName);
+                    Eval::NNUE::init(o, currentEvalFileName, cli.binaryDirectory);
                 }));
 
     threads.set(size_t(options["Threads"]));
@@ -69,7 +70,7 @@ NewUci::NewUci() :
 NewUci::~NewUci() { threads.set(0); }
 
 
-void NewUci::loop(int argc, char* argv[]) {
+void NewUci::loop() {
 
     Position     pos;
     std::string  token, cmd;
@@ -77,12 +78,12 @@ void NewUci::loop(int argc, char* argv[]) {
 
     pos.set(StartFEN, false, &states->back(), threads.main());
 
-    for (int i = 1; i < argc; ++i)
-        cmd += std::string(argv[i]) + " ";
+    for (int i = 1; i < cli.argc; ++i)
+        cmd += std::string(cli.argv[i]) + " ";
 
     do
     {
-        if (argc == 1
+        if (cli.argc == 1
             && !getline(std::cin, cmd))  // Wait for an input or an end-of-file (EOF) indication
             cmd = "quit";
 
@@ -149,7 +150,7 @@ void NewUci::loop(int argc, char* argv[]) {
             sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
                       << sync_endl;
 
-    } while (token != "quit" && argc == 1);  // The command-line arguments are one-shot
+    } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
 void NewUci::go(Position& pos, std::istringstream& is, StateListPtr& states) {
