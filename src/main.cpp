@@ -29,7 +29,6 @@
 #include "types.h"
 #include "uci.h"
 
-
 using namespace Stockfish;
 
 int main(int argc, char* argv[]) {
