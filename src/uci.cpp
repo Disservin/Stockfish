@@ -27,6 +27,7 @@
 #include <memory>
 #include <optional>
 #include <vector>
+#include <sstream>
 
 #include "nnue/evaluate_nnue.h"
 #include "evaluate.h"
