@@ -216,7 +216,7 @@ void ThreadPool::start_thinking(Position&          pos,
         th->nodes = th->tbHits = th->nmpMinPly = th->bestMoveChanges = 0;
         th->rootDepth = th->completedDepth = 0;
         th->rootMoves                      = rootMoves;
-        th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState, th);
+        th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState);
         th->rootState      = setupStates->back();
         th->rootSimpleEval = Eval::simple_eval(pos, pos.side_to_move());
     }

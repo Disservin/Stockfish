@@ -85,7 +85,7 @@ void NewUci::loop() {
     std::string  token, cmd;
     StateListPtr states(new std::deque<StateInfo>(1));
 
-    pos.set(StartFEN, false, &states->back(), threads.main());
+    pos.set(StartFEN, false, &states->back());
 
     for (int i = 1; i < cli.argc; ++i)
         cmd += std::string(cli.argv[i]) + " ";
@@ -258,11 +258,11 @@ void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
 void NewUci::trace_eval(Position& pos) {
     StateListPtr states(new std::deque<StateInfo>(1));
     Position     p;
-    p.set(pos.fen(), options["UCI_Chess960"], &states->back(), threads.main());
+    p.set(pos.fen(), options["UCI_Chess960"], &states->back());
 
     Eval::NNUE::verify(options["EvalFile"], currentEvalFileName);
 
-    sync_cout << "\n" << Eval::trace(p) << sync_endl;
+    sync_cout << "\n" << Eval::trace(p, threads.main()) << sync_endl;
 }
 
 void NewUci::search_clear() {
@@ -296,7 +296,7 @@ void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& state
         return;
 
     states = StateListPtr(new std::deque<StateInfo>(1));  // Drop the old state and create a new one
-    pos.set(fen, options["UCI_Chess960"], &states->back(), threads.main());
+    pos.set(fen, options["UCI_Chess960"], &states->back());
 
     // Parse the move list, if any
     while (is >> token && (m = to_move(pos, token)) != MOVE_NONE)
@@ -352,6 +352,7 @@ std::string NewUci::move(Move m, bool chess960) {
 }
 
 std::string NewUci::pv(const Position&   pos,
+                       Thread*           thisThread,
                        Depth             depth,
                        TimePoint         elapsed,
                        const OptionsMap& options,
@@ -361,8 +362,8 @@ std::string NewUci::pv(const Position&   pos,
                        bool              rootInTB) {
     std::stringstream ss;
     TimePoint         time      = elapsed + 1;
-    const auto&       rootMoves = pos.this_thread()->rootMoves;
-    size_t            pvIdx     = pos.this_thread()->pvIdx;
+    const auto&       rootMoves = thisThread->rootMoves;
+    size_t            pvIdx     = thisThread->pvIdx;
     size_t            multiPV   = std::min(size_t(options["MultiPV"]), rootMoves.size());
     uint64_t          tbHits    = tb_hits + (rootInTB ? rootMoves.size() : 0);
 

@@ -44,6 +44,7 @@ class NewUci {
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
     static std::string pv(const Position&   pos,
+                          Thread*           thisThread,
                           Depth             depth,
                           TimePoint         elapsed,
                           const OptionsMap& options,

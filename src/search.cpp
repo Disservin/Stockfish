@@ -94,9 +94,7 @@ int stat_bonus(Depth d) { return std::min(268 * d - 352, 1153); }
 int stat_malus(Depth d) { return std::min(400 * d - 354, 1201); }
 
 // Add a small random component to draw evaluations to avoid 3-fold blindness
-Value value_draw(const Thread* thisThread) {
-    return VALUE_DRAW - 1 + Value(thisThread->nodes & 0x2);
-}
+Value value_draw(size_t nodes) { return VALUE_DRAW - 1 + Value(nodes & 0x2); }
 
 // Skill structure is used to implement strength limit. If we have a UCI_Elo,
 // we convert it to an appropriate skill level, anchored to the Stash engine.
@@ -132,9 +130,10 @@ Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-void  update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus);
+void  update_quiet_stats(const Position& pos, Stack* ss, Thread* thisThread, Move move, int bonus);
 void  update_all_stats(const Position& pos,
                        Stack*          ss,
+                       Thread*         thisThread,
                        Move            bestMove,
                        Value           bestValue,
                        Value           beta,
@@ -243,9 +242,9 @@ void MainThread::id_loop() {
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << NewUci::pv(bestThread->rootPos, bestThread->completedDepth, tm.elapsed(),
-                                options, threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
-                                TB::RootInTB)
+        sync_cout << NewUci::pv(bestThread->rootPos, bestThread, bestThread->completedDepth,
+                                tm.elapsed(), options, threads.nodes_searched(), threads.tb_hits(),
+                                tt.hashfull(), TB::RootInTB)
                   << sync_endl;
 
     sync_cout << "bestmove " << NewUci::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
@@ -387,8 +386,8 @@ void Thread::id_loop() {
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (iterBestValue <= alpha || iterBestValue >= beta)
                     && mainThread->tm.elapsed() > 3000)
-                    sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed(), options,
-                                            threads.nodes_searched(), threads.tb_hits(),
+                    sync_cout << NewUci::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(),
+                                            options, threads.nodes_searched(), threads.tb_hits(),
                                             tt.hashfull(), TB::RootInTB)
                               << sync_endl;
 
@@ -421,7 +420,7 @@ void Thread::id_loop() {
 
             if (mainThread
                 && (threads.stop || pvIdx + 1 == multiPV || mainThread->tm.elapsed() > 3000))
-                sync_cout << NewUci::pv(rootPos, rootDepth, mainThread->tm.elapsed(), options,
+                sync_cout << NewUci::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(), options,
                                         threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
                                         TB::RootInTB)
                           << sync_endl;
@@ -524,7 +523,7 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     // if the opponent had an alternative move earlier to this position.
     if (!rootNode && alpha < VALUE_DRAW && pos.has_game_cycle(ss->ply))
     {
-        alpha = value_draw(pos.this_thread());
+        alpha = value_draw(nodes);
         if (alpha >= beta)
             return alpha;
     }
@@ -549,17 +548,16 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     int      moveCount, captureCount, quietCount;
 
     // Step 1. Initialize node
-    Thread* thisThread = pos.this_thread();
-    ss->inCheck        = pos.checkers();
-    priorCapture       = pos.captured_piece();
-    Color us           = pos.side_to_move();
+    ss->inCheck  = pos.checkers();
+    priorCapture = pos.captured_piece();
+    Color us     = pos.side_to_move();
     moveCount = captureCount = quietCount = ss->moveCount = 0;
     bestValue                                             = -VALUE_INFINITE;
     maxValue                                              = VALUE_INFINITE;
 
     // Check for the available remaining time
-    if (thisThread == threads.main())
-        static_cast<MainThread*>(thisThread)->check_time();
+    if (this == threads.main())
+        static_cast<MainThread*>(this)->check_time();
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && selDepth < ss->ply + 1)
@@ -570,8 +568,7 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         // Step 2. Check for aborted search and immediate draw
         if (threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos)
-                                                        : value_draw(pos.this_thread());
+            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, this) : value_draw(nodes);
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
         // would be at best mate_in(ss->ply + 1), but if alpha is already bigger because
@@ -621,7 +618,7 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             {
                 // Bonus for a quiet ttMove that fails high (~2 Elo)
                 if (!ttCapture)
-                    update_quiet_stats(pos, ss, ttMove, stat_bonus(depth));
+                    update_quiet_stats(pos, ss, this, ttMove, stat_bonus(depth));
 
                 // Extra penalty for early quiet moves of
                 // the previous ply (~0 Elo on STC, ~2 Elo on LTC).
@@ -659,8 +656,8 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
             TB::WDLScore   wdl = Tablebases::probe_wdl(pos, &err);
 
             // Force check of time on the next occasion
-            if (thisThread == threads.main())
-                static_cast<MainThread*>(thisThread)->callsCnt = 0;
+            if (this == threads.main())
+                static_cast<MainThread*>(this)->callsCnt = 0;
 
             if (err != TB::ProbeState::FAIL)
             {
@@ -722,7 +719,7 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
         // Never assume anything about values stored in TT
         unadjustedStaticEval = ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            unadjustedStaticEval = ss->staticEval = eval = evaluate(pos);
+            unadjustedStaticEval = ss->staticEval = eval = evaluate(pos, this);
         else if (PvNode)
             Eval::NNUE::hint_common_parent_position(pos);
 
@@ -737,7 +734,7 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
     }
     else
     {
-        unadjustedStaticEval = ss->staticEval = eval = evaluate(pos);
+        unadjustedStaticEval = ss->staticEval = eval = evaluate(pos, this);
 
         Value newEval =
           ss->staticEval + correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
@@ -872,9 +869,9 @@ Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth de
 
                 ss->currentMove = move;
                 ss->continuationHistory =
-                  &thisThread
-                     ->continuationHistory[ss->inCheck][true][pos.moved_piece(move)][to_sq(move)];
+                  &this->continuationHistory[ss->inCheck][true][pos.moved_piece(move)][to_sq(move)];
 
+                nodes.fetch_add(1, std::memory_order_relaxed);
                 pos.do_move(move, st);
 
                 // Perform a preliminary qsearch to verify that the move holds
@@ -950,7 +947,7 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && thisThread == threads.main() && threads.main()->tm.elapsed() > 3000)
+        if (rootNode && this == threads.main() && threads.main()->tm.elapsed() > 3000)
             sync_cout << "info depth " << depth << " currmove "
                       << NewUci::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + pvIdx << sync_endl;
@@ -1124,6 +1121,7 @@ moves_loop:  // When in check, search starts here
           &continuationHistory[ss->inCheck][capture][movedPiece][to_sq(move)];
 
         // Step 16. Make the move
+        nodes.fetch_add(1, std::memory_order_relaxed);
         pos.do_move(move, st, givesCheck);
 
         // Decrease reduction if position is or has been on the PV (~4 Elo)
@@ -1339,8 +1337,8 @@ moves_loop:  // When in check, search starts here
 
     // If there is a move that produces search value greater than alpha we update the stats of searched moves
     else if (bestMove)
-        update_all_stats(pos, ss, bestMove, bestValue, beta, prevSq, quietsSearched, quietCount,
-                         capturesSearched, captureCount, depth);
+        update_all_stats(pos, ss, this, bestMove, bestValue, beta, prevSq, quietsSearched,
+                         quietCount, capturesSearched, captureCount, depth);
 
     // Bonus for prior countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
@@ -1402,7 +1400,7 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
     // if the opponent had an alternative move earlier to this position.
     if (alpha < VALUE_DRAW && pos.has_game_cycle(ss->ply))
     {
-        alpha = value_draw(pos.this_thread());
+        alpha = value_draw(nodes);
         if (alpha >= beta)
             return alpha;
     }
@@ -1427,10 +1425,9 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
         ss->pv[0]    = MOVE_NONE;
     }
 
-    Thread* thisThread = pos.this_thread();
-    bestMove           = MOVE_NONE;
-    ss->inCheck        = pos.checkers();
-    moveCount          = 0;
+    bestMove    = MOVE_NONE;
+    ss->inCheck = pos.checkers();
+    moveCount   = 0;
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && selDepth < ss->ply + 1)
@@ -1438,7 +1435,7 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
 
     // Step 2. Check for an immediate draw or maximum ply reached
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos) : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, this) : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1469,7 +1466,7 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
         {
             // Never assume anything about values stored in TT
             if ((unadjustedStaticEval = ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
-                unadjustedStaticEval = ss->staticEval = bestValue = evaluate(pos);
+                unadjustedStaticEval = ss->staticEval = bestValue = evaluate(pos, this);
 
             Value newEval =
               ss->staticEval + correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
@@ -1485,7 +1482,7 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
         {
             // In case of null move search, use previous static eval with a different sign
             unadjustedStaticEval = ss->staticEval = bestValue =
-              (ss - 1)->currentMove != MOVE_NULL ? evaluate(pos) : -(ss - 1)->staticEval;
+              (ss - 1)->currentMove != MOVE_NULL ? evaluate(pos, this) : -(ss - 1)->staticEval;
 
             Value newEval =
               ss->staticEval + correctionHistory[us][pawn_structure_index<Correction>(pos)] / 32;
@@ -1595,12 +1592,12 @@ Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth d
         // Update the current move
         ss->currentMove = move;
         ss->continuationHistory =
-          &thisThread
-             ->continuationHistory[ss->inCheck][capture][pos.moved_piece(move)][to_sq(move)];
+          &continuationHistory[ss->inCheck][capture][pos.moved_piece(move)][to_sq(move)];
 
         quietCheckEvasions += !capture && ss->inCheck;
 
         // Step 7. Make and search the move
+        nodes.fetch_add(1, std::memory_order_relaxed);
         pos.do_move(move, st, givesCheck);
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
         pos.undo_move(move);
@@ -1718,6 +1715,7 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position& pos,
                       Stack*          ss,
+                      Thread*         thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
@@ -1729,7 +1727,6 @@ void update_all_stats(const Position& pos,
                       Depth           depth) {
 
     Color                  us             = pos.side_to_move();
-    Thread*                thisThread     = pos.this_thread();
     CapturePieceToHistory& captureHistory = thisThread->captureHistory;
     Piece                  moved_piece    = pos.moved_piece(bestMove);
     PieceType              captured;
@@ -1743,7 +1740,7 @@ void update_all_stats(const Position& pos,
                                                    : stat_bonus(depth);  // smaller bonus
 
         // Increase stats for the best move in case it was a quiet move
-        update_quiet_stats(pos, ss, bestMove, bestMoveBonus);
+        update_quiet_stats(pos, ss, thisThread, bestMove, bestMoveBonus);
 
         int pIndex = pawn_structure_index(pos);
         thisThread->pawnHistory[pIndex][moved_piece][to_sq(bestMove)] << quietMoveBonus;
@@ -1801,7 +1798,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 
 // Updates move sorting heuristics
-void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
+void update_quiet_stats(const Position& pos, Stack* ss, Thread* thisThread, Move move, int bonus) {
 
     // Update killers
     if (ss->killers[0] != move)
@@ -1810,8 +1807,7 @@ void update_quiet_stats(const Position& pos, Stack* ss, Move move, int bonus) {
         ss->killers[0] = move;
     }
 
-    Color   us         = pos.side_to_move();
-    Thread* thisThread = pos.this_thread();
+    Color us = pos.side_to_move();
     thisThread->mainHistory[us][from_to(move)] << bonus;
     update_continuation_histories(ss, pos.moved_piece(move), to_sq(move), bonus);
 

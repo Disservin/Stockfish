@@ -157,7 +157,7 @@ Value Eval::simple_eval(const Position& pos, Color c) {
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
-Value Eval::evaluate(const Position& pos) {
+Value Eval::evaluate(const Position& pos, Thread* thisThread) {
 
     assert(!pos.checkers());
 
@@ -167,8 +167,8 @@ Value Eval::evaluate(const Position& pos) {
     int   simpleEval = simple_eval(pos, stm) + (int(pos.key() & 7) - 3);
 
     bool lazy = std::abs(simpleEval) >= RookValue + KnightValue + 16 * shuffling * shuffling
-                                          + std::abs(pos.this_thread()->iterBestValue)
-                                          + std::abs(pos.this_thread()->rootSimpleEval);
+                                          + std::abs(thisThread->iterBestValue)
+                                          + std::abs(thisThread->rootSimpleEval);
 
     if (lazy)
         v = Value(simpleEval);
@@ -177,7 +177,7 @@ Value Eval::evaluate(const Position& pos) {
         int   nnueComplexity;
         Value nnue = NNUE::evaluate(pos, true, &nnueComplexity);
 
-        Value optimism = pos.this_thread()->optimism[stm];
+        Value optimism = thisThread->optimism[stm];
 
         // Blend optimism and eval with nnue complexity and material imbalance
         optimism += optimism * (nnueComplexity + std::abs(simpleEval - nnue)) / 512;
@@ -200,16 +200,16 @@ Value Eval::evaluate(const Position& pos) {
 // a string (suitable for outputting to stdout) that contains the detailed
 // descriptions and values of each evaluation term. Useful for debugging.
 // Trace scores are from white's point of view
-std::string Eval::trace(Position& pos) {
+std::string Eval::trace(Position& pos, Thread* thisThread) {
 
     if (pos.checkers())
         return "Final evaluation: none (in check)";
 
     // Reset any global variable used in eval
-    pos.this_thread()->iterBestValue   = VALUE_ZERO;
-    pos.this_thread()->rootSimpleEval  = VALUE_ZERO;
-    pos.this_thread()->optimism[WHITE] = VALUE_ZERO;
-    pos.this_thread()->optimism[BLACK] = VALUE_ZERO;
+    thisThread->iterBestValue   = VALUE_ZERO;
+    thisThread->rootSimpleEval  = VALUE_ZERO;
+    thisThread->optimism[WHITE] = VALUE_ZERO;
+    thisThread->optimism[BLACK] = VALUE_ZERO;
 
     std::stringstream ss;
     ss << std::showpoint << std::noshowpos << std::fixed << std::setprecision(2);
@@ -222,7 +222,7 @@ std::string Eval::trace(Position& pos) {
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * NewUci::to_cp(v) << " (white side)\n";
 
-    v = evaluate(pos);
+    v = evaluate(pos, thisThread);
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "Final evaluation       " << 0.01 * NewUci::to_cp(v) << " (white side)";
     ss << " [with scaled NNUE, ...]";

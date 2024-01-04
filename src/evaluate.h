@@ -22,6 +22,7 @@
 #include <string>
 
 #include "types.h"
+#include "thread.h"
 
 namespace Stockfish {
 
@@ -29,10 +30,10 @@ class Position;
 
 namespace Eval {
 
-std::string trace(Position& pos);
+std::string trace(Position& pos, Thread* thisThread);
 
 Value simple_eval(const Position& pos, Color c);
-Value evaluate(const Position& pos);
+Value evaluate(const Position& pos, Thread* thisThread);
 
 // The default net name MUST follow the format nn-[SHA256 first 12 digits].nnue
 // for the build process (profile-build and fishtest) to work. Do not change the

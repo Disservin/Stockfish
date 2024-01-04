@@ -87,7 +87,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
         ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
         Position p;
-        p.set(pos.fen(), pos.is_chess960(), &st, pos.this_thread());
+        p.set(pos.fen(), pos.is_chess960(), &st);
         Tablebases::ProbeState s1, s2;
         Tablebases::WDLScore   wdl = Tablebases::probe_wdl(p, &s1);
         int                    dtz = Tablebases::probe_dtz(p, &s2);
@@ -160,7 +160,7 @@ void Position::init() {
 // Initializes the position object with the given FEN string.
 // This function is not very robust - make sure that input FENs are correct,
 // this is assumed to be the responsibility of the GUI.
-Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Thread* th) {
+Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
     /*
    A FEN string defines a particular position using only the ASCII character set.
 
@@ -286,8 +286,7 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si, Th
     // handle also common incorrect FEN with fullmove = 0.
     gamePly = std::max(2 * (gamePly - 1), 0) + (sideToMove == BLACK);
 
-    chess960   = isChess960;
-    thisThread = th;
+    chess960 = isChess960;
     set_state();
 
     assert(pos_is_ok());
@@ -388,7 +387,7 @@ Position& Position::set(const string& code, Color c, StateInfo* si) {
     string fenStr = "8/" + sides[0] + char(8 - sides[0].length() + '0') + "/8/8/8/8/" + sides[1]
                   + char(8 - sides[1].length() + '0') + "/8 w - - 0 10";
 
-    return set(fenStr, false, si, nullptr);
+    return set(fenStr, false, si);
 }
 
 
@@ -667,7 +666,6 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
     assert(is_ok(m));
     assert(&newSt != st);
 
-    thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
     Key k = st->key ^ Zobrist::side;
 
     // Copy some fields of the old state to our new StateInfo object except the
@@ -1235,7 +1233,7 @@ void Position::flip() {
     std::getline(ss, token);  // Half and full moves
     f += token;
 
-    set(f, is_chess960(), st, this_thread());
+    set(f, is_chess960(), st);
 
     assert(pos_is_ok());
 }
