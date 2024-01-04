@@ -128,12 +128,9 @@ struct LimitsType {
 
 void init(int);
 
-}  // namespace Search
-
-
-class SearchWorker {
+class Worker {
    public:
-    SearchWorker(Search::ExternalShared& es) :
+    Worker(Search::ExternalShared& es) :
         // Unpack the ExternalShared struct into member variables
         options(es.options),
         threads(es.threads),
@@ -172,6 +169,9 @@ class SearchWorker {
     template<NodeType nodeType>
     Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
 };
+
+}  // namespace Search
+
 
 }  // namespace Stockfish
 

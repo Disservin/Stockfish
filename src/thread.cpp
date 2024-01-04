@@ -41,7 +41,7 @@ namespace Stockfish {
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
 Thread::Thread(Search::ExternalShared& es, size_t n) :
-    SearchWorker(es),
+    Search::Worker(es),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 

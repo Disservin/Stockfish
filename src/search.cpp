@@ -131,10 +131,10 @@ Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
 void  update_quiet_stats(
-   const Position& pos, Stack* ss, SearchWorker* thisThread, Move move, int bonus);
+   const Position& pos, Stack* ss, Search::Worker* thisThread, Move move, int bonus);
 void update_all_stats(const Position& pos,
                       Stack*          ss,
-                      SearchWorker*   thisThread,
+                      Search::Worker*   thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
@@ -511,7 +511,7 @@ void Thread::id_loop() {
 
 // Main search function for both PV and non-PV nodes
 template<NodeType nodeType>
-Value SearchWorker::search(
+Value Search::Worker::search(
   Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
 
     constexpr bool PvNode   = nodeType != NonPV;
@@ -1389,7 +1389,7 @@ moves_loop:  // When in check, search starts here
 // function with zero depth, or recursively with further decreasing depth per call.
 // (~155 Elo)
 template<NodeType nodeType>
-Value SearchWorker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
+Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1717,7 +1717,7 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position& pos,
                       Stack*          ss,
-                      SearchWorker*   thisThread,
+                      Search::Worker*   thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
@@ -1801,7 +1801,7 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 // Updates move sorting heuristics
 void update_quiet_stats(
-  const Position& pos, Stack* ss, SearchWorker* thisThread, Move move, int bonus) {
+  const Position& pos, Stack* ss, Search::Worker* thisThread, Move move, int bonus) {
 
     // Update killers
     if (ss->killers[0] != move)

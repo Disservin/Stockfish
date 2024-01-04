@@ -40,7 +40,7 @@ class ThreadPool;
 class TranspositionTable;
 
 // Thread class keeps together all the thread-related stuff.
-class Thread: public SearchWorker {
+class Thread: public Search::Worker {
    public:
     Thread(Search::ExternalShared&, size_t);
     virtual ~Thread();

@@ -157,7 +157,7 @@ Value Eval::simple_eval(const Position& pos, Color c) {
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
-Value Eval::evaluate(const Position& pos, SearchWorker* thisThread) {
+Value Eval::evaluate(const Position& pos, Search::Worker* thisThread) {
 
     assert(!pos.checkers());
 
@@ -200,7 +200,7 @@ Value Eval::evaluate(const Position& pos, SearchWorker* thisThread) {
 // a string (suitable for outputting to stdout) that contains the detailed
 // descriptions and values of each evaluation term. Useful for debugging.
 // Trace scores are from white's point of view
-std::string Eval::trace(Position& pos, SearchWorker* thisThread) {
+std::string Eval::trace(Position& pos, Search::Worker* thisThread) {
 
     if (pos.checkers())
         return "Final evaluation: none (in check)";
