@@ -28,7 +28,6 @@
 #include "bitboard.h"
 #include "nnue/nnue_accumulator.h"
 #include "types.h"
-#
 
 namespace Stockfish {
 
