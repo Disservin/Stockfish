@@ -120,12 +120,6 @@ struct Skill {
     Move   best = MOVE_NONE;
 };
 
-// template<NodeType nodeType>
-// Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
-
-// template<NodeType nodeType>
-// Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
-
 Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
