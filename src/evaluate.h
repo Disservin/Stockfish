@@ -22,11 +22,11 @@
 #include <string>
 
 #include "types.h"
-#include "thread.h"
 
 namespace Stockfish {
 
 class Position;
+class Thread;
 
 namespace Eval {
 
