@@ -26,18 +26,15 @@
 #include <mutex>
 #include <vector>
 
-#include "movepick.h"
 #include "position.h"
 #include "search.h"
 #include "thread_win32_osx.h"
 #include "timeman.h"
-#include "types.h"
 
 namespace Stockfish {
 
 class OptionsMap;
-class ThreadPool;
-class TranspositionTable;
+enum Value : int;
 
 // Thread class keeps together all the thread-related stuff.
 class Thread: public Search::Worker {

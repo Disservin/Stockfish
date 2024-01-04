@@ -35,6 +35,8 @@
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
+#include "movepick.h"
+#include "types.h"
 
 namespace Stockfish {
 

@@ -22,10 +22,12 @@
 #include <cstdint>
 #include <vector>
 #include <atomic>
+#include <cstddef>
 
 #include "misc.h"
 #include "movepick.h"
 #include "types.h"
+#include "position.h"
 
 namespace Stockfish {
 
@@ -36,10 +38,9 @@ enum NodeType {
     Root
 };
 
-class Position;
 class TranspositionTable;
 class ThreadPool;
-
+class OptionsMap;
 
 namespace Search {
 
