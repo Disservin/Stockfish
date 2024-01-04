@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << engine_info() << std::endl;
 
-    NewUci uci(argc, argv);
+    UciHandler uci(argc, argv);
 
     Tune::init(uci.options);
     Bitboards::init();

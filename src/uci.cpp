@@ -43,7 +43,7 @@ constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB
 constexpr int  NormalizeToPawnValue = 328;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
-NewUci::NewUci(int argc, char** argv) :
+UciHandler::UciHandler(int argc, char** argv) :
     cli(argc, argv) {
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
@@ -80,7 +80,7 @@ NewUci::NewUci(int argc, char** argv) :
     search_clear();  // After threads are up
 }
 
-void NewUci::loop() {
+void UciHandler::loop() {
 
     Position     pos;
     std::string  token, cmd;
@@ -163,7 +163,7 @@ void NewUci::loop() {
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
-void NewUci::go(Position& pos, std::istringstream& is, StateListPtr& states) {
+void UciHandler::go(Position& pos, std::istringstream& is, StateListPtr& states) {
 
 
     Search::LimitsType limits;
@@ -207,7 +207,7 @@ void NewUci::go(Position& pos, std::istringstream& is, StateListPtr& states) {
     threads.start_thinking(options, pos, states, limits, ponderMode);
 }
 
-void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
+void UciHandler::bench(Position& pos, std::istream& args, StateListPtr& states) {
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
 
@@ -256,7 +256,7 @@ void NewUci::bench(Position& pos, std::istream& args, StateListPtr& states) {
               << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
 }
 
-void NewUci::trace_eval(Position& pos) {
+void UciHandler::trace_eval(Position& pos) {
     StateListPtr states(new std::deque<StateInfo>(1));
     Position     p;
     p.set(pos.fen(), options["UCI_Chess960"], &states->back());
@@ -266,7 +266,7 @@ void NewUci::trace_eval(Position& pos) {
     sync_cout << "\n" << Eval::trace(p, threads.main()) << sync_endl;
 }
 
-void NewUci::search_clear() {
+void UciHandler::search_clear() {
     threads.main()->wait_for_search_finished();
 
     tt.clear(options["Threads"]);
@@ -274,12 +274,12 @@ void NewUci::search_clear() {
     Tablebases::init(options["SyzygyPath"]);  // Free mapped files
 }
 
-void NewUci::setoption(std::istringstream& is) {
+void UciHandler::setoption(std::istringstream& is) {
     threads.main()->wait_for_search_finished();
     options.setoption(is);
 }
 
-void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& states) {
+void UciHandler::position(Position& pos, std::istringstream& is, StateListPtr& states) {
     Move        m;
     std::string token, fen;
 
@@ -307,9 +307,9 @@ void NewUci::position(Position& pos, std::istringstream& is, StateListPtr& state
     }
 }
 
-int NewUci::to_cp(Value v) { return 100 * v / NormalizeToPawnValue; }
+int UciHandler::to_cp(Value v) { return 100 * v / NormalizeToPawnValue; }
 
-std::string NewUci::value(Value v) {
+std::string UciHandler::value(Value v) {
     assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
 
     std::stringstream ss;
@@ -327,11 +327,11 @@ std::string NewUci::value(Value v) {
     return ss.str();
 }
 
-std::string NewUci::square(Square s) {
+std::string UciHandler::square(Square s) {
     return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
 }
 
-std::string NewUci::move(Move m, bool chess960) {
+std::string UciHandler::move(Move m, bool chess960) {
     if (m == MOVE_NONE)
         return "(none)";
 
@@ -352,7 +352,7 @@ std::string NewUci::move(Move m, bool chess960) {
     return move;
 }
 
-std::string NewUci::pv(const Position&   pos,
+std::string UciHandler::pv(const Position&   pos,
                        Thread*           thisThread,
                        Depth             depth,
                        TimePoint         elapsed,
@@ -437,7 +437,7 @@ int win_rate_model(Value v, int ply) {
 }
 }
 
-std::string NewUci::wdl(Value v, int ply) {
+std::string UciHandler::wdl(Value v, int ply) {
     std::stringstream ss;
 
     int wdl_w = win_rate_model(v, ply);
@@ -448,7 +448,7 @@ std::string NewUci::wdl(Value v, int ply) {
     return ss.str();
 }
 
-Move NewUci::to_move(const Position& pos, std::string& str) {
+Move UciHandler::to_move(const Position& pos, std::string& str) {
     if (str.length() == 5)
         str[4] = char(tolower(str[4]));  // The promotion piece character must be lowercased
 

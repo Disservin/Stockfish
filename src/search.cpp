@@ -162,7 +162,7 @@ uint64_t perft(Position& pos, Depth depth) {
             pos.undo_move(m);
         }
         if (Root)
-            sync_cout << NewUci::move(m, pos.is_chess960()) << ": " << cnt << sync_endl;
+            sync_cout << UciHandler::move(m, pos.is_chess960()) << ": " << cnt << sync_endl;
     }
     return nodes;
 }
@@ -195,7 +195,7 @@ void MainThread::id_loop() {
     {
         rootMoves.emplace_back(MOVE_NONE);
         sync_cout << "info depth 0 score "
-                  << NewUci::value(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW) << sync_endl;
+                  << UciHandler::value(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW) << sync_endl;
     }
     else
     {
@@ -237,17 +237,17 @@ void MainThread::id_loop() {
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << NewUci::pv(bestThread->rootPos, bestThread, bestThread->completedDepth,
+        sync_cout << UciHandler::pv(bestThread->rootPos, bestThread, bestThread->completedDepth,
                                 tm.elapsed(), options, threads.nodes_searched(), threads.tb_hits(),
                                 tt.hashfull(), TB::RootInTB)
                   << sync_endl;
 
-    sync_cout << "bestmove " << NewUci::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+    sync_cout << "bestmove " << UciHandler::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
     if (bestThread->rootMoves[0].pv.size() > 1
         || bestThread->rootMoves[0].extract_ponder_from_tt(tt, rootPos))
         std::cout << " ponder "
-                  << NewUci::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+                  << UciHandler::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
 
     std::cout << sync_endl;
 }
@@ -381,7 +381,7 @@ void Thread::id_loop() {
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (iterBestValue <= alpha || iterBestValue >= beta)
                     && mainThread->tm.elapsed() > 3000)
-                    sync_cout << NewUci::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(),
+                    sync_cout << UciHandler::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(),
                                             options, threads.nodes_searched(), threads.tb_hits(),
                                             tt.hashfull(), TB::RootInTB)
                               << sync_endl;
@@ -415,7 +415,7 @@ void Thread::id_loop() {
 
             if (mainThread
                 && (threads.stop || pvIdx + 1 == multiPV || mainThread->tm.elapsed() > 3000))
-                sync_cout << NewUci::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(), options,
+                sync_cout << UciHandler::pv(rootPos, this, rootDepth, mainThread->tm.elapsed(), options,
                                         threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
                                         TB::RootInTB)
                           << sync_endl;
@@ -945,7 +945,7 @@ moves_loop:  // When in check, search starts here
 
         if (rootNode && this == threads.main() && threads.main()->tm.elapsed() > 3000)
             sync_cout << "info depth " << depth << " currmove "
-                      << NewUci::move(move, pos.is_chess960()) << " currmovenumber "
+                      << UciHandler::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + pvIdx << sync_endl;
         if (PvNode)
             (ss + 1)->pv = nullptr;

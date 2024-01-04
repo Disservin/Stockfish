@@ -77,7 +77,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
        << std::setw(16) << pos.key() << std::setfill(' ') << std::dec << "\nCheckers: ";
 
     for (Bitboard b = pos.checkers(); b;)
-        os << NewUci::square(pop_lsb(b)) << " ";
+        os << UciHandler::square(pop_lsb(b)) << " ";
 
     if (int(Tablebases::MaxCardinality) >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
     {
@@ -431,7 +431,7 @@ string Position::fen() const {
     if (!can_castle(ANY_CASTLING))
         ss << '-';
 
-    ss << (ep_square() == SQ_NONE ? " - " : " " + NewUci::square(ep_square()) + " ") << st->rule50
+    ss << (ep_square() == SQ_NONE ? " - " : " " + UciHandler::square(ep_square()) + " ") << st->rule50
        << " " << 1 + (gamePly - (sideToMove == BLACK)) / 2;
 
     return ss.str();
