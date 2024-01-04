@@ -84,7 +84,7 @@ struct RootMove {
 
     explicit RootMove(Move m) :
         pv(1, m) {}
-    bool extract_ponder_from_tt(TranspositionTable& tt, Position& pos);
+    bool extract_ponder_from_tt(const TranspositionTable& tt, Position& pos);
     bool operator==(const Move& m) const { return pv[0] == m; }
     // Sort in descending order
     bool operator<(const RootMove& m) const {

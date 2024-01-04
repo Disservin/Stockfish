@@ -1885,7 +1885,7 @@ void MainThread::check_time() {
 // for instance, in case we stop the search during a fail high at root.
 // We try hard to have a ponder move to return to the GUI,
 // otherwise in case of 'ponder on' we have nothing to think about.
-bool RootMove::extract_ponder_from_tt(TranspositionTable& tt, Position& pos) {
+bool RootMove::extract_ponder_from_tt(const TranspositionTable& tt, Position& pos) {
 
     StateInfo st;
     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
