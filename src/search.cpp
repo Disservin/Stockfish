@@ -130,19 +130,20 @@ Value value_to_tt(Value v, int ply);
 Value value_from_tt(Value v, int ply, int r50c);
 void  update_pv(Move* pv, Move move, const Move* childPv);
 void  update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus);
-void  update_quiet_stats(const Position& pos, Stack* ss, Thread* thisThread, Move move, int bonus);
-void  update_all_stats(const Position& pos,
-                       Stack*          ss,
-                       Thread*         thisThread,
-                       Move            bestMove,
-                       Value           bestValue,
-                       Value           beta,
-                       Square          prevSq,
-                       Move*           quietsSearched,
-                       int             quietCount,
-                       Move*           capturesSearched,
-                       int             captureCount,
-                       Depth           depth);
+void  update_quiet_stats(
+   const Position& pos, Stack* ss, SearchWorker* thisThread, Move move, int bonus);
+void update_all_stats(const Position& pos,
+                      Stack*          ss,
+                      SearchWorker*   thisThread,
+                      Move            bestMove,
+                      Value           bestValue,
+                      Value           beta,
+                      Square          prevSq,
+                      Move*           quietsSearched,
+                      int             quietCount,
+                      Move*           capturesSearched,
+                      int             captureCount,
+                      Depth           depth);
 
 // Utility to verify move generation. All the leaf nodes up
 // to the given depth are generated and counted, and the sum is returned.
@@ -510,7 +511,8 @@ void Thread::id_loop() {
 
 // Main search function for both PV and non-PV nodes
 template<NodeType nodeType>
-Value Thread::search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
+Value SearchWorker::search(
+  Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode) {
 
     constexpr bool PvNode   = nodeType != NonPV;
     constexpr bool rootNode = nodeType == Root;
@@ -1387,7 +1389,7 @@ moves_loop:  // When in check, search starts here
 // function with zero depth, or recursively with further decreasing depth per call.
 // (~155 Elo)
 template<NodeType nodeType>
-Value Thread::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
+Value SearchWorker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
     static_assert(nodeType != Root);
     constexpr bool PvNode = nodeType == PV;
@@ -1715,7 +1717,7 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position& pos,
                       Stack*          ss,
-                      Thread*         thisThread,
+                      SearchWorker*   thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
@@ -1798,7 +1800,8 @@ void update_continuation_histories(Stack* ss, Piece pc, Square to, int bonus) {
 
 
 // Updates move sorting heuristics
-void update_quiet_stats(const Position& pos, Stack* ss, Thread* thisThread, Move move, int bonus) {
+void update_quiet_stats(
+  const Position& pos, Stack* ss, SearchWorker* thisThread, Move move, int bonus) {
 
     // Update killers
     if (ss->killers[0] != move)

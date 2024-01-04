@@ -40,9 +40,9 @@ class ThreadPool;
 class TranspositionTable;
 
 // Thread class keeps together all the thread-related stuff.
-class Thread {
+class Thread: public SearchWorker {
    public:
-    Thread(const OptionsMap&, ThreadPool&, TranspositionTable&, size_t);
+    Thread(Search::ExternalShared&, size_t);
     virtual ~Thread();
 
     void virtual id_loop();
@@ -52,38 +52,6 @@ class Thread {
     void   start_searching();
     void   wait_for_search_finished();
     size_t id() const { return idx; }
-
-    template<NodeType nodeType>
-    Value
-    search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
-
-    template<NodeType nodeType>
-    Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
-
-    Search::LimitsType limits;
-
-    size_t                pvIdx, pvLast;
-    std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
-    int                   selDepth, nmpMinPly;
-    Value                 iterBestValue, optimism[COLOR_NB];
-
-    Position              rootPos;
-    StateInfo             rootState;
-    Search::RootMoves     rootMoves;
-    Depth                 rootDepth, completedDepth;
-    Value                 rootDelta;
-    Value                 rootSimpleEval;
-    CounterMoveHistory    counterMoves;
-    ButterflyHistory      mainHistory;
-    CapturePieceToHistory captureHistory;
-    ContinuationHistory   continuationHistory[2][2];
-    PawnHistory           pawnHistory;
-    CorrectionHistory     correctionHistory;
-
-   protected:
-    const OptionsMap&   options;
-    ThreadPool&         threads;
-    TranspositionTable& tt;
 
    private:
     std::mutex              mutex;
@@ -119,8 +87,6 @@ struct MainThread: public Thread {
 class ThreadPool {
 
    public:
-    ThreadPool(const OptionsMap& o) :
-        options(o) {}
     ~ThreadPool() {
         // destroy any existing thread(s)
         if (threads.size() > 0)
@@ -132,9 +98,10 @@ class ThreadPool {
         }
     }
 
-    void start_thinking(Position&, StateListPtr&, Search::LimitsType, bool = false);
+    void
+    start_thinking(const OptionsMap&, Position&, StateListPtr&, Search::LimitsType, bool = false);
     void clear();
-    void set(TranspositionTable& tt, size_t);
+    void set(Search::ExternalShared&&);
 
     MainThread* main() const { return static_cast<MainThread*>(threads.front()); }
     uint64_t    nodes_searched() const { return accumulate(&Thread::nodes); }
@@ -153,8 +120,6 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    const OptionsMap& options;
-
     StateListPtr         setupStates;
     std::vector<Thread*> threads;
 

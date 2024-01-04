@@ -21,6 +21,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <atomic>
 
 #include "misc.h"
 #include "movepick.h"
@@ -37,8 +38,22 @@ enum NodeType {
 
 class Position;
 class TranspositionTable;
+class ThreadPool;
+
 
 namespace Search {
+
+struct ExternalShared {
+    ExternalShared(const OptionsMap& o, ThreadPool& tp, TranspositionTable& t) :
+        options(o),
+        threads(tp),
+        tt(t) {}
+
+    const OptionsMap&   options;
+    ThreadPool&         threads;
+    TranspositionTable& tt;
+};
+
 
 // Stack struct keeps track of the information we need to remember from nodes
 // shallower and deeper in the tree during the search. Each search thread has
@@ -114,6 +129,49 @@ struct LimitsType {
 void init(int);
 
 }  // namespace Search
+
+
+class SearchWorker {
+   public:
+    SearchWorker(Search::ExternalShared& es) :
+        // Unpack the ExternalShared struct into member variables
+        options(es.options),
+        threads(es.threads),
+        tt(es.tt) {}
+
+    Search::LimitsType limits;
+
+    size_t                pvIdx, pvLast;
+    std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
+    int                   selDepth, nmpMinPly;
+    Value                 iterBestValue, optimism[COLOR_NB];
+
+    Position              rootPos;
+    StateInfo             rootState;
+    Search::RootMoves     rootMoves;
+    Depth                 rootDepth, completedDepth;
+    Value                 rootDelta;
+    Value                 rootSimpleEval;
+    CounterMoveHistory    counterMoves;
+    ButterflyHistory      mainHistory;
+    CapturePieceToHistory captureHistory;
+    ContinuationHistory   continuationHistory[2][2];
+    PawnHistory           pawnHistory;
+    CorrectionHistory     correctionHistory;
+
+   protected:
+    template<NodeType nodeType>
+    Value
+    search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+    const OptionsMap&   options;
+    ThreadPool&         threads;
+    TranspositionTable& tt;
+
+   private:
+    template<NodeType nodeType>
+    Value qsearch(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth = 0);
+};
 
 }  // namespace Stockfish
 

@@ -40,10 +40,8 @@ namespace Stockfish {
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
-Thread::Thread(const OptionsMap& o, ThreadPool& tp, TranspositionTable& t, size_t n) :
-    options(o),
-    threads(tp),
-    tt(t),
+Thread::Thread(Search::ExternalShared& es, size_t n) :
+    SearchWorker(es),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 
@@ -107,6 +105,9 @@ void Thread::idle_loop() {
     // some Windows NUMA hardware, for instance in fishtest. To make it simple,
     // just check if running threads are below a threshold, in this case, all this
     // NUMA machinery is not needed.
+    // @TODO what if the number of threads is changed after the thread is created?
+    // i.e. setoption name Threads value 7, and the setoption name Threads value 10
+    // only the last 3 threads will use the binding mechanism.
     if (options["Threads"] > 8)
         WinProcGroup::bindThisThread(idx);
 
@@ -129,7 +130,7 @@ void Thread::idle_loop() {
 // Creates/destroys threads to match the requested number.
 // Created and launched threads will immediately go to sleep in idle_loop.
 // Upon resizing, threads are recreated to allow for binding if necessary.
-void ThreadPool::set(TranspositionTable& tt, size_t requested) {
+void ThreadPool::set(Search::ExternalShared&& es) {
 
     if (threads.size() > 0)  // destroy any existing thread(s)
     {
@@ -139,19 +140,21 @@ void ThreadPool::set(TranspositionTable& tt, size_t requested) {
             delete threads.back(), threads.pop_back();
     }
 
+    const size_t requested = es.options["Threads"];
+
     if (requested > 0)  // create new thread(s)
     {
-        threads.push_back(new MainThread(options, *this, tt, 0));
+        threads.push_back(new MainThread(es, 0));
 
 
         while (threads.size() < requested)
-            threads.push_back(new Thread(options, *this, tt, threads.size()));
+            threads.push_back(new Thread(es, threads.size()));
         clear();
 
         main()->wait_for_search_finished();
 
         // Reallocate the hash with the new threadpool size
-        tt.resize(options["Hash"], requested);
+        es.tt.resize(es.options["Hash"], requested);
 
         // Init thread number dependent search params.
         Search::init(requested);
@@ -175,7 +178,8 @@ void ThreadPool::clear() {
 
 // Wakes up main thread waiting in idle_loop() and
 // returns immediately. Main thread will wake up other threads and start the search.
-void ThreadPool::start_thinking(Position&          pos,
+void ThreadPool::start_thinking(const OptionsMap&  options,
+                                Position&          pos,
                                 StateListPtr&      states,
                                 Search::LimitsType limits,
                                 bool               ponderMode) {
