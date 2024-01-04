@@ -157,12 +157,13 @@ class Worker {
     PawnHistory           pawnHistory;
     CorrectionHistory     correctionHistory;
 
+    const OptionsMap& options;
+
    protected:
     template<NodeType nodeType>
     Value
     search(Position& pos, Search::Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
-    const OptionsMap&   options;
     ThreadPool&         threads;
     TranspositionTable& tt;
 

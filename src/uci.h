@@ -43,15 +43,12 @@ class UciHandler {
     static std::string value(Value v);
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
-    static std::string pv(const Position&   pos,
-                          Thread*           thisThread,
-                          Depth             depth,
-                          TimePoint         elapsed,
-                          const OptionsMap& options,
-                          uint64_t          nodesSearched,
-                          uint64_t          tb_hits,
-                          int               hashfull,
-                          bool              rootInTB);
+    static std::string pv(const Thread& workerThread,
+                          TimePoint     elapsed,
+                          uint64_t      nodesSearched,
+                          uint64_t      tb_hits,
+                          int           hashfull,
+                          bool          rootInTB);
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 

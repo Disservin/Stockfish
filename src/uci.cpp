@@ -263,7 +263,7 @@ void UciHandler::trace_eval(Position& pos) {
 
     Eval::NNUE::verify(options["EvalFile"], currentEvalFileName);
 
-    sync_cout << "\n" << Eval::trace(p, threads.main()) << sync_endl;
+    sync_cout << "\n" << Eval::trace(p, *threads.main()) << sync_endl;
 }
 
 void UciHandler::search_clear() {
@@ -352,21 +352,21 @@ std::string UciHandler::move(Move m, bool chess960) {
     return move;
 }
 
-std::string UciHandler::pv(const Position&   pos,
-                       Thread*           thisThread,
-                       Depth             depth,
-                       TimePoint         elapsed,
-                       const OptionsMap& options,
-                       uint64_t          nodesSearched,
-                       uint64_t          tb_hits,
-                       int               hashfull,
-                       bool              rootInTB) {
+std::string UciHandler::pv(const Thread& workerThread,
+                           TimePoint     elapsed,
+                           uint64_t      nodesSearched,
+                           uint64_t      tb_hits,
+                           int           hashfull,
+                           bool          rootInTB) {
     std::stringstream ss;
     TimePoint         time      = elapsed + 1;
-    const auto&       rootMoves = thisThread->rootMoves;
-    size_t            pvIdx     = thisThread->pvIdx;
-    size_t            multiPV   = std::min(size_t(options["MultiPV"]), rootMoves.size());
-    uint64_t          tbHits    = tb_hits + (rootInTB ? rootMoves.size() : 0);
+    const auto&       rootMoves = workerThread.rootMoves;
+    const auto&       depth     = workerThread.completedDepth;
+    const auto&       pos       = workerThread.rootPos;
+    size_t            pvIdx     = workerThread.pvIdx;
+    size_t            multiPV = std::min(size_t(workerThread.options["MultiPV"]), rootMoves.size());
+    uint64_t          tbHits  = tb_hits + (rootInTB ? rootMoves.size() : 0);
+
 
     for (size_t i = 0; i < multiPV; ++i)
     {
@@ -391,7 +391,7 @@ std::string UciHandler::pv(const Position&   pos,
            << " depth " << d << " seldepth " << rootMoves[i].selDepth << " multipv " << i + 1
            << " score " << value(v);
 
-        if (options["UCI_ShowWDL"])
+        if (workerThread.options["UCI_ShowWDL"])
             ss << wdl(v, pos.game_ply());
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
