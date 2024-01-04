@@ -23,7 +23,6 @@
 #include <string>
 #include <iostream>
 
-#include "types.h"
 #include "thread.h"
 #include "tt.h"
 #include "misc.h"
@@ -32,6 +31,10 @@
 #include "options_map.h"
 
 namespace Stockfish {
+
+enum Move : int;
+enum Square : int;
+enum Value : int;
 
 class UciHandler {
    public:

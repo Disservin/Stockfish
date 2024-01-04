@@ -36,6 +36,7 @@
 #include "benchmark.h"
 #include "options_map.h"
 #include "movegen.h"
+#include "types.h"
 
 namespace Stockfish {
 
