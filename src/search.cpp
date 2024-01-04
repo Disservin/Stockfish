@@ -134,7 +134,7 @@ void  update_quiet_stats(
    const Position& pos, Stack* ss, Search::Worker* thisThread, Move move, int bonus);
 void update_all_stats(const Position& pos,
                       Stack*          ss,
-                      Search::Worker*   thisThread,
+                      Search::Worker* thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
@@ -1717,7 +1717,7 @@ void update_pv(Move* pv, Move move, const Move* childPv) {
 // Updates stats at the end of search() when a bestMove is found
 void update_all_stats(const Position& pos,
                       Stack*          ss,
-                      Search::Worker*   thisThread,
+                      Search::Worker* thisThread,
                       Move            bestMove,
                       Value           bestValue,
                       Value           beta,
