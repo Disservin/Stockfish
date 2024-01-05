@@ -38,19 +38,31 @@ std::string compiler_info();
 // function that doesn't stall the CPU waiting for data to be loaded from memory,
 // which can be quite slow.
 
+enum class PrefetchRw {
+    READ,
+    WRITE
+};
+
+enum class PrefetchLoc {
+    NONE,
+    LOW,
+    MODERATE,
+    HIGH
+};
+
 #ifdef NO_PREFETCH
 
-template<int RW, int LOC>
+template<PrefetchRw RW = PrefetchRw::READ, PrefetchLoc LOC = PrefetchLoc::HIGH>
 void prefetch(void*) {}
 
 #else
-template<int RW = 0, int LOC = 3>
+template<PrefetchRw RW = PrefetchRw::READ, PrefetchLoc LOC = PrefetchLoc::HIGH>
 void prefetch(void* addr) {
 
     #if defined(_MSC_VER)
     _mm_prefetch((char*) addr, _MM_HINT_T0);
     #else
-    __builtin_prefetch(addr, RW, LOC);
+    __builtin_prefetch(addr, int(RW), int(LOC));
     #endif
 }
 #endif

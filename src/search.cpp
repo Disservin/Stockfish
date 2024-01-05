@@ -1142,7 +1142,8 @@ moves_loop:  // When in check, search starts here
         ss->doubleExtensions = (ss - 1)->doubleExtensions + (extension == 2);
 
         // Speculative prefetch as early as possible
-        prefetch<0, 0>(TT.first_entry(pos.key_after(move)));
+        prefetch(TT.first_entry(pos.key_after(move)));
+        const auto posKey = pos.key();
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1255,6 +1256,9 @@ moves_loop:  // When in check, search starts here
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
+
+        // prefetch entry again for write
+        prefetch<PrefetchRw::WRITE, PrefetchLoc::NONE>(TT.first_entry(posKey));
 
         // Step 19. Undo move
         pos.undo_move(move);
@@ -1623,6 +1627,7 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
 
         // Speculative prefetch as early as possible
         prefetch(TT.first_entry(pos.key_after(move)));
+        const auto posKey = pos.key();
 
         // Update the current move
         ss->currentMove = move;
@@ -1635,6 +1640,10 @@ Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth) {
         // Step 7. Make and search the move
         pos.do_move(move, st, givesCheck);
         value = -qsearch<nodeType>(pos, ss + 1, -beta, -alpha, depth - 1);
+
+        // prefetch entry again for write
+        prefetch<PrefetchRw::WRITE, PrefetchLoc::NONE>(TT.first_entry(posKey));
+
         pos.undo_move(move);
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
