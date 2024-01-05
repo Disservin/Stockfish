@@ -1142,7 +1142,7 @@ moves_loop:  // When in check, search starts here
         ss->doubleExtensions = (ss - 1)->doubleExtensions + (extension == 2);
 
         // Speculative prefetch as early as possible
-        prefetch(TT.first_entry(pos.key_after(move)));
+        prefetch<0, 0>(TT.first_entry(pos.key_after(move)));
 
         // Update the current move (this must be done after singular extension search)
         ss->currentMove = move;
@@ -1258,9 +1258,6 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         pos.undo_move(move);
-
-        // prefetch entry again for write
-        prefetch<1, 0>(TT.first_entry(pos.key()));
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
