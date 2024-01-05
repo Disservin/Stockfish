@@ -412,25 +412,6 @@ std::ostream& operator<<(std::ostream& os, SyncCout sc) {
 // Trampoline helper to avoid moving Logger to misc.h
 void start_logger(const std::string& fname) { Logger::start(fname); }
 
-
-#ifdef NO_PREFETCH
-
-void prefetch(void*) {}
-
-#else
-
-void prefetch(void* addr) {
-
-    #if defined(_MSC_VER)
-    _mm_prefetch((char*) addr, _MM_HINT_T0);
-    #else
-    __builtin_prefetch(addr);
-    #endif
-}
-
-#endif
-
-
 // Wrapper for systems where the c++17 implementation
 // does not guarantee the availability of aligned_alloc(). Memory allocated with
 // std_aligned_alloc() must be freed with std_aligned_free().

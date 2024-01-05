@@ -1259,6 +1259,9 @@ moves_loop:  // When in check, search starts here
         // Step 19. Undo move
         pos.undo_move(move);
 
+        // prefetch entry again for write
+        prefetch<1, 0>(TT.first_entry(pos.key()));
+
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
         // Step 20. Check for a new best move
