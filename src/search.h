@@ -47,6 +47,9 @@ class UciHandler;
 
 namespace Search {
 
+// Called at startup to initialize various lookup tables, after program startup
+void init(int);
+
 // Stack struct keeps track of the information we need to remember from nodes
 // shallower and deeper in the tree during the search. Each search thread has
 // its own array of Stack objects, indexed by the current ply.
@@ -118,8 +121,6 @@ struct LimitsType {
 };
 
 
-void init(int);
-
 // The UciHandler stores the uci options, thread pool, and transposition table.
 // This struct is used to easily forward data to the Search::Worker class.
 struct ExternalShared {
@@ -135,7 +136,6 @@ struct ExternalShared {
 
 class Worker;
 
-
 // Null Object Pattern
 class ISearchManager {
    public:
@@ -143,10 +143,13 @@ class ISearchManager {
     virtual void check_time(Search::Worker&) = 0;
 };
 
-
+// SearchManager manages the search from the main thread. It is responsible for
+// keeping track of the time, and storing data strictly related to the main thread.
 class SearchManager: public ISearchManager {
    public:
     void check_time(Search::Worker& worker) override;
+
+    Worker* find_bestworker(const Search::Worker& worker) const;
 
     Stockfish::TimeManagement tm;
     int                       callsCnt;
@@ -176,11 +179,12 @@ class Worker {
         manager(std::move(sm)),
         thread_idx(i) {}
 
+    // Reset histories, usually before a new game
+    void clear();
+
     // Called when the program receives the UCI 'go'
     // command. It searches from the root position and outputs the "bestmove".
     void start_searching();
-    // Reset histories, usually before a new game
-    void clear();
 
     bool is_mainthread() const { return thread_idx == 0; }
 
@@ -199,12 +203,16 @@ class Worker {
    private:
     void iterative_deepening();
 
+    // Main search function for both PV and non-PV nodes
     template<NodeType nodeType>
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
+    // Quiescence search function, which is called by the main search
     template<NodeType nodeType>
     Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
 
+    // Get a pointer to the search manager, only allowed to be called by the
+    // main thread.
     SearchManager* main_manager() const {
         assert(thread_idx == 0);
         return static_cast<SearchManager*>(manager.get());
