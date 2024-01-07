@@ -39,8 +39,8 @@ class OptionsMap {
 
     friend std::ostream& operator<<(std::ostream&, const OptionsMap&);
 
-    Option  operator[](const std::string&) const;
-    Option& operator[](const std::string&);
+    const Option& operator[](const std::string&) const;
+    Option&       operator[](const std::string&);
 
     std::size_t count(const std::string&) const;
 

@@ -55,12 +55,15 @@ void OptionsMap::setoption(std::istringstream& is) {
         sync_cout << "No such option: " << name << sync_endl;
 }
 
-Option OptionsMap::operator[](const std::string& name) const {
-    auto it = options_map.find(name);
-    return it != options_map.end() ? it->second : Option();
+const Option& OptionsMap::operator[](const std::string& name) const {
+    // throws std::out_of_range if the option does not exist
+    return options_map.at(name);
 }
 
-Option& OptionsMap::operator[](const std::string& name) { return options_map[name]; }
+Option& OptionsMap::operator[](const std::string& name) {
+    // throws std::out_of_range if the option does not exist
+    return options_map.at(name);
+}
 
 std::size_t OptionsMap::count(const std::string& name) const { return options_map.count(name); }
 
