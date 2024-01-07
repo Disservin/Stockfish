@@ -149,8 +149,6 @@ class SearchManager: public ISearchManager {
    public:
     void check_time(Search::Worker& worker) override;
 
-    Worker* find_bestworker(const Search::Worker& worker) const;
-
     Stockfish::TimeManagement tm;
     int                       callsCnt;
     std::atomic_bool          ponder;
