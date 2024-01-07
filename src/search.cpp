@@ -177,10 +177,13 @@ void Search::init(int size) {
         Reductions[i] = int((20.37 + std::log(size) / 2) * std::log(i));
 }
 
-
-// Called when the program receives the UCI 'go'
-// command. It searches from the root position and outputs the "bestmove".
-void MainThread::id_loop() {
+void Search::Worker::start_searching() {
+    // Start searching right away for non mainthreads
+    if (thread_idx != 0)
+    {
+        iterative_deepening();
+        return;
+    }
 
     if (limits.perft)
     {
@@ -200,7 +203,7 @@ void MainThread::id_loop() {
     else
     {
         threads.start_searching();  // start non-main threads
-        Thread::id_loop();          // main thread start searching
+        iterative_deepening();      // main thread start searching
     }
 
     // When we reach the maximum depth, we can arrive here without a raise of
@@ -209,7 +212,9 @@ void MainThread::id_loop() {
     // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
     // until the GUI sends one of those commands.
 
-    while (!threads.stop && (ponder || limits.infinite))
+    auto search_manager = main_manager();
+
+    while (!threads.stop && (search_manager->ponder || limits.infinite))
     {}  // Busy wait for a stop or a ponder reset
 
     // Stop the threads if not already stopped (also raise the stop if
@@ -222,24 +227,25 @@ void MainThread::id_loop() {
     // When playing in 'nodes as time' mode, subtract the searched nodes from
     // the available ones before exiting.
     if (limits.npmsec)
-        tm.availableNodes += limits.inc[rootPos.side_to_move()] - threads.nodes_searched();
+        search_manager->tm.availableNodes +=
+          limits.inc[rootPos.side_to_move()] - threads.nodes_searched();
 
-    Thread* bestThread = this;
+    Worker* bestThread = this;
     Skill   skill =
       Skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     if (int(options["MultiPV"]) == 1 && !limits.depth && !skill.enabled()
         && rootMoves[0].pv[0] != Move::none())
-        bestThread = threads.get_best_thread();
+        bestThread = threads.get_best_thread()->worker.get();
 
-    bestPreviousScore        = bestThread->rootMoves[0].score;
-    bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+    search_manager->bestPreviousScore        = bestThread->rootMoves[0].score;
+    search_manager->bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << UciHandler::pv(*bestThread, tm.elapsed(threads.nodes_searched()),
-                                    threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
-                                    TB::RootInTB)
+        sync_cout << UciHandler::pv(
+          *bestThread, search_manager->tm.elapsed(threads.nodes_searched()),
+          threads.nodes_searched(), threads.tb_hits(), tt.hashfull(), TB::RootInTB)
                   << sync_endl;
 
     sync_cout << "bestmove "
@@ -253,24 +259,23 @@ void MainThread::id_loop() {
     std::cout << sync_endl;
 }
 
-
 // Main iterative deepening loop. It calls search()
 // repeatedly with increasing depth until the allocated thinking time has been
 // consumed, the user stops the search, or the maximum search depth is reached.
-void Thread::id_loop() {
+void Search::Worker::iterative_deepening() {
 
     // Allocate stack with extra size to allow access from (ss - 7) to (ss + 2):
     // (ss - 7) is needed for update_continuation_histories(ss - 1) which accesses (ss - 6),
     // (ss + 2) is needed for initialization of cutOffCnt and killers.
-    Stack       stack[MAX_PLY + 10], *ss = stack + 7;
-    Move        pv[MAX_PLY + 1];
-    Value       alpha, beta;
-    Move        lastBestMove      = Move::none();
-    Depth       lastBestMoveDepth = 0;
-    MainThread* mainThread        = (this == threads.main() ? threads.main() : nullptr);
-    double      timeReduction = 1, totBestMoveChanges = 0;
-    Color       us = rootPos.side_to_move();
-    int         delta, iterIdx = 0;
+    Stack          stack[MAX_PLY + 10], *ss = stack + 7;
+    Move           pv[MAX_PLY + 1];
+    Value          alpha, beta;
+    Move           lastBestMove      = Move::none();
+    Depth          lastBestMoveDepth = 0;
+    SearchManager* mainThread        = (thread_idx == 0 ? main_manager() : nullptr);
+    double         timeReduction = 1, totBestMoveChanges = 0;
+    Color          us = rootPos.side_to_move();
+    int            delta, iterIdx = 0;
 
     std::memset(ss - 7, 0, 10 * sizeof(Stack));
     for (int i = 7; i > 0; --i)
@@ -383,7 +388,7 @@ void Thread::id_loop() {
                 if (mainThread && multiPV == 1 && (iterBestValue <= alpha || iterBestValue >= beta)
                     && mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
                     sync_cout << UciHandler::pv(
-                      *mainThread, mainThread->tm.elapsed(threads.nodes_searched()),
+                      *this, mainThread->tm.elapsed(threads.nodes_searched()),
                       threads.nodes_searched(), threads.tb_hits(), tt.hashfull(), TB::RootInTB)
                               << sync_endl;
 
@@ -417,9 +422,9 @@ void Thread::id_loop() {
             if (mainThread
                 && (threads.stop || pvIdx + 1 == multiPV
                     || mainThread->tm.elapsed(threads.nodes_searched()) > 3000))
-                sync_cout << UciHandler::pv(
-                  *mainThread, mainThread->tm.elapsed(threads.nodes_searched()),
-                  threads.nodes_searched(), threads.tb_hits(), tt.hashfull(), TB::RootInTB)
+                sync_cout << UciHandler::pv(*this, mainThread->tm.elapsed(threads.nodes_searched()),
+                                            threads.nodes_searched(), threads.tb_hits(),
+                                            tt.hashfull(), TB::RootInTB)
                           << sync_endl;
         }
 
@@ -442,13 +447,13 @@ void Thread::id_loop() {
 
         // If the skill level is enabled and time is up, pick a sub-optimal best move
         if (skill.enabled() && skill.time_to_pick(rootDepth))
-            skill.pick_best(threads.main()->rootMoves, multiPV);
+            skill.pick_best(rootMoves, multiPV);
 
         // Use part of the gained time from a previous stable move for the current move
         for (Thread* th : threads)
         {
-            totBestMoveChanges += th->bestMoveChanges;
-            th->bestMoveChanges = 0;
+            totBestMoveChanges += th->worker->bestMoveChanges;
+            th->worker->bestMoveChanges = 0;
         }
 
         // Do we have time for the next iteration? Can we stop searching now?
@@ -501,8 +506,21 @@ void Thread::id_loop() {
     if (skill.enabled())
         std::swap(rootMoves[0],
                   *std::find(rootMoves.begin(), rootMoves.end(),
-                             skill.best ? skill.best
-                                        : skill.pick_best(threads.main()->rootMoves, multiPV)));
+                             skill.best ? skill.best : skill.pick_best(rootMoves, multiPV)));
+}
+
+void Search::Worker::clear() {
+    counterMoves.fill(Move::none());
+    mainHistory.fill(0);
+    captureHistory.fill(0);
+    pawnHistory.fill(0);
+    correctionHistory.fill(0);
+
+    for (bool inCheck : {false, true})
+        for (StatsType c : {NoCaptures, Captures})
+            for (auto& to : continuationHistory[inCheck][c])
+                for (auto& h : to)
+                    h->fill(-71);
 }
 
 
@@ -556,8 +574,9 @@ Value Search::Worker::search(
     maxValue                                              = VALUE_INFINITE;
 
     // Check for the available remaining time
-    if (this == threads.main())
-        static_cast<MainThread*>(this)->check_time();
+    if (is_main_thread())
+        main_manager()->check_time(*this);
+    // static_cast<MainThread*>(this)->check_time();
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -659,8 +678,9 @@ Value Search::Worker::search(
             TB::WDLScore   wdl = Tablebases::probe_wdl(pos, &err);
 
             // Force check of time on the next occasion
-            if (this == threads.main())
-                static_cast<MainThread*>(this)->callsCnt = 0;
+            if (is_main_thread())
+                main_manager()->callsCnt = 0;
+            // static_cast<MainThread*>(this)->callsCnt = 0;
 
             if (err != TB::ProbeState::FAIL)
             {
@@ -962,8 +982,8 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && this == threads.main()
-            && threads.main()->tm.elapsed(threads.nodes_searched()) > 3000)
+        if (rootNode && is_main_thread()
+            && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
             sync_cout << "info depth " << depth << " currmove "
                       << UciHandler::move(move, pos.is_chess960()) << " currmovenumber "
                       << moveCount + thisThread->pvIdx << sync_endl;
@@ -1889,18 +1909,17 @@ Move Skill::pick_best(const RootMoves& rootMoves, size_t multiPV) {
 
 // Used to print debug info and, more importantly,
 // to detect when we are out of available time and thus stop the search.
-void MainThread::check_time() {
-
+void SearchManager::check_time(Search::Worker& worker) {
     if (--callsCnt > 0)
         return;
 
     // When using nodes, ensure checking rate is not lower than 0.1% of nodes
-    callsCnt = limits.nodes ? std::min(512, int(limits.nodes / 1024)) : 512;
+    callsCnt = worker.limits.nodes ? std::min(512, int(worker.limits.nodes / 1024)) : 512;
 
     static TimePoint lastInfoTime = now();
 
-    TimePoint elapsed = tm.elapsed(threads.nodes_searched());
-    TimePoint tick    = limits.startTime + elapsed;
+    TimePoint elapsed = tm.elapsed(worker.threads.nodes_searched());
+    TimePoint tick    = worker.limits.startTime + elapsed;
 
     if (tick - lastInfoTime >= 1000)
     {
@@ -1912,12 +1931,12 @@ void MainThread::check_time() {
     if (ponder)
         return;
 
-    if ((limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
-        || (limits.movetime && elapsed >= limits.movetime)
-        || (limits.nodes && threads.nodes_searched() >= uint64_t(limits.nodes)))
-        threads.stop = true;
+    if ((worker.limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
+        || (worker.limits.movetime && elapsed >= worker.limits.movetime)
+        || (worker.limits.nodes
+            && worker.threads.nodes_searched() >= uint64_t(worker.limits.nodes)))
+        worker.threads.stop = true;
 }
-
 
 // Called in case we have no ponder move before exiting the search,
 // for instance, in case we stop the search during a fail high at root.

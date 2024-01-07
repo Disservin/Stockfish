@@ -19,15 +19,16 @@
 #ifndef SEARCH_H_INCLUDED
 #define SEARCH_H_INCLUDED
 
-#include <cstdint>
-#include <vector>
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
+#include <vector>
 
 #include "misc.h"
 #include "movepick.h"
-#include "types.h"
 #include "position.h"
+#include "timeman.h"
+#include "types.h"
 
 namespace Stockfish {
 
@@ -46,7 +47,6 @@ class OptionsMap;
 class UciHandler;
 
 namespace Search {
-
 
 // Stack struct keeps track of the information we need to remember from nodes
 // shallower and deeper in the tree during the search. Each search thread has
@@ -134,13 +134,56 @@ struct ExternalShared {
     TranspositionTable& tt;
 };
 
+class Worker;
+
+
+class ISearchManager {
+   public:
+    virtual ~ISearchManager() {}
+    virtual void check_time(Search::Worker&) = 0;
+};
+
+
+class SearchManager: public ISearchManager {
+   public:
+    void check_time(Search::Worker& worker) override;
+
+    Stockfish::TimeManagement tm;
+    int                       callsCnt;
+    std::atomic_bool          ponder;
+
+    double previousTimeReduction;
+    Value  bestPreviousScore;
+    Value  bestPreviousAverageScore;
+    Value  iterValue[4];
+    bool   stopOnPonderhit;
+
+    size_t id;
+};
+
+class NullSearchManager: public ISearchManager {
+   public:
+    void check_time(Search::Worker&) override {}
+};
+
+
 class Worker {
    public:
-    Worker(ExternalShared& es) :
+    Worker(ExternalShared& es, std::unique_ptr<ISearchManager> sm, size_t i) :
         // Unpack the ExternalShared struct into member variables
         options(es.options),
         threads(es.threads),
-        tt(es.tt) {}
+        tt(es.tt),
+        manager(std::move(sm)),
+        thread_idx(i) {}
+
+    bool is_main_thread() const { return thread_idx == 0; }
+
+    void start_searching();
+
+    void iterative_deepening();
+
+    void clear();
 
     // Public because evaluate uses this
     Value iterBestValue, optimism[COLOR_NB];
@@ -174,15 +217,23 @@ class Worker {
     ThreadPool&         threads;
     TranspositionTable& tt;
 
+    std::unique_ptr<ISearchManager> manager;
+
+    SearchManager* main_manager() const { return dynamic_cast<SearchManager*>(manager.get()); }
+
    private:
     template<NodeType nodeType>
     Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
+
+    size_t thread_idx;
 
     friend class Stockfish::Thread;
     friend class Stockfish::MainThread;
     friend class Stockfish::ThreadPool;
     friend class Stockfish::UciHandler;
+    friend class SearchManager;
 };
+
 
 }  // namespace Search
 

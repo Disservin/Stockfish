@@ -24,26 +24,26 @@
 #include <cstdlib>
 #include <deque>
 #include <initializer_list>
-#include <unordered_map>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 
 #include "evaluate.h"
 #include "misc.h"
 #include "movegen.h"
-#include "ucioption.h"
+#include "movepick.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
-#include "movepick.h"
 #include "types.h"
+#include "ucioption.h"
 
 namespace Stockfish {
 
 // Constructor launches the thread and waits until it goes to sleep
 // in idle_loop(). Note that 'searching' and 'exit' should be already set.
-Thread::Thread(Search::ExternalShared& es, size_t n) :
-    Search::Worker(es),
+Thread::Thread(Search::ExternalShared& es, std::unique_ptr<Search::ISearchManager> sm, size_t n) :
+    worker(std::make_unique<Search::Worker>(es, std::move(sm), n)),
     idx(n),
     stdThread(&Thread::idle_loop, this) {
 
@@ -61,24 +61,6 @@ Thread::~Thread() {
     start_searching();
     stdThread.join();
 }
-
-
-// Reset histories, usually before a new game
-void Thread::clear() {
-
-    counterMoves.fill(Move::none());
-    mainHistory.fill(0);
-    captureHistory.fill(0);
-    pawnHistory.fill(0);
-    correctionHistory.fill(0);
-
-    for (bool inCheck : {false, true})
-        for (StatsType c : {NoCaptures, Captures})
-            for (auto& to : continuationHistory[inCheck][c])
-                for (auto& h : to)
-                    h->fill(-71);
-}
-
 
 // Wakes up the thread that will start the search
 void Thread::start_searching() {
@@ -111,8 +93,11 @@ void Thread::idle_loop() {
     // @TODO what if the number of threads is changed after the thread is created?
     // i.e. setoption name Threads value 7, and the setoption name Threads value 10
     // only the last 3 threads will use the binding mechanism.
-    if (options["Threads"] > 8)
-        WinProcGroup::bindThisThread(idx);
+
+
+    // @todo ADD BACK
+    // if (options["Threads"] > 8)
+    //     WinProcGroup::bindThisThread(idx);
 
     while (true)
     {
@@ -126,7 +111,8 @@ void Thread::idle_loop() {
 
         lk.unlock();
 
-        id_loop();
+        // id_loop();
+        worker->start_searching();
     }
 }
 
@@ -147,11 +133,14 @@ void ThreadPool::set(Search::ExternalShared&& es) {
 
     if (requested > 0)  // create new thread(s)
     {
-        threads.push_back(new MainThread(es, 0));
+        threads.push_back(
+          new Thread(es, std::unique_ptr<Search::ISearchManager>(new Search::SearchManager()), 0));
 
 
         while (threads.size() < requested)
-            threads.push_back(new Thread(es, threads.size()));
+            threads.push_back(new Thread(
+              es, std::unique_ptr<Search::ISearchManager>(new Search::NullSearchManager()),
+              threads.size()));
         clear();
 
         main()->wait_for_search_finished();
@@ -169,13 +158,13 @@ void ThreadPool::set(Search::ExternalShared&& es) {
 void ThreadPool::clear() {
 
     for (Thread* th : threads)
-        th->clear();
+        th->worker->clear();
 
-    main()->callsCnt                 = 0;
-    main()->bestPreviousScore        = VALUE_INFINITE;
-    main()->bestPreviousAverageScore = VALUE_INFINITE;
-    main()->previousTimeReduction    = 1.0;
-    main()->tm.availableNodes        = 0;
+    main_manager()->callsCnt                 = 0;
+    main_manager()->bestPreviousScore        = VALUE_INFINITE;
+    main_manager()->bestPreviousAverageScore = VALUE_INFINITE;
+    main_manager()->previousTimeReduction    = 1.0;
+    main_manager()->tm.availableNodes        = 0;
 }
 
 
@@ -189,9 +178,9 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
 
     main()->wait_for_search_finished();
 
-    main()->stopOnPonderhit = stop = false;
-    main()->ponder                 = ponderMode;
-    main()->tm.init(limits, pos.side_to_move(), pos.game_ply(), options);
+    main_manager()->stopOnPonderhit = stop = false;
+    main_manager()->ponder                 = ponderMode;
+    main_manager()->tm.init(limits, pos.side_to_move(), pos.game_ply(), options);
 
     increaseDepth = true;
 
@@ -219,13 +208,14 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     // since they are read-only.
     for (Thread* th : threads)
     {
-        th->limits = limits;
-        th->nodes = th->tbHits = th->nmpMinPly = th->bestMoveChanges = 0;
-        th->rootDepth = th->completedDepth = 0;
-        th->rootMoves                      = rootMoves;
-        th->rootPos.set(pos.fen(), pos.is_chess960(), &th->rootState);
-        th->rootState      = setupStates->back();
-        th->rootSimpleEval = Eval::simple_eval(pos, pos.side_to_move());
+        th->worker->limits = limits;
+        th->worker->nodes = th->worker->tbHits = th->worker->nmpMinPly =
+          th->worker->bestMoveChanges          = 0;
+        th->worker->rootDepth = th->worker->completedDepth = 0;
+        th->worker->rootMoves                              = rootMoves;
+        th->worker->rootPos.set(pos.fen(), pos.is_chess960(), &th->worker->rootState);
+        th->worker->rootState      = setupStates->back();
+        th->worker->rootSimpleEval = Eval::simple_eval(pos, pos.side_to_move());
     }
 
     main()->start_searching();
@@ -239,30 +229,32 @@ Thread* ThreadPool::get_best_thread() const {
 
     // Find the minimum score of all threads
     for (Thread* th : threads)
-        minScore = std::min(minScore, th->rootMoves[0].score);
+        minScore = std::min(minScore, th->worker->rootMoves[0].score);
 
     // Vote according to score and depth, and select the best thread
     auto thread_value = [minScore](Thread* th) {
-        return (th->rootMoves[0].score - minScore + 14) * int(th->completedDepth);
+        return (th->worker->rootMoves[0].score - minScore + 14) * int(th->worker->completedDepth);
     };
 
     for (Thread* th : threads)
-        votes[th->rootMoves[0].pv[0]] += thread_value(th);
+        votes[th->worker->rootMoves[0].pv[0]] += thread_value(th);
 
     for (Thread* th : threads)
-        if (std::abs(bestThread->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
+        if (std::abs(bestThread->worker->rootMoves[0].score) >= VALUE_TB_WIN_IN_MAX_PLY)
         {
             // Make sure we pick the shortest mate / TB conversion or stave off mate the longest
-            if (th->rootMoves[0].score > bestThread->rootMoves[0].score)
+            if (th->worker->rootMoves[0].score > bestThread->worker->rootMoves[0].score)
                 bestThread = th;
         }
-        else if (th->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
-                 || (th->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
-                     && (votes[th->rootMoves[0].pv[0]] > votes[bestThread->rootMoves[0].pv[0]]
-                         || (votes[th->rootMoves[0].pv[0]] == votes[bestThread->rootMoves[0].pv[0]]
-                             && thread_value(th) * int(th->rootMoves[0].pv.size() > 2)
+        else if (th->worker->rootMoves[0].score >= VALUE_TB_WIN_IN_MAX_PLY
+                 || (th->worker->rootMoves[0].score > VALUE_TB_LOSS_IN_MAX_PLY
+                     && (votes[th->worker->rootMoves[0].pv[0]]
+                           > votes[bestThread->worker->rootMoves[0].pv[0]]
+                         || (votes[th->worker->rootMoves[0].pv[0]]
+                               == votes[bestThread->worker->rootMoves[0].pv[0]]
+                             && thread_value(th) * int(th->worker->rootMoves[0].pv.size() > 2)
                                   > thread_value(bestThread)
-                                      * int(bestThread->rootMoves[0].pv.size() > 2)))))
+                                      * int(bestThread->worker->rootMoves[0].pv.size() > 2)))))
             bestThread = th;
 
     return bestThread;
