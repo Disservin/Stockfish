@@ -42,7 +42,6 @@ enum NodeType {
 class TranspositionTable;
 class ThreadPool;
 class Thread;
-class MainThread;
 class OptionsMap;
 class UciHandler;
 
@@ -137,6 +136,7 @@ struct ExternalShared {
 class Worker;
 
 
+// Null Object Pattern
 class ISearchManager {
    public:
     virtual ~ISearchManager() {}
@@ -166,7 +166,6 @@ class NullSearchManager: public ISearchManager {
     void check_time(Search::Worker&) override {}
 };
 
-
 class Worker {
    public:
     Worker(ExternalShared& es, std::unique_ptr<ISearchManager> sm, size_t i) :
@@ -177,13 +176,13 @@ class Worker {
         manager(std::move(sm)),
         thread_idx(i) {}
 
-    bool is_main_thread() const { return thread_idx == 0; }
-
+    // Called when the program receives the UCI 'go'
+    // command. It searches from the root position and outputs the "bestmove".
     void start_searching();
-
-    void iterative_deepening();
-
+    // Reset histories, usually before a new game
     void clear();
+
+    bool is_mainthread() const { return thread_idx == 0; }
 
     // Public because evaluate uses this
     Value iterBestValue, optimism[COLOR_NB];
@@ -197,9 +196,19 @@ class Worker {
     PawnHistory           pawnHistory;
     CorrectionHistory     correctionHistory;
 
-   protected:
+   private:
+    void iterative_deepening();
+
     template<NodeType nodeType>
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
+
+    template<NodeType nodeType>
+    Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
+
+    SearchManager* main_manager() const {
+        assert(thread_idx == 0);
+        return static_cast<SearchManager*>(manager.get());
+    }
 
     LimitsType limits;
 
@@ -217,18 +226,11 @@ class Worker {
     ThreadPool&         threads;
     TranspositionTable& tt;
 
+    // The main thread has a SearchManager, the others have a NullSearchManager
     std::unique_ptr<ISearchManager> manager;
-
-    SearchManager* main_manager() const { return dynamic_cast<SearchManager*>(manager.get()); }
-
-   private:
-    template<NodeType nodeType>
-    Value qsearch(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth = 0);
 
     size_t thread_idx;
 
-    friend class Stockfish::Thread;
-    friend class Stockfish::MainThread;
     friend class Stockfish::ThreadPool;
     friend class Stockfish::UciHandler;
     friend class SearchManager;

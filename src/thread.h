@@ -68,7 +68,7 @@ class ThreadPool {
         // destroy any existing thread(s)
         if (threads.size() > 0)
         {
-            main()->wait_for_search_finished();
+            main_thread()->wait_for_search_finished();
 
             while (threads.size() > 0)
                 delete threads.back(), threads.pop_back();
@@ -81,9 +81,9 @@ class ThreadPool {
     void set(Search::ExternalShared&&);
 
     Search::SearchManager* main_manager() const {
-        return dynamic_cast<Search::SearchManager*>(threads.front()->worker.get()->manager.get());
+        return static_cast<Search::SearchManager*>(main_thread()->worker.get()->manager.get());
     };
-    Thread*  main() const { return threads.front(); }
+    Thread*  main_thread() const { return threads.front(); }
     uint64_t nodes_searched() const { return accumulate(&Search::Worker::nodes); }
     uint64_t tb_hits() const { return accumulate(&Search::Worker::tbHits); }
     Thread*  get_best_thread() const;

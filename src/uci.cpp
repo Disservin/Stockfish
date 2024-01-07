@@ -54,7 +54,7 @@ UciHandler::UciHandler(int argc, char** argv) :
     });
 
     options["Hash"] << Option(16, 1, MaxHashMB, [this](const Option& o) {
-        threads.main()->wait_for_search_finished();
+        threads.main_thread()->wait_for_search_finished();
         tt.resize(o, options["Threads"]);
     });
 
@@ -231,7 +231,7 @@ void UciHandler::bench(Position& pos, std::istream& args, StateListPtr& states) 
             if (token == "go")
             {
                 go(pos, is, states);
-                threads.main()->wait_for_search_finished();
+                threads.main_thread()->wait_for_search_finished();
                 nodes += threads.nodes_searched();
             }
             else
@@ -264,11 +264,11 @@ void UciHandler::trace_eval(Position& pos) {
 
     Eval::NNUE::verify(options["EvalFile"], currentEvalFileName);
 
-    sync_cout << "\n" << Eval::trace(p, *threads.main()->worker.get()) << sync_endl;
+    sync_cout << "\n" << Eval::trace(p, *threads.main_thread()->worker.get()) << sync_endl;
 }
 
 void UciHandler::search_clear() {
-    threads.main()->wait_for_search_finished();
+    threads.main_thread()->wait_for_search_finished();
 
     tt.clear(options["Threads"]);
     threads.clear();
@@ -276,7 +276,7 @@ void UciHandler::search_clear() {
 }
 
 void UciHandler::setoption(std::istringstream& is) {
-    threads.main()->wait_for_search_finished();
+    threads.main_thread()->wait_for_search_finished();
     options.setoption(is);
 }
 

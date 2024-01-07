@@ -178,7 +178,7 @@ void Search::init(int size) {
 }
 
 void Search::Worker::start_searching() {
-    // Start searching right away for non mainthreads
+    // Non-main threads go directly to iterative_deepening()
     if (thread_idx != 0)
     {
         iterative_deepening();
@@ -211,10 +211,7 @@ void Search::Worker::start_searching() {
     // the UCI protocol states that we shouldn't print the best move before the
     // GUI sends a "stop" or "ponderhit" command. We therefore simply wait here
     // until the GUI sends one of those commands.
-
-    auto search_manager = main_manager();
-
-    while (!threads.stop && (search_manager->ponder || limits.infinite))
+    while (!threads.stop && (main_manager()->ponder || limits.infinite))
     {}  // Busy wait for a stop or a ponder reset
 
     // Stop the threads if not already stopped (also raise the stop if
@@ -227,7 +224,7 @@ void Search::Worker::start_searching() {
     // When playing in 'nodes as time' mode, subtract the searched nodes from
     // the available ones before exiting.
     if (limits.npmsec)
-        search_manager->tm.availableNodes +=
+        main_manager()->tm.availableNodes +=
           limits.inc[rootPos.side_to_move()] - threads.nodes_searched();
 
     Worker* bestThread = this;
@@ -238,13 +235,13 @@ void Search::Worker::start_searching() {
         && rootMoves[0].pv[0] != Move::none())
         bestThread = threads.get_best_thread()->worker.get();
 
-    search_manager->bestPreviousScore        = bestThread->rootMoves[0].score;
-    search_manager->bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+    main_manager()->bestPreviousScore        = bestThread->rootMoves[0].score;
+    main_manager()->bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
         sync_cout << UciHandler::pv(
-          *bestThread, search_manager->tm.elapsed(threads.nodes_searched()),
+          *bestThread, main_manager()->tm.elapsed(threads.nodes_searched()),
           threads.nodes_searched(), threads.tb_hits(), tt.hashfull(), TB::RootInTB)
                   << sync_endl;
 
@@ -574,9 +571,8 @@ Value Search::Worker::search(
     maxValue                                              = VALUE_INFINITE;
 
     // Check for the available remaining time
-    if (is_main_thread())
+    if (is_mainthread())
         main_manager()->check_time(*this);
-    // static_cast<MainThread*>(this)->check_time();
 
     // Used to send selDepth info to GUI (selDepth counts from 1, ply from 0)
     if (PvNode && thisThread->selDepth < ss->ply + 1)
@@ -678,9 +674,8 @@ Value Search::Worker::search(
             TB::WDLScore   wdl = Tablebases::probe_wdl(pos, &err);
 
             // Force check of time on the next occasion
-            if (is_main_thread())
+            if (is_mainthread())
                 main_manager()->callsCnt = 0;
-            // static_cast<MainThread*>(this)->callsCnt = 0;
 
             if (err != TB::ProbeState::FAIL)
             {
@@ -982,7 +977,7 @@ moves_loop:  // When in check, search starts here
 
         ss->moveCount = ++moveCount;
 
-        if (rootNode && is_main_thread()
+        if (rootNode && is_mainthread()
             && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
             sync_cout << "info depth " << depth << " currmove "
                       << UciHandler::move(move, pos.is_chess960()) << " currmovenumber "

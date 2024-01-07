@@ -123,7 +123,7 @@ void ThreadPool::set(Search::ExternalShared&& es) {
 
     if (threads.size() > 0)  // destroy any existing thread(s)
     {
-        main()->wait_for_search_finished();
+        main_thread()->wait_for_search_finished();
 
         while (threads.size() > 0)
             delete threads.back(), threads.pop_back();
@@ -143,7 +143,7 @@ void ThreadPool::set(Search::ExternalShared&& es) {
               threads.size()));
         clear();
 
-        main()->wait_for_search_finished();
+        main_thread()->wait_for_search_finished();
 
         // Reallocate the hash with the new threadpool size
         es.tt.resize(es.options["Hash"], requested);
@@ -176,7 +176,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
                                 Search::LimitsType limits,
                                 bool               ponderMode) {
 
-    main()->wait_for_search_finished();
+    main_thread()->wait_for_search_finished();
 
     main_manager()->stopOnPonderhit = stop = false;
     main_manager()->ponder                 = ponderMode;
@@ -218,7 +218,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
         th->worker->rootSimpleEval = Eval::simple_eval(pos, pos.side_to_move());
     }
 
-    main()->start_searching();
+    main_thread()->start_searching();
 }
 
 Thread* ThreadPool::get_best_thread() const {
