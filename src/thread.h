@@ -36,7 +36,11 @@ namespace Stockfish {
 class OptionsMap;
 using Value = int;
 
-// Thread class keeps together all the thread-related stuff.
+// Abstraction of a thread. It contains a pointer to the worker and a native thread.
+// After construction, the native thread is started with idle_loop()
+// waiting for a signal to start searching.
+// When the signal is received, the thread starts searching and when
+// the search is finished, it goes back to idle_loop() waiting for a new signal.
 class Thread {
    public:
     Thread(Search::ExternalShared&, std::unique_ptr<Search::ISearchManager>, size_t);
