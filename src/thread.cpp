@@ -45,6 +45,7 @@ namespace Stockfish {
 Thread::Thread(Search::ExternalShared& es, std::unique_ptr<Search::ISearchManager> sm, size_t n) :
     worker(std::make_unique<Search::Worker>(es, std::move(sm), n)),
     idx(n),
+    nthreads(es.options["Threads"]),
     stdThread(&Thread::idle_loop, this) {
 
     wait_for_search_finished();
@@ -90,14 +91,8 @@ void Thread::idle_loop() {
     // some Windows NUMA hardware, for instance in fishtest. To make it simple,
     // just check if running threads are below a threshold, in this case, all this
     // NUMA machinery is not needed.
-    // @TODO what if the number of threads is changed after the thread is created?
-    // i.e. setoption name Threads value 7, and the setoption name Threads value 10
-    // only the last 3 threads will use the binding mechanism.
-
-
-    // @todo ADD BACK
-    // if (options["Threads"] > 8)
-    //     WinProcGroup::bindThisThread(idx);
+    if (nthreads > 8)
+        WinProcGroup::bindThisThread(idx);
 
     while (true)
     {
@@ -111,7 +106,6 @@ void Thread::idle_loop() {
 
         lk.unlock();
 
-        // id_loop();
         worker->start_searching();
     }
 }

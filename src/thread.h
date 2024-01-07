@@ -52,7 +52,7 @@ class Thread {
    private:
     std::mutex              mutex;
     std::condition_variable cv;
-    size_t                  idx;
+    size_t                  idx, nthreads;
     bool                    exit = false, searching = true;  // Set before starting std::thread
     NativeThread            stdThread;
 };
