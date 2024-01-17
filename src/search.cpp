@@ -1316,7 +1316,8 @@ moves_loop:  // When in check, search starts here
 
         if (value > bestValue)
         {
-            bestValue = value;
+            secondBestValue = bestValue;
+            bestValue       = value;
 
             if (value > alpha)
             {
