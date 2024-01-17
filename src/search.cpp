@@ -113,6 +113,7 @@ void update_all_stats(const Position& pos,
                       Search::Worker& workerThread,
                       Move            bestMove,
                       Value           bestValue,
+                      Value           secondBestValue,
                       Value           beta,
                       Square          prevSq,
                       Move*           quietsSearched,
@@ -944,6 +945,8 @@ moves_loop:  // When in check, search starts here
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
 
+    int secondBestValue = -VALUE_INFINITE;
+
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
     while ((move = mp.next_move(moveCountPruning)) != Move::none())
@@ -1339,6 +1342,10 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
+        else if (value > secondBestValue)
+        {
+            secondBestValue = value;
+        }
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
@@ -1364,8 +1371,8 @@ moves_loop:  // When in check, search starts here
 
     // If there is a move that produces search value greater than alpha we update the stats of searched moves
     else if (bestMove)
-        update_all_stats(pos, ss, *this, bestMove, bestValue, beta, prevSq, quietsSearched,
-                         quietCount, capturesSearched, captureCount, depth);
+        update_all_stats(pos, ss, *this, bestMove, bestValue, secondBestValue, beta, prevSq,
+                         quietsSearched, quietCount, capturesSearched, captureCount, depth);
 
     // Bonus for prior countermove that caused the fail low
     else if (!priorCapture && prevSq != SQ_NONE)
@@ -1746,6 +1753,7 @@ void update_all_stats(const Position& pos,
                       Search::Worker& workerThread,
                       Move            bestMove,
                       Value           bestValue,
+                      Value           secondBestValue,
                       Value           beta,
                       Square          prevSq,
                       Move*           quietsSearched,
@@ -1764,8 +1772,11 @@ void update_all_stats(const Position& pos,
 
     if (!pos.capture_stage(bestMove))
     {
-        int bestMoveBonus = bestValue > beta + 173 ? quietMoveBonus      // larger bonus
-                                                   : stat_bonus(depth);  // smaller bonus
+        int bestMoveBonus =
+          (bestValue > beta + 173)
+              || (secondBestValue != -VALUE_INFINITE && bestValue - 150 > secondBestValue)
+            ? quietMoveBonus      // larger bonus
+            : stat_bonus(depth);  // smaller bonus
 
         // Increase stats for the best move in case it was a quiet move
         update_quiet_stats(pos, ss, workerThread, bestMove, bestMoveBonus);
