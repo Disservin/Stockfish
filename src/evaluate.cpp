@@ -195,7 +195,7 @@ int Eval::simple_eval(const Position& pos, Color c) {
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
-Value Eval::evaluate(const Position& pos, int optimism) {
+Value Eval::evaluate(const Position& pos, int optimism, bool singleBest, Color rstm) {
 
     assert(!pos.checkers());
 
@@ -223,6 +223,8 @@ Value Eval::evaluate(const Position& pos, int optimism) {
         int npm = pos.non_pawn_material() / 64;
         v       = (nnue * (915 + npm + 9 * pos.count<PAWN>()) + optimism * (154 + npm)) / 1024;
     }
+
+    v -= (singleBest && stm != rstm) * 28;
 
     // Damp down the evaluation linearly when shuffling
     v = v * (200 - shuffling) / 214;
@@ -253,7 +255,7 @@ std::string Eval::trace(Position& pos) {
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * UCI::to_cp(v) << " (white side)\n";
 
-    v = evaluate(pos, VALUE_ZERO);
+    v = evaluate(pos, VALUE_ZERO, false, pos.side_to_move());
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "Final evaluation       " << 0.01 * UCI::to_cp(v) << " (white side)";
     ss << " [with scaled NNUE, ...]";

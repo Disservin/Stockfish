@@ -67,6 +67,7 @@ struct Stack {
     bool            ttHit;
     int             doubleExtensions;
     int             cutoffCnt;
+    bool            singleBestReply;
 };
 
 
@@ -225,6 +226,7 @@ class Worker {
     Value optimism[COLOR_NB];
 
     Position  rootPos;
+    Color     rootColor;
     StateInfo rootState;
     RootMoves rootMoves;
     Depth     rootDepth, completedDepth;

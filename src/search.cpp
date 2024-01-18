@@ -261,6 +261,8 @@ void Search::Worker::iterative_deepening() {
     Color             us = rootPos.side_to_move();
     int               delta, iterIdx = 0;
 
+    rootColor = rootPos.side_to_move();
+
     std::memset(ss - 7, 0, 10 * sizeof(Stack));
     for (int i = 7; i > 0; --i)
     {
@@ -591,8 +593,9 @@ Value Search::Worker::search(
         // Step 2. Check for aborted search and immediate draw
         if (threads.stop.load(std::memory_order_relaxed) || pos.is_draw(ss->ply)
             || ss->ply >= MAX_PLY)
-            return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->optimism[us])
-                                                        : value_draw(thisThread->nodes);
+            return (ss->ply >= MAX_PLY && !ss->inCheck)
+                   ? evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor)
+                   : value_draw(thisThread->nodes);
 
         // Step 3. Mate distance pruning. Even if we mate at the next move our score
         // would be at best mate_in(ss->ply + 1), but if alpha is already bigger because
@@ -745,7 +748,8 @@ Value Search::Worker::search(
         // Never assume anything about values stored in TT
         unadjustedStaticEval = ss->staticEval = eval = tte->eval();
         if (eval == VALUE_NONE)
-            unadjustedStaticEval = ss->staticEval = eval = evaluate(pos, thisThread->optimism[us]);
+            unadjustedStaticEval = ss->staticEval = eval =
+              evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor);
         else if (PvNode)
             Eval::NNUE::hint_common_parent_position(pos);
 
@@ -757,7 +761,8 @@ Value Search::Worker::search(
     }
     else
     {
-        unadjustedStaticEval = ss->staticEval = eval = evaluate(pos, thisThread->optimism[us]);
+        unadjustedStaticEval = ss->staticEval = eval =
+          evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor);
         ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, *thisThread, pos);
 
         // Static evaluation is saved as it was before adjustment by correction history
@@ -943,6 +948,8 @@ moves_loop:  // When in check, search starts here
 
     value            = bestValue;
     moveCountPruning = singularQuietLMR = false;
+
+    Value secondBestValue = -VALUE_INFINITE;
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1313,7 +1320,8 @@ moves_loop:  // When in check, search starts here
 
         if (value > bestValue)
         {
-            bestValue = value;
+            secondBestValue = bestValue;
+            bestValue       = value;
 
             if (value > alpha)
             {
@@ -1339,6 +1347,8 @@ moves_loop:  // When in check, search starts here
                 }
             }
         }
+        else if (value > secondBestValue)
+            secondBestValue = value;
 
         // If the move is worse than some previously searched move,
         // remember it, to update its stats later.
@@ -1405,6 +1415,8 @@ moves_loop:  // When in check, search starts here
         thisThread->correctionHistory[us][pawn_structure_index<Correction>(pos)] << bonus;
     }
 
+    ss->singleBestReply = secondBestValue != -VALUE_INFINITE && (bestValue - 150 > secondBestValue);
+
     assert(bestValue > -VALUE_INFINITE && bestValue < VALUE_INFINITE);
 
     return bestValue;
@@ -1464,8 +1476,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
 
     // Step 2. Check for an immediate draw or maximum ply reached
     if (pos.is_draw(ss->ply) || ss->ply >= MAX_PLY)
-        return (ss->ply >= MAX_PLY && !ss->inCheck) ? evaluate(pos, thisThread->optimism[us])
-                                                    : VALUE_DRAW;
+        return (ss->ply >= MAX_PLY && !ss->inCheck)
+               ? evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor)
+               : VALUE_DRAW;
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
@@ -1497,7 +1510,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
             // Never assume anything about values stored in TT
             if ((unadjustedStaticEval = ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
                 unadjustedStaticEval = ss->staticEval = bestValue =
-                  evaluate(pos, thisThread->optimism[us]);
+                  evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor);
             ss->staticEval = bestValue =
               to_corrected_static_eval(unadjustedStaticEval, *thisThread, pos);
 
@@ -1510,8 +1523,9 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         {
             // In case of null move search, use previous static eval with a different sign
             unadjustedStaticEval = ss->staticEval = bestValue =
-              (ss - 1)->currentMove != Move::null() ? evaluate(pos, thisThread->optimism[us])
-                                                    : -(ss - 1)->staticEval;
+              (ss - 1)->currentMove != Move::null()
+                ? evaluate(pos, thisThread->optimism[us], (ss - 1)->singleBestReply, rootColor)
+                : -(ss - 1)->staticEval;
             ss->staticEval = bestValue =
               to_corrected_static_eval(unadjustedStaticEval, *thisThread, pos);
         }
