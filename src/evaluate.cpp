@@ -224,7 +224,7 @@ Value Eval::evaluate(const Position& pos, int optimism, bool singleBest, Color r
         v       = (nnue * (915 + npm + 9 * pos.count<PAWN>()) + optimism * (154 + npm)) / 1024;
     }
 
-    v -= (singleBest && stm != rstm) * 28;
+    v += (singleBest && stm != rstm) * 28;
 
     // Damp down the evaluation linearly when shuffling
     v = v * (200 - shuffling) / 214;
