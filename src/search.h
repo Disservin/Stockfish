@@ -149,8 +149,10 @@ class SearchManager: public ISearchManager {
    public:
     void check_time(Search::Worker& worker) override;
 
-    std::string
-    pv(const Search::Worker& worker, size_t nodes, size_t tbHits, Depth depth, int hashful);
+    std::string pv(const Search::Worker&     worker,
+                   const ThreadPool&         threads,
+                   const TranspositionTable& tt,
+                   Depth                     depth) const;
 
     Stockfish::TimeManagement tm;
     int                       callsCnt;

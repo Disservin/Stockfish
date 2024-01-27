@@ -193,8 +193,7 @@ void Search::Worker::start_searching() {
 
     // Send again PV info if we have a new best thread
     if (bestThread != this)
-        sync_cout << main_manager()->pv(*bestThread, threads.nodes_searched(), threads.tb_hits(),
-                                        bestThread->completedDepth, tt.hashfull())
+        sync_cout << main_manager()->pv(*bestThread, threads, tt, bestThread->completedDepth)
                   << sync_endl;
 
     sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
@@ -335,9 +334,7 @@ void Search::Worker::iterative_deepening() {
                 // the UI) before a re-search.
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
                     && mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
-                    sync_cout << main_manager()->pv(*this, threads.nodes_searched(),
-                                                    threads.tb_hits(), rootDepth, tt.hashfull())
-                              << sync_endl;
+                    sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
                 // re-search, otherwise exit the loop.
@@ -374,9 +371,7 @@ void Search::Worker::iterative_deepening() {
                 // had time to fully search other root-moves. Thus we suppress this output and
                 // below pick a proven score/PV for this thread (from the previous iteration).
                 && !(threads.abortedSearch && rootMoves[0].uciScore <= VALUE_TB_LOSS_IN_MAX_PLY))
-                sync_cout << main_manager()->pv(*this, threads.nodes_searched(), threads.tb_hits(),
-                                                rootDepth, tt.hashfull())
-                          << sync_endl;
+                sync_cout << main_manager()->pv(*this, threads, tt, rootDepth) << sync_endl;
         }
 
         if (!threads.stop)
@@ -1875,15 +1870,20 @@ void SearchManager::check_time(Search::Worker& worker) {
         worker.threads.stop = worker.threads.abortedSearch = true;
 }
 
-std::string SearchManager::pv(
-  const Search::Worker& worker, size_t nodes, size_t tbHits, Depth depth, int hashfull) {
+std::string SearchManager::pv(const Search::Worker&     worker,
+                              const ThreadPool&         threads,
+                              const TranspositionTable& tt,
+                              Depth                     depth) const {
     std::stringstream ss;
-    TimePoint         time      = tm.elapsed(nodes) + 1;
-    const auto&       rootMoves = worker.rootMoves;
-    const auto&       pos       = worker.rootPos;
-    size_t            pvIdx     = worker.pvIdx;
-    size_t            multiPV   = std::min(size_t(worker.options["MultiPV"]), rootMoves.size());
-    uint64_t          tbHits    = tbHits + (worker.tbConfig.rootInTB ? rootMoves.size() : 0);
+
+    const auto  nodes     = threads.nodes_searched();
+    const auto  tbHits    = threads.tb_hits();
+    const auto& rootMoves = worker.rootMoves;
+    const auto& pos       = worker.rootPos;
+    size_t      pvIdx     = worker.pvIdx;
+    TimePoint   time      = tm.elapsed(nodes) + 1;
+    size_t      multiPV   = std::min(size_t(worker.options["MultiPV"]), rootMoves.size());
+    uint64_t    tbHits    = tbHits + (worker.tbConfig.rootInTB ? rootMoves.size() : 0);
 
     for (size_t i = 0; i < multiPV; ++i)
     {
@@ -1916,7 +1916,7 @@ std::string SearchManager::pv(
                      ? " lowerbound"
                      : (rootMoves[i].scoreUpperbound ? " upperbound" : ""));
 
-        ss << " nodes " << nodes << " nps " << nodes * 1000 / time << " hashfull " << hashfull
+        ss << " nodes " << nodes << " nps " << nodes * 1000 / time << " hashfull " << tt.hashfull()
            << " tbhits " << tbHits << " time " << time << " pv";
 
         for (Move m : rootMoves[i].pv)
