@@ -55,13 +55,6 @@ class UCI {
     static std::string value(Value v);
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
-    static std::string pv(const Search::Worker& workerThread,
-                          TimePoint             elapsed,
-                          uint64_t              nodesSearched,
-                          uint64_t              tb_hits,
-                          Depth                 depth,
-                          int                   hashfull,
-                          bool                  rootInTB);
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 
