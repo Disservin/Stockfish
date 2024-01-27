@@ -59,6 +59,7 @@ class UCI {
                           TimePoint             elapsed,
                           uint64_t              nodesSearched,
                           uint64_t              tb_hits,
+                          Depth                 depth,
                           int                   hashfull,
                           bool                  rootInTB);
     static std::string wdl(Value v, int ply);

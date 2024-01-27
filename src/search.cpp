@@ -194,8 +194,8 @@ void Search::Worker::start_searching() {
     // Send again PV info if we have a new best thread
     if (bestThread != this)
         sync_cout << UCI::pv(*bestThread, main_manager()->tm.elapsed(threads.nodes_searched()),
-                             threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
-                             tbConfig.rootInTB)
+                             threads.nodes_searched(), threads.tb_hits(),
+                             bestThread->completedDepth, tt.hashfull(), tbConfig.rootInTB)
                   << sync_endl;
 
     sync_cout << "bestmove " << UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
@@ -337,8 +337,8 @@ void Search::Worker::iterative_deepening() {
                 if (mainThread && multiPV == 1 && (bestValue <= alpha || bestValue >= beta)
                     && mainThread->tm.elapsed(threads.nodes_searched()) > 3000)
                     sync_cout << UCI::pv(*this, mainThread->tm.elapsed(threads.nodes_searched()),
-                                         threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
-                                         tbConfig.rootInTB)
+                                         threads.nodes_searched(), threads.tb_hits(), rootDepth,
+                                         tt.hashfull(), tbConfig.rootInTB)
                               << sync_endl;
 
                 // In case of failing low/high increase aspiration window and
@@ -377,8 +377,8 @@ void Search::Worker::iterative_deepening() {
                 // below pick a proven score/PV for this thread (from the previous iteration).
                 && !(threads.abortedSearch && rootMoves[0].uciScore <= VALUE_TB_LOSS_IN_MAX_PLY))
                 sync_cout << UCI::pv(*this, mainThread->tm.elapsed(threads.nodes_searched()),
-                                     threads.nodes_searched(), threads.tb_hits(), tt.hashfull(),
-                                     tbConfig.rootInTB)
+                                     threads.nodes_searched(), threads.tb_hits(), rootDepth,
+                                     tt.hashfull(), tbConfig.rootInTB)
                           << sync_endl;
         }
 
