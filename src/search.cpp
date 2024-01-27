@@ -264,7 +264,7 @@ void Search::Worker::iterative_deepening() {
     int searchAgainCounter = 0;
 
     // Iterative deepening loop until requested to stop or the target depth is reached
-    while (++rootDepth < MAX_PLY && !threads.stop
+    while (rootDepth < MAX_PLY && !threads.stop
            && !(limits.depth && mainThread && rootDepth > limits.depth))
     {
         // Age out PV variability metric
@@ -382,9 +382,6 @@ void Search::Worker::iterative_deepening() {
                           << sync_endl;
         }
 
-        if (!threads.stop)
-            completedDepth = rootDepth;
-
         // We make sure not to pick an unproven mated-in score,
         // in case this thread prematurely stopped search (aborted-search).
         if (threads.abortedSearch && rootMoves[0].score != -VALUE_INFINITE
@@ -409,7 +406,13 @@ void Search::Worker::iterative_deepening() {
             threads.stop = true;
 
         if (!mainThread)
+        {
+            // continue searching deeper
+            if (!threads.stop)
+                rootDepth++;
+
             continue;
+        }
 
         // If the skill level is enabled and time is up, pick a sub-optimal best move
         if (skill.enabled() && skill.time_to_pick(rootDepth))
@@ -431,7 +434,7 @@ void Search::Worker::iterative_deepening() {
             fallingEval = std::clamp(fallingEval, 0.51, 1.51);
 
             // If the bestMove is stable over several iterations, reduce time accordingly
-            timeReduction    = lastBestMoveDepth + 8 < completedDepth ? 1.56 : 0.69;
+            timeReduction    = lastBestMoveDepth + 8 < rootDepth ? 1.56 : 0.69;
             double reduction = (1.4 + mainThread->previousTimeReduction) / (2.17 * timeReduction);
             double bestMoveInstability = 1 + 1.79 * totBestMoveChanges / threads.size();
 
@@ -461,6 +464,10 @@ void Search::Worker::iterative_deepening() {
 
         mainThread->iterValue[iterIdx] = bestValue;
         iterIdx                        = (iterIdx + 1) & 3;
+
+        // continue searching deeper
+        if (!threads.stop)
+            rootDepth++;
     }
 
     if (!mainThread)
@@ -1027,7 +1034,7 @@ moves_loop:  // When in check, search starts here
             // so changing them requires tests at these types of time controls.
             // Recursive singular search is avoided.
             if (!rootNode && move == ttMove && !excludedMove
-                && depth >= 4 - (thisThread->completedDepth > 31) + ss->ttPv
+                && depth >= 4 - (thisThread->rootDepth > 31) + ss->ttPv
                 && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && (tte->bound() & BOUND_LOWER)
                 && tte->depth() >= depth - 3)
             {
@@ -1871,7 +1878,7 @@ void SearchManager::check_time(Search::Worker& worker) {
     if (
       // Later we rely on the fact that we can at least use the mainthread previous
       // root-search score and PV in a multithreaded environment to prove mated-in scores.
-      worker.completedDepth >= 1
+      worker.rootDepth >= 1
       && ((worker.limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
           || (worker.limits.movetime && elapsed >= worker.limits.movetime)
           || (worker.limits.nodes && worker.threads.nodes_searched() >= worker.limits.nodes)))

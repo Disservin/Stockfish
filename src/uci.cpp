@@ -374,7 +374,7 @@ std::string UCI::pv(const Search::Worker& workerThread,
     std::stringstream ss;
     TimePoint         time      = elapsed + 1;
     const auto&       rootMoves = workerThread.rootMoves;
-    const auto&       depth     = workerThread.completedDepth;
+    const auto&       depth     = workerThread.rootDepth;
     const auto&       pos       = workerThread.rootPos;
     size_t            pvIdx     = workerThread.pvIdx;
     size_t            multiPV = std::min(size_t(workerThread.options["MultiPV"]), rootMoves.size());
