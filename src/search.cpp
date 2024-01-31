@@ -579,6 +579,7 @@ Value Search::Worker::search(
     (ss + 2)->killers[0] = (ss + 2)->killers[1] = Move::none();
     (ss + 2)->cutoffCnt                         = 0;
     ss->doubleExtensions                        = (ss - 1)->doubleExtensions;
+    ss->extensions                              = (ss - 1)->extensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
     ss->statScore = 0;
 
@@ -1026,7 +1027,7 @@ moves_loop:  // When in check, search starts here
             // scaling. Their values are optimized to time controls of 180+1.8 and longer
             // so changing them requires tests at these types of time controls.
             // Recursive singular search is avoided.
-            if (!rootNode && move == ttMove && !excludedMove
+            if (!rootNode && move == ttMove && !excludedMove && ss->extensions < ss->ply / 4
                 && depth >= 4 - (thisThread->completedDepth > 31) + ss->ttPv
                 && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && (tte->bound() & BOUND_LOWER)
                 && tte->depth() >= depth - 3)
@@ -1041,6 +1042,7 @@ moves_loop:  // When in check, search starts here
 
                 if (value < singularBeta)
                 {
+                    ss->extensions++;
                     extension        = 1;
                     singularQuietLMR = !ttCapture;
 
