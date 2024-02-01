@@ -536,6 +536,25 @@ void TBTables::add(const std::vector<PieceType>& pieces) {
 // file a,b,c,d also, in this case, one set for wtm and one for btm.
 int decompress_pairs(PairsData* d, uint64_t idx) {
 
+    std::cout << "decompress_pairs" << std::endl;
+    std::cout << d->flags << std::endl;
+    std::cout << d->maxSymLen << std::endl;
+    std::cout << d->minSymLen << std::endl;
+    std::cout << d->blocksNum << std::endl;
+    std::cout << d->sizeofBlock << std::endl;
+    std::cout << d->span << std::endl;
+    std::cout << d->lowestSym << std::endl;
+    std::cout << d->btree << std::endl;
+    std::cout << d->blockLength << std::endl;
+    std::cout << d->blockLengthSize << std::endl;
+    // std::cout << d->sparseIndex << std::endl;
+    std::cout << d->sparseIndexSize << std::endl;
+    std::cout << d->data << std::endl;
+    // std::cout << d->base64 << std::endl;
+    // std::cout << d->symlen << std::endl;
+    std::cout << d->pieces << std::endl;
+
+    exit(0);
     // Special case where all table positions store the same value
     if (d->flags & TBFlag::SingleValue)
         return d->minSymLen;
@@ -762,6 +781,7 @@ do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) 
     // DTZ tables are one-sided, i.e. they store positions only for white to
     // move or only for black to move, so check for side to move to be stm,
     // early exit otherwise.
+    std::cout << "x" << std::endl;
     if (!check_dtz_stm(entry, stm, tbFile))
         return *result = CHANGE_STM, Ret();
 
@@ -1197,6 +1217,7 @@ void* mapped(TBTable<Type>& e, const Position& pos) {
 
     static std::mutex mutex;
 
+    std::cout << "map" << std::endl;
     // Use 'acquire' to avoid a thread reading 'ready' == true while
     // another is still working. (compiler reordering may cause this).
     if (e.ready.load(std::memory_order_acquire))
@@ -1204,6 +1225,7 @@ void* mapped(TBTable<Type>& e, const Position& pos) {
 
     std::scoped_lock<std::mutex> lk(mutex);
 
+    std::cout << "map" << std::endl;
     if (e.ready.load(std::memory_order_relaxed))  // Recheck under lock
         return e.baseAddress;
 
@@ -1223,6 +1245,7 @@ void* mapped(TBTable<Type>& e, const Position& pos) {
     if (data)
         set(e, data);
 
+    std::cout << "map" << std::endl;
     e.ready.store(true, std::memory_order_release);
     return e.baseAddress;
 }
@@ -1235,8 +1258,12 @@ Ret probe_table(const Position& pos, ProbeState* result, WDLScore wdl = WDLDraw)
 
     TBTable<Type>* entry = TBTables.get<Type>(pos.material_key());
 
+    std::cout << "do_probe_table" << !entry << std::endl;
+    std::cout << pos << std::endl;
     if (!entry || !mapped(*entry, pos))
         return *result = FAIL, Ret();
+
+    std::cout << "do_probe_table" << std::endl;
 
     return do_probe_table(pos, entry, wdl, result);
 }
@@ -1302,6 +1329,7 @@ WDLScore search(Position& pos, ProbeState* result) {
     else
     {
         value = probe_table<WDL>(pos, result);
+        std::cout << "probe_table<WDL> result: " << value << std::endl;
 
         if (*result == FAIL)
             return WDLDraw;
