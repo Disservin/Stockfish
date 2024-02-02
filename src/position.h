@@ -95,8 +95,7 @@ class Position {
 
 
    private:
-    Square ep_square() const;
-    bool   empty(Square s) const;
+    bool empty(Square s) const;
 
     template<PieceType Pt>
     Square square(Color c) const;
@@ -124,9 +123,9 @@ class Position {
     Square     castlingRookSquare[CASTLING_RIGHT_NB];
     Bitboard   castlingPath[CASTLING_RIGHT_NB];
     StateInfo* st;
-    int        gamePly;
-    Color      sideToMove;
-    bool       chess960;
+    // int        gamePly;
+    Color sideToMove;
+    // bool       chess960;
 };
 
 std::ostream& operator<<(std::ostream& os, const Position& pos);
@@ -171,7 +170,6 @@ inline Square Position::square(Color c) const {
     return lsb(pieces(c, Pt));
 }
 
-inline Square Position::ep_square() const { return st->epSquare; }
 
 inline bool Position::can_castle(CastlingRights cr) const { return st->castlingRights & cr; }
 

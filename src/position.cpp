@@ -275,9 +275,9 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
 
     // Convert from fullmove starting from 1 to gamePly starting from 0,
     // handle also common incorrect FEN with fullmove = 0.
-    gamePly = std::max(2 * (gamePly - 1), 0) + (sideToMove == BLACK);
+    // gamePly = std::max(2 * (gamePly - 1), 0) + (sideToMove == BLACK);
 
-    chess960 = isChess960;
+    // chess960 = isChess960;
     set_state();
 
 
@@ -386,20 +386,20 @@ string Position::fen() const {
 
     ss << (sideToMove == WHITE ? " w " : " b ");
 
-    if (can_castle(WHITE_OO))
-        ss << (chess960 ? char('A' + file_of(castling_rook_square(WHITE_OO))) : 'K');
+    // if (can_castle(WHITE_OO))
+    //     ss << (chess960 ? char('A' + file_of(castling_rook_square(WHITE_OO))) : 'K');
 
-    if (can_castle(WHITE_OOO))
-        ss << (chess960 ? char('A' + file_of(castling_rook_square(WHITE_OOO))) : 'Q');
+    // if (can_castle(WHITE_OOO))
+    //     ss << (chess960 ? char('A' + file_of(castling_rook_square(WHITE_OOO))) : 'Q');
 
-    if (can_castle(BLACK_OO))
-        ss << (chess960 ? char('a' + file_of(castling_rook_square(BLACK_OO))) : 'k');
+    // if (can_castle(BLACK_OO))
+    //     ss << (chess960 ? char('a' + file_of(castling_rook_square(BLACK_OO))) : 'k');
 
-    if (can_castle(BLACK_OOO))
-        ss << (chess960 ? char('a' + file_of(castling_rook_square(BLACK_OOO))) : 'q');
+    // if (can_castle(BLACK_OOO))
+    //     ss << (chess960 ? char('a' + file_of(castling_rook_square(BLACK_OOO))) : 'q');
 
-    if (!can_castle(ANY_CASTLING))
-        ss << '-';
+    // if (!can_castle(ANY_CASTLING))
+    //     ss << '-';
 
     return ss.str();
 }
