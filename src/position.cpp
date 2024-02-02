@@ -280,7 +280,6 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
     chess960 = isChess960;
     set_state();
 
-    assert(pos_is_ok());
 
     return *this;
 }
@@ -422,10 +421,5 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
          | (attacks_bb<KING>(s) & pieces(KING));
 }
 
-
-// Performs some consistency checks for the position object
-// and raise an assert if something wrong is detected.
-// This is meant to be helpful when debugging.
-bool Position::pos_is_ok() const { return true; }
 
 }  // namespace Stockfish

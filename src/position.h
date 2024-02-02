@@ -36,20 +36,11 @@ namespace Stockfish {
 // board (by calling Position::do_move), a StateInfo object must be passed.
 
 struct StateInfo {
-
-    // Copied when making a move
     Key    materialKey;
-    Key    pawnKey;
-    Value  nonPawnMaterial[COLOR_NB];
     int    castlingRights;
-    int    rule50;
-    int    pliesFromNull;
     Square epSquare;
 
-    // Not copied when making a move (will be recomputed anyhow)
-    Key      key;
-    // Bitboard checkersBB;
-    // StateInfo* previous;
+    Key key;
 };
 
 
@@ -120,17 +111,6 @@ class Position {
     Bitboard attackers_to(Square s) const;
     Bitboard attackers_to(Square s, Bitboard occupied) const;
 
-
-    // Properties of moves
-
-    // Static Exchange Evaluation
-
-
-    // Position consistency check, for debugging
-    bool pos_is_ok() const;
-
-    // Used by NNUE
-    StateInfo* state() const;
 
     void put_piece(Piece pc, Square s);
 
@@ -221,8 +201,6 @@ inline void Position::put_piece(Piece pc, Square s) {
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
 }
 
-
-inline StateInfo* Position::state() const { return st; }
 
 }  // namespace Stockfish
 
