@@ -107,10 +107,6 @@ class Position {
 
     // Checking
 
-    // Attacks to/from a given square
-    Bitboard attackers_to(Square s) const;
-    Bitboard attackers_to(Square s, Bitboard occupied) const;
-
 
     void put_piece(Piece pc, Square s);
 
@@ -185,8 +181,6 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 
     return castlingRookSquare[cr];
 }
-
-inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, pieces()); }
 
 
 inline Key Position::material_key() const { return st->materialKey; }
