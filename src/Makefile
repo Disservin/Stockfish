@@ -53,10 +53,10 @@ PGOBENCH = $(WINE_PATH) ./$(EXE) bench
 
 ### Source and object files
 SRCS = bitboard.cpp main.cpp \
-	movegen.cpp movepick.cpp position.cpp \
+	movegen.cpp position.cpp \
 	syzygy/tbprobe.cpp
 
-HEADERS = bitboard.h misc.h movegen.h movepick.h \
+HEADERS = bitboard.h misc.h movegen.h \
 		position.h syzygy/tbprobe.h types.h
 		  
 
