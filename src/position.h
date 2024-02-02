@@ -47,18 +47,9 @@ struct StateInfo {
     Square epSquare;
 
     // Not copied when making a move (will be recomputed anyhow)
-    Key        key;
-    Bitboard   checkersBB;
-    StateInfo* previous;
-    Bitboard   blockersForKing[COLOR_NB];
-    Bitboard   pinners[COLOR_NB];
-    Bitboard   checkSquares[PIECE_TYPE_NB];
-    Piece      capturedPiece;
-    int        repetition;
-
-    // Used by NNUE
-    DirtyPiece dirtyPiece;
-    int        accumulatorBig;
+    Key      key;
+    Bitboard checkersBB;
+    // StateInfo* previous;
 };
 
 
@@ -102,7 +93,6 @@ class Position {
 
     template<PieceType Pt>
     int count() const;
-
 
     Piece piece_on(Square s) const;
 
