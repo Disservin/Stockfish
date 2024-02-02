@@ -121,7 +121,6 @@ class Position {
 
 
     // Properties of moves
-    Piece moved_piece(Move m) const;
 
     // Static Exchange Evaluation
 
@@ -171,7 +170,6 @@ inline Piece Position::piece_on(Square s) const {
 
 inline bool Position::empty(Square s) const { return piece_on(s) == NO_PIECE; }
 
-inline Piece Position::moved_piece(Move m) const { return piece_on(m.from_sq()); }
 
 inline Bitboard Position::pieces(PieceType pt) const { return byTypeBB[pt]; }
 
