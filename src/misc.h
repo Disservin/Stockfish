@@ -19,9 +19,11 @@
 #ifndef MISC_H_INCLUDED
 #define MISC_H_INCLUDED
 
+#include <cassert>
+#include <cstdint>
 #include <iostream>
 
-#include "bitboard.h"
+// #include "bitboard.h"
 
 
 namespace Stockfish {
