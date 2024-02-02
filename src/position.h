@@ -129,12 +129,6 @@ class Position {
     bool  gives_check(Move m) const;
     Piece moved_piece(Move m) const;
 
-    // Doing and undoing moves
-    void do_move(Move m, StateInfo& newSt);
-    void do_move(Move m, StateInfo& newSt, bool givesCheck);
-    void undo_move(Move m);
-    void undo_null_move();
-
     // Static Exchange Evaluation
 
     // Accessing hash keys
@@ -330,7 +324,6 @@ inline void Position::move_piece(Square from, Square to) {
     board[to]   = pc;
 }
 
-inline void Position::do_move(Move m, StateInfo& newSt) { do_move(m, newSt, gives_check(m)); }
 
 inline StateInfo* Position::state() const { return st; }
 
