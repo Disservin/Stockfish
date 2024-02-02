@@ -118,8 +118,7 @@ class Position {
     Bitboard attackers_to(Square s) const;
     Bitboard attackers_to(Square s, Bitboard occupied) const;
     void     update_slider_blockers(Color c) const;
-    template<PieceType Pt>
-    Bitboard attacks_by(Color c) const;
+
 
     // Properties of moves
     bool  legal(Move m) const;
@@ -132,8 +131,6 @@ class Position {
 
     // Other properties of the position
     Color side_to_move() const;
-    bool  is_draw(int ply) const;
-    bool  has_repeated() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -226,21 +223,6 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 
 inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, pieces()); }
 
-template<PieceType Pt>
-inline Bitboard Position::attacks_by(Color c) const {
-
-    if constexpr (Pt == PAWN)
-        return c == WHITE ? pawn_attacks_bb<WHITE>(pieces(WHITE, PAWN))
-                          : pawn_attacks_bb<BLACK>(pieces(BLACK, PAWN));
-    else
-    {
-        Bitboard threats   = 0;
-        Bitboard attackers = pieces(c, Pt);
-        while (attackers)
-            threats |= attacks_bb<Pt>(pop_lsb(attackers), pieces());
-        return threats;
-    }
-}
 
 inline Bitboard Position::checkers() const { return st->checkersBB; }
 

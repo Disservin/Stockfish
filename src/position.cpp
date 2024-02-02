@@ -531,36 +531,6 @@ bool Position::legal(Move m) const {
 }
 
 
-// Tests whether the position is drawn by 50-move rule
-// or by repetition. It does not detect stalemates.
-bool Position::is_draw(int ply) const {
-
-    if (st->rule50 > 99 && (!checkers() || MoveList<LEGAL>(*this).size()))
-        return true;
-
-    // Return a draw score if a position repeats once earlier but strictly
-    // after the root, or repeats twice before or at the root.
-    return st->repetition && st->repetition < ply;
-}
-
-
-// Tests whether there has been at least one repetition
-// of positions since the last capture or pawn move.
-bool Position::has_repeated() const {
-
-    StateInfo* stc = st;
-    int        end = std::min(st->rule50, st->pliesFromNull);
-    while (end-- >= 4)
-    {
-        if (stc->repetition)
-            return true;
-
-        stc = stc->previous;
-    }
-    return false;
-}
-
-
 // Performs some consistency checks for the position object
 // and raise an assert if something wrong is detected.
 // This is meant to be helpful when debugging.
