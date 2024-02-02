@@ -207,7 +207,6 @@ inline int distance<Square>(Square x, Square y) {
     return SquareDistance[x][y];
 }
 
-inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
 // Returns the pseudo attacks of the given piece type
 // assuming an empty board.

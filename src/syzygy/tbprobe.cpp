@@ -60,6 +60,7 @@ int Stockfish::Tablebases::MaxCardinality;
 
 namespace Stockfish {
 
+inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
 namespace {
 
