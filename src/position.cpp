@@ -151,7 +151,7 @@ void Position::init() {
 // Initializes the position object with the given FEN string.
 // This function is not very robust - make sure that input FENs are correct,
 // this is assumed to be the responsibility of the GUI.
-Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
+Position& Position::set(const string& fenStr, bool, StateInfo* si) {
     /*
    A FEN string defines a particular position using only the ASCII character set.
 
