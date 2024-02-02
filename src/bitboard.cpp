@@ -22,6 +22,7 @@
 #include <bitset>
 #include <initializer_list>
 
+#include "intrin.h"
 #include "misc.h"
 
 namespace Stockfish {

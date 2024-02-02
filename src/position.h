@@ -26,6 +26,7 @@
 #include <string>
 
 #include "bitboard.h"
+#include "intrin.h"
 #include "types.h"
 
 namespace Stockfish {
