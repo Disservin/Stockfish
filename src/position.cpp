@@ -983,40 +983,6 @@ bool Position::has_repeated() const {
 }
 
 
-// Flips position with the white and black sides reversed. This
-// is only useful for debugging e.g. for finding evaluation symmetry bugs.
-void Position::flip() {
-
-    string            f, token;
-    std::stringstream ss(fen());
-
-    for (Rank r = RANK_8; r >= RANK_1; --r)  // Piece placement
-    {
-        std::getline(ss, token, r > RANK_1 ? '/' : ' ');
-        f.insert(0, token + (f.empty() ? " " : "/"));
-    }
-
-    ss >> token;                        // Active color
-    f += (token == "w" ? "B " : "W ");  // Will be lowercased later
-
-    ss >> token;  // Castling availability
-    f += token + " ";
-
-    std::transform(f.begin(), f.end(), f.begin(),
-                   [](char c) { return char(islower(c) ? toupper(c) : tolower(c)); });
-
-    ss >> token;  // En passant square
-    f += (token == "-" ? token : token.replace(1, 1, token[1] == '3' ? "6" : "3"));
-
-    std::getline(ss, token);  // Half and full moves
-    f += token;
-
-    set(f, is_chess960(), st);
-
-    assert(pos_is_ok());
-}
-
-
 // Performs some consistency checks for the position object
 // and raise an assert if something wrong is detected.
 // This is meant to be helpful when debugging.
