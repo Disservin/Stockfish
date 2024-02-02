@@ -1,4 +1,0 @@
-setoption name SyzygyPath value /home/max/3-4-5
-position fen 8/8/3K4/1r6/8/8/4k3/2R5 b - - 0 18
-go
-ucinewgame
