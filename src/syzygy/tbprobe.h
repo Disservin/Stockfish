@@ -62,11 +62,8 @@ enum ProbeState {
 extern int MaxCardinality;
 
 
-void     init(const std::string& paths);
-WDLScore probe_wdl(Position& pos, ProbeState* result);
-int      probe_dtz(Position& pos, ProbeState* result);
-bool     root_probe(Position& pos, Search::RootMoves& rootMoves, bool rule50);
-bool     root_probe_wdl(Position& pos, Search::RootMoves& rootMoves, bool rule50);
+void init(const std::string& paths);
+int  probe_dtz(Position& pos, ProbeState* result);
 
 }  // namespace Stockfish::Tablebases
 

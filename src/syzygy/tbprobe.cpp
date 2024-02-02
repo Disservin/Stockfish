@@ -89,8 +89,6 @@ using RootMoves = std::vector<RootMove>;
 namespace {
 
 constexpr int TBPIECES = 7;  // Max number of supported pieces
-constexpr int MAX_DTZ =
-  1 << 18;  // Max DTZ supported, large enough to deal with the syzygy TB limit.
 
 enum {
     BigEndian,
@@ -128,9 +126,6 @@ int LeadPawnsSize[6][4];        // [leadPawnsCnt][FILE_A..FILE_D]
 // Comparison function to sort leading pawns in ascending MapPawns[] order
 bool pawns_comp(Square i, Square j) { return MapPawns[i] < MapPawns[j]; }
 int  off_A1H8(Square sq) { return int(rank_of(sq)) - file_of(sq); }
-
-constexpr Value WDL_to_value[] = {-VALUE_MATE + MAX_PLY + 1, VALUE_DRAW - 2, VALUE_DRAW,
-                                  VALUE_DRAW + 2, VALUE_MATE - MAX_PLY - 1};
 
 template<typename T, int Half = sizeof(T) / 2, int End = sizeof(T) - 1>
 inline void swap_endian(T& x) {
@@ -1492,19 +1487,6 @@ void Tablebases::init(const std::string& paths) {
     sync_cout << "info string Found " << TBTables.size() << " tablebases" << sync_endl;
 }
 
-// Probe the WDL table for a particular position.
-// If *result != FAIL, the probe was successful.
-// The return value is from the point of view of the side to move:
-// -2 : loss
-// -1 : loss, but draw under 50-move rule
-//  0 : draw
-//  1 : win, but draw under 50-move rule
-//  2 : win
-WDLScore Tablebases::probe_wdl(Position& pos, ProbeState* result) {
-
-    *result = OK;
-    return search<false>(pos, result);
-}
 
 // Probe the DTZ table for a particular position.
 // If *result != FAIL, the probe was successful.
@@ -1593,115 +1575,5 @@ int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
     return minDTZ == 0xFFFF ? -1 : minDTZ;
 }
 
-
-// Use the DTZ tables to rank root moves.
-//
-// A return value false indicates that not all probes were successful.
-bool Tablebases::root_probe(Position& pos, Search::RootMoves& rootMoves, bool rule50) {
-
-    ProbeState result = OK;
-    StateInfo  st;
-
-    // Obtain 50-move counter for the root position
-    int cnt50 = pos.rule50_count();
-
-    // Check whether a position was repeated since the last zeroing move.
-    bool rep = pos.has_repeated();
-
-    int dtz, bound = rule50 ? (MAX_DTZ - 100) : 1;
-
-    // Probe and rank each move
-    for (auto& m : rootMoves)
-    {
-        pos.do_move(m.pv[0], st);
-
-        // Calculate dtz for the current move counting from the root position
-        if (pos.rule50_count() == 0)
-        {
-            // In case of a zeroing move, dtz is one of -101/-1/0/1/101
-            WDLScore wdl = -probe_wdl(pos, &result);
-            dtz          = dtz_before_zeroing(wdl);
-        }
-        else if (pos.is_draw(1))
-        {
-            // In case a root move leads to a draw by repetition or 50-move rule,
-            // we set dtz to zero. Note: since we are only 1 ply from the root,
-            // this must be a true 3-fold repetition inside the game history.
-            dtz = 0;
-        }
-        else
-        {
-            // Otherwise, take dtz for the new position and correct by 1 ply
-            dtz = -probe_dtz(pos, &result);
-            dtz = dtz > 0 ? dtz + 1 : dtz < 0 ? dtz - 1 : dtz;
-        }
-
-        // Make sure that a mating move is assigned a dtz value of 1
-        if (pos.checkers() && dtz == 2 && MoveList<LEGAL>(pos).size() == 0)
-            dtz = 1;
-
-        pos.undo_move(m.pv[0]);
-
-        if (result == FAIL)
-            return false;
-
-        // Better moves are ranked higher. Certain wins are ranked equally.
-        // Losing moves are ranked equally unless a 50-move draw is in sight.
-        int r    = dtz > 0 ? (dtz + cnt50 <= 99 && !rep ? MAX_DTZ : MAX_DTZ - (dtz + cnt50))
-                 : dtz < 0 ? (-dtz * 2 + cnt50 < 100 ? -MAX_DTZ : -MAX_DTZ + (-dtz + cnt50))
-                           : 0;
-        m.tbRank = r;
-
-        // Determine the score to be displayed for this move. Assign at least
-        // 1 cp to cursed wins and let it grow to 49 cp as the positions gets
-        // closer to a real win.
-        m.tbScore = r >= bound ? VALUE_MATE - MAX_PLY - 1
-                  : r > 0      ? Value((std::max(3, r - (MAX_DTZ - 200)) * int(PawnValue)) / 200)
-                  : r == 0     ? VALUE_DRAW
-                  : r > -bound ? Value((std::min(-3, r + (MAX_DTZ - 200)) * int(PawnValue)) / 200)
-                               : -VALUE_MATE + MAX_PLY + 1;
-    }
-
-    return true;
-}
-
-
-// Use the WDL tables to rank root moves.
-// This is a fallback for the case that some or all DTZ tables are missing.
-//
-// A return value false indicates that not all probes were successful.
-bool Tablebases::root_probe_wdl(Position& pos, Search::RootMoves& rootMoves, bool rule50) {
-
-    static const int WDL_to_rank[] = {-MAX_DTZ, -MAX_DTZ + 101, 0, MAX_DTZ - 101, MAX_DTZ};
-
-    ProbeState result = OK;
-    StateInfo  st;
-    WDLScore   wdl;
-
-
-    // Probe and rank each move
-    for (auto& m : rootMoves)
-    {
-        pos.do_move(m.pv[0], st);
-
-        if (pos.is_draw(1))
-            wdl = WDLDraw;
-        else
-            wdl = -probe_wdl(pos, &result);
-
-        pos.undo_move(m.pv[0]);
-
-        if (result == FAIL)
-            return false;
-
-        m.tbRank = WDL_to_rank[wdl + 2];
-
-        if (!rule50)
-            wdl = wdl > WDLDraw ? WDLWin : wdl < WDLDraw ? WDLLoss : WDLDraw;
-        m.tbScore = WDL_to_value[wdl + 2];
-    }
-
-    return true;
-}
 
 }  // namespace Stockfish
