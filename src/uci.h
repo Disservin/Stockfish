@@ -24,10 +24,8 @@
 #include <string>
 #include <unordered_map>
 
-#include "evaluate.h"
 #include "misc.h"
 #include "position.h"
-#include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
 
@@ -37,9 +35,7 @@ namespace Eval::NNUE {
 enum NetSize : int;
 }
 
-namespace Search {
-class Worker;
-}
+namespace Search {}
 
 class Move;
 enum Square : int;
@@ -47,20 +43,13 @@ using Value = int;
 
 class UCI {
    public:
-    UCI(int argc, char** argv);
-
     void loop();
 
     static int         to_cp(Value v);
     static std::string value(Value v);
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
-    static std::string pv(const Search::Worker& workerThread,
-                          TimePoint             elapsed,
-                          uint64_t              nodesSearched,
-                          uint64_t              tb_hits,
-                          int                   hashfull,
-                          bool                  rootInTB);
+
     static std::string wdl(Value v, int ply);
     static Move        to_move(const Position& pos, std::string& str);
 
@@ -68,15 +57,12 @@ class UCI {
 
     OptionsMap options;
 
-    std::unordered_map<Eval::NNUE::NetSize, Eval::EvalFile> evalFiles;
 
    private:
     TranspositionTable tt;
-    ThreadPool         threads;
     CommandLine        cli;
 
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
-    void bench(Position& pos, std::istream& args, StateListPtr& states);
     void position(Position& pos, std::istringstream& is, StateListPtr& states);
     void trace_eval(Position& pos);
     void search_clear();

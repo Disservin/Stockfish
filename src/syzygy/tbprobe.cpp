@@ -40,7 +40,6 @@
 #include "../misc.h"
 #include "../movegen.h"
 #include "../position.h"
-#include "../search.h"
 #include "../types.h"
 #include "../ucioption.h"
 
@@ -61,6 +60,33 @@ using namespace Stockfish::Tablebases;
 int Stockfish::Tablebases::MaxCardinality;
 
 namespace Stockfish {
+
+namespace Search {
+struct RootMove {
+
+    explicit RootMove(Move m) :
+        pv(1, m) {}
+    bool extract_ponder_from_tt(const TranspositionTable& tt, Position& pos);
+    bool operator==(const Move& m) const { return pv[0] == m; }
+    // Sort in descending order
+    bool operator<(const RootMove& m) const {
+        return m.score != score ? m.score < score : m.previousScore < previousScore;
+    }
+
+    Value             score           = -VALUE_INFINITE;
+    Value             previousScore   = -VALUE_INFINITE;
+    Value             averageScore    = -VALUE_INFINITE;
+    Value             uciScore        = -VALUE_INFINITE;
+    bool              scoreLowerbound = false;
+    bool              scoreUpperbound = false;
+    int               selDepth        = 0;
+    int               tbRank          = 0;
+    Value             tbScore;
+    std::vector<Move> pv;
+};
+
+using RootMoves = std::vector<RootMove>;
+}
 
 namespace {
 

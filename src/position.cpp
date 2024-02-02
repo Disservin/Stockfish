@@ -33,7 +33,6 @@
 #include "bitboard.h"
 #include "misc.h"
 #include "movegen.h"
-#include "nnue/nnue_common.h"
 #include "syzygy/tbprobe.h"
 #include "tt.h"
 #include "uci.h"
@@ -680,10 +679,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
     ++st->pliesFromNull;
 
     // Used by NNUE
-    st->accumulatorBig.computed[WHITE]     = st->accumulatorBig.computed[BLACK] =
-      st->accumulatorSmall.computed[WHITE] = st->accumulatorSmall.computed[BLACK] = false;
-    auto& dp                                                                      = st->dirtyPiece;
-    dp.dirty_num                                                                  = 1;
+    auto& dp     = st->dirtyPiece;
+    dp.dirty_num = 1;
 
     Color  us       = sideToMove;
     Color  them     = ~us;
@@ -965,11 +962,8 @@ void Position::do_null_move(StateInfo& newSt, TranspositionTable& tt) {
     newSt.previous = st;
     st             = &newSt;
 
-    st->dirtyPiece.dirty_num               = 0;
-    st->dirtyPiece.piece[0]                = NO_PIECE;  // Avoid checks in UpdateAccumulator()
-    st->accumulatorBig.computed[WHITE]     = st->accumulatorBig.computed[BLACK] =
-      st->accumulatorSmall.computed[WHITE] = st->accumulatorSmall.computed[BLACK] = false;
-
+    st->dirtyPiece.dirty_num = 0;
+    st->dirtyPiece.piece[0]  = NO_PIECE;  // Avoid checks in UpdateAccumulator()
     if (st->epSquare != SQ_NONE)
     {
         st->key ^= Zobrist::enpassant[file_of(st->epSquare)];

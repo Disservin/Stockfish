@@ -20,9 +20,9 @@
 #include <unordered_map>
 
 #include "bitboard.h"
-#include "evaluate.h"
 #include "misc.h"
 #include "position.h"
+#include "syzygy/tbprobe.h"
 #include "tune.h"
 #include "types.h"
 #include "uci.h"
