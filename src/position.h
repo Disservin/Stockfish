@@ -88,18 +88,35 @@ class Position {
 
     // Position representation
     Bitboard pieces(PieceType pt = ALL_PIECES) const;
+
     template<typename... PieceTypes>
     Bitboard pieces(PieceType pt, PieceTypes... pts) const;
+
     Bitboard pieces(Color c) const;
+
     template<typename... PieceTypes>
     Bitboard pieces(Color c, PieceTypes... pts) const;
-    Piece    piece_on(Square s) const;
-    Square   ep_square() const;
-    bool     empty(Square s) const;
+
     template<PieceType Pt>
     int count(Color c) const;
+
     template<PieceType Pt>
     int count() const;
+
+
+    Piece piece_on(Square s) const;
+
+    // Accessing hash keys
+    Key material_key() const;
+
+    // Other properties of the position
+    Color side_to_move() const;
+
+
+   private:
+    Square ep_square() const;
+    bool   empty(Square s) const;
+
     template<PieceType Pt>
     Square square(Color c) const;
 
@@ -118,11 +135,6 @@ class Position {
 
     // Static Exchange Evaluation
 
-    // Accessing hash keys
-    Key material_key() const;
-
-    // Other properties of the position
-    Color side_to_move() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -132,7 +144,6 @@ class Position {
 
     void put_piece(Piece pc, Square s);
 
-   private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
     void set_state() const;
