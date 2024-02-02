@@ -32,7 +32,6 @@
 
 #include "bitboard.h"
 #include "misc.h"
-#include "movegen.h"
 
 using std::string;
 
