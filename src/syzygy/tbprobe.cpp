@@ -1319,7 +1319,11 @@ WDLScore search(Position& pos, ProbeState* result) {
         value = bestValue;
     else
     {
+        std::cout << "wdl" << std::endl;
+
         value = probe_table<WDL>(pos, result);
+
+        std::cout << "value: " << value << std::endl;
 
         if (*result == FAIL)
             return WDLDraw;
@@ -1516,63 +1520,29 @@ void Tablebases::init(const std::string& paths) {
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
 
-    *result      = OK;
-    WDLScore wdl = search<true>(pos, result);
+    // *result      = OK;
+    // WDLScore wdl = search<true>(pos, result);
 
-    if (*result == FAIL || wdl == WDLDraw)  // DTZ tables don't store draws
-        return 0;
 
-    // DTZ stores a 'don't care value in this case, or even a plain wrong
-    // one as in case the best move is a losing ep, so it cannot be probed.
-    if (*result == ZEROING_BEST_MOVE)
-        return dtz_before_zeroing(wdl);
+    // if (*result == FAIL || wdl == WDLDraw)  // DTZ tables don't store draws
+    //     return 0;
 
-    int dtz = probe_table<DTZ>(pos, result, wdl);
+    // // DTZ stores a 'don't care value in this case, or even a plain wrong
+    // // one as in case the best move is a losing ep, so it cannot be probed.
+    // if (*result == ZEROING_BEST_MOVE)
+    //     return dtz_before_zeroing(wdl);
 
-    if (*result == FAIL)
-        return 0;
+    // int dtz = probe_table<DTZ>(pos, result, wdl);
 
-    if (*result != CHANGE_STM)
-        return (dtz + 100 * (wdl == WDLBlessedLoss || wdl == WDLCursedWin)) * sign_of(wdl);
+    // if (*result == FAIL)
+    //     return 0;
 
-    // DTZ stores results for the other side, so we need to do a 1-ply search and
-    // find the winning move that minimizes DTZ.
-    StateInfo st;
-    int       minDTZ = 0xFFFF;
+    // if (*result != CHANGE_STM)
+    //     return (dtz + 100 * (wdl == WDLBlessedLoss || wdl == WDLCursedWin)) * sign_of(wdl);
 
-    for (const Move move : MoveList<LEGAL>(pos))
-    {
-        bool zeroing = pos.capture(move) || type_of(pos.moved_piece(move)) == PAWN;
+    // return -1;
 
-        pos.do_move(move, st);
-
-        // For zeroing moves we want the dtz of the move _before_ doing it,
-        // otherwise we will get the dtz of the next move sequence. Search the
-        // position after the move to get the score sign (because even in a
-        // winning position we could make a losing capture or go for a draw).
-        dtz = zeroing ? -dtz_before_zeroing(search<false>(pos, result)) : -probe_dtz(pos, result);
-
-        // If the move mates, force minDTZ to 1
-        if (dtz == 1 && pos.checkers() && MoveList<LEGAL>(pos).size() == 0)
-            minDTZ = 1;
-
-        // Convert result from 1-ply search. Zeroing moves are already accounted
-        // by dtz_before_zeroing() that returns the DTZ of the previous move.
-        if (!zeroing)
-            dtz += sign_of(dtz);
-
-        // Skip the draws and if we are winning only pick positive dtz
-        if (dtz < minDTZ && sign_of(dtz) == sign_of(wdl))
-            minDTZ = dtz;
-
-        pos.undo_move(move);
-
-        if (*result == FAIL)
-            return 0;
-    }
-
-    // When there are no legal moves, the position is mate: we return -1
-    return minDTZ == 0xFFFF ? -1 : minDTZ;
+    return probe_table<WDL>(pos, result);
 }
 
 
