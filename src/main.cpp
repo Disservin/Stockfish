@@ -27,9 +27,7 @@
 
 using namespace Stockfish;
 
-int main(int argc, char* argv[]) {
-
-
+int main() {
     Bitboards::init();
     Position::init();
 
@@ -41,7 +39,7 @@ int main(int argc, char* argv[]) {
     pos.set("8/8/3K4/1r6/8/8/4k3/2R5 b - - 0 18", false, &states->back());
 
     Tablebases::ProbeState score = Tablebases::ProbeState::OK;
-    auto                   wdl   = Tablebases::probe_dtz(pos, &score);
+    Tablebases::probe_dtz(pos, &score);
 
 
     return 0;
