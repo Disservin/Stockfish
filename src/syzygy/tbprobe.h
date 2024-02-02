@@ -26,22 +26,10 @@
 namespace Stockfish {
 class Position;
 
-using Depth = int;
-
-namespace Search {
-struct RootMove;
-using RootMoves = std::vector<RootMove>;
-}
 }
 
 namespace Stockfish::Tablebases {
 
-struct Config {
-    int   cardinality = 0;
-    bool  rootInTB    = false;
-    bool  useRule50   = false;
-    Depth probeDepth  = 0;
-};
 
 enum WDLScore {
     WDLLoss        = -2,  // Loss
