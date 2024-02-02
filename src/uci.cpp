@@ -30,7 +30,6 @@
 #include <vector>
 
 #include "movegen.h"
-#include "perft.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "types.h"

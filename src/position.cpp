@@ -34,7 +34,6 @@
 #include "misc.h"
 #include "movegen.h"
 #include "syzygy/tbprobe.h"
-#include "tt.h"
 #include "uci.h"
 
 using std::string;
@@ -947,42 +946,6 @@ void Position::do_castling(Color us, Square from, Square& to, Square& rfrom, Squ
       NO_PIECE;  // remove_piece does not do this for us
     put_piece(make_piece(us, KING), Do ? to : from);
     put_piece(make_piece(us, ROOK), Do ? rto : rfrom);
-}
-
-
-// Used to do a "null move": it flips
-// the side to move without executing any move on the board.
-void Position::do_null_move(StateInfo& newSt, TranspositionTable& tt) {
-
-    assert(!checkers());
-    assert(&newSt != st);
-
-    std::memcpy(&newSt, st, offsetof(StateInfo, accumulatorBig));
-
-    newSt.previous = st;
-    st             = &newSt;
-
-    st->dirtyPiece.dirty_num = 0;
-    st->dirtyPiece.piece[0]  = NO_PIECE;  // Avoid checks in UpdateAccumulator()
-    if (st->epSquare != SQ_NONE)
-    {
-        st->key ^= Zobrist::enpassant[file_of(st->epSquare)];
-        st->epSquare = SQ_NONE;
-    }
-
-    st->key ^= Zobrist::side;
-    ++st->rule50;
-    prefetch(tt.first_entry(key()));
-
-    st->pliesFromNull = 0;
-
-    sideToMove = ~sideToMove;
-
-    set_check_info();
-
-    st->repetition = 0;
-
-    assert(pos_is_ok());
 }
 
 

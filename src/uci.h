@@ -26,7 +26,6 @@
 
 #include "misc.h"
 #include "position.h"
-#include "tt.h"
 #include "ucioption.h"
 
 namespace Stockfish {
@@ -59,8 +58,7 @@ class UCI {
 
 
    private:
-    TranspositionTable tt;
-    CommandLine        cli;
+    CommandLine cli;
 
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
     void position(Position& pos, std::istringstream& is, StateListPtr& states);

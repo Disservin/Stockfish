@@ -30,7 +30,6 @@
 
 namespace Stockfish {
 
-class TranspositionTable;
 
 // StateInfo struct stores information needed to restore a Position object to
 // its previous state when we retract a move. Whenever a move is made on the
@@ -136,7 +135,6 @@ class Position {
     void do_move(Move m, StateInfo& newSt);
     void do_move(Move m, StateInfo& newSt, bool givesCheck);
     void undo_move(Move m);
-    void do_null_move(StateInfo& newSt, TranspositionTable& tt);
     void undo_null_move();
 
     // Static Exchange Evaluation

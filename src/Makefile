@@ -54,12 +54,12 @@ PGOBENCH = $(WINE_PATH) ./$(EXE) bench
 ### Source and object files
 SRCS = bitboard.cpp main.cpp \
 	misc.cpp movegen.cpp movepick.cpp position.cpp \
-	tt.cpp uci.cpp ucioption.cpp tune.cpp syzygy/tbprobe.cpp
+	 uci.cpp ucioption.cpp  syzygy/tbprobe.cpp
 
 HEADERS = bitboard.h misc.h movegen.h movepick.h \
 		position.h \
 		syzygy/tbprobe.h \
-		tt.h tune.h types.h uci.h ucioption.h perft.h
+		  types.h uci.h ucioption.h 
 
 OBJS = $(notdir $(SRCS:.cpp=.o))
 
