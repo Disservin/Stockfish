@@ -1371,29 +1371,6 @@ void Tablebases::init(const std::string& paths) {
 // In short, if a move is available resulting in dtz + 50-move-counter <= 99,
 // then do not accept moves leading to dtz + 50-move-counter == 100.
 int Tablebases::probe_dtz(Position& pos, ProbeState* result) {
-
-    // *result      = OK;
-    // WDLScore wdl = search<true>(pos, result);
-
-
-    // if (*result == FAIL || wdl == WDLDraw)  // DTZ tables don't store draws
-    //     return 0;
-
-    // // DTZ stores a 'don't care value in this case, or even a plain wrong
-    // // one as in case the best move is a losing ep, so it cannot be probed.
-    // if (*result == ZEROING_BEST_MOVE)
-    //     return dtz_before_zeroing(wdl);
-
-    // int dtz = probe_table<DTZ>(pos, result, wdl);
-
-    // if (*result == FAIL)
-    //     return 0;
-
-    // if (*result != CHANGE_STM)
-    //     return (dtz + 100 * (wdl == WDLBlessedLoss || wdl == WDLCursedWin)) * sign_of(wdl);
-
-    // return -1;
-
     return probe_table<WDL>(pos, result);
 }
 
