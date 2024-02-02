@@ -109,7 +109,6 @@ class Position {
 
     // Checking
     Bitboard blockers_for_king(Color c) const;
-    Bitboard check_squares(PieceType pt) const;
     Bitboard pinners(Color c) const;
 
     // Attacks to/from a given square
@@ -216,9 +215,6 @@ inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, 
 inline Bitboard Position::blockers_for_king(Color c) const { return st->blockersForKing[c]; }
 
 inline Bitboard Position::pinners(Color c) const { return st->pinners[c]; }
-
-inline Bitboard Position::check_squares(PieceType pt) const { return st->checkSquares[pt]; }
-
 
 inline Key Position::material_key() const { return st->materialKey; }
 
