@@ -108,7 +108,6 @@ class Position {
     Square castling_rook_square(CastlingRights cr) const;
 
     // Checking
-    Bitboard blockers_for_king(Color c) const;
 
     // Attacks to/from a given square
     Bitboard attackers_to(Square s) const;
@@ -209,9 +208,6 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 }
 
 inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, pieces()); }
-
-
-inline Bitboard Position::blockers_for_king(Color c) const { return st->blockersForKing[c]; }
 
 
 inline Key Position::material_key() const { return st->materialKey; }
