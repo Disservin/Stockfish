@@ -471,65 +471,6 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
 }
 
 
-// Tests whether a pseudo-legal move is legal
-bool Position::legal(Move m) const {
-
-    assert(m.is_ok());
-
-    Color  us   = sideToMove;
-    Square from = m.from_sq();
-    Square to   = m.to_sq();
-
-    assert(color_of(moved_piece(m)) == us);
-    assert(piece_on(square<KING>(us)) == make_piece(us, KING));
-
-    // En passant captures are a tricky special case. Because they are rather
-    // uncommon, we do it simply by testing whether the king is attacked after
-    // the move is made.
-    if (m.type_of() == EN_PASSANT)
-    {
-        Square   ksq      = square<KING>(us);
-        Square   capsq    = to - pawn_push(us);
-        Bitboard occupied = (pieces() ^ from ^ capsq) | to;
-
-        assert(to == ep_square());
-        assert(moved_piece(m) == make_piece(us, PAWN));
-        assert(piece_on(capsq) == make_piece(~us, PAWN));
-        assert(piece_on(to) == NO_PIECE);
-
-        return !(attacks_bb<ROOK>(ksq, occupied) & pieces(~us, QUEEN, ROOK))
-            && !(attacks_bb<BISHOP>(ksq, occupied) & pieces(~us, QUEEN, BISHOP));
-    }
-
-    // Castling moves generation does not check if the castling path is clear of
-    // enemy attacks, it is delayed at a later time: now!
-    if (m.type_of() == CASTLING)
-    {
-        // After castling, the rook and king final positions are the same in
-        // Chess960 as they would be in standard chess.
-        to             = relative_square(us, to > from ? SQ_G1 : SQ_C1);
-        Direction step = to > from ? WEST : EAST;
-
-        for (Square s = to; s != from; s += step)
-            if (attackers_to(s) & pieces(~us))
-                return false;
-
-        // In case of Chess960, verify if the Rook blocks some checks.
-        // For instance an enemy queen in SQ_A1 when castling rook is in SQ_B1.
-        return !chess960 || !(blockers_for_king(us) & m.to_sq());
-    }
-
-    // If the moving piece is a king, check whether the destination square is
-    // attacked by the opponent.
-    if (type_of(piece_on(from)) == KING)
-        return !(attackers_to(to, pieces() ^ from) & pieces(~us));
-
-    // A non-king move is legal if and only if it is not pinned or it
-    // is moving along the ray towards or away from the king.
-    return !(blockers_for_king(us) & from) || aligned(from, to, square<KING>(us));
-}
-
-
 // Performs some consistency checks for the position object
 // and raise an assert if something wrong is detected.
 // This is meant to be helpful when debugging.

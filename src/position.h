@@ -121,7 +121,6 @@ class Position {
 
 
     // Properties of moves
-    bool  legal(Move m) const;
     Piece moved_piece(Move m) const;
 
     // Static Exchange Evaluation
