@@ -24,7 +24,6 @@
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "types.h"
-#include "uci.h"
 
 using namespace Stockfish;
 

@@ -25,7 +25,6 @@
 
 namespace Stockfish {
 class Position;
-class OptionsMap;
 
 using Depth = int;
 
@@ -68,7 +67,6 @@ WDLScore probe_wdl(Position& pos, ProbeState* result);
 int      probe_dtz(Position& pos, ProbeState* result);
 bool     root_probe(Position& pos, Search::RootMoves& rootMoves, bool rule50);
 bool     root_probe_wdl(Position& pos, Search::RootMoves& rootMoves, bool rule50);
-Config   rank_root_moves(const OptionsMap& options, Position& pos, Search::RootMoves& rootMoves);
 
 }  // namespace Stockfish::Tablebases
 

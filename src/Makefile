@@ -54,12 +54,11 @@ PGOBENCH = $(WINE_PATH) ./$(EXE) bench
 ### Source and object files
 SRCS = bitboard.cpp main.cpp \
 	misc.cpp movegen.cpp movepick.cpp position.cpp \
-	 uci.cpp ucioption.cpp  syzygy/tbprobe.cpp
+	syzygy/tbprobe.cpp
 
 HEADERS = bitboard.h misc.h movegen.h movepick.h \
-		position.h \
-		syzygy/tbprobe.h \
-		  types.h uci.h ucioption.h 
+		position.h syzygy/tbprobe.h types.h
+		  
 
 OBJS = $(notdir $(SRCS:.cpp=.o))
 
@@ -967,10 +966,7 @@ endef
 
 # evaluation network (nnue)
 net:
-	$(call netvariables, EvalFileDefaultNameBig)
-	$(call fetch_network)
-	$(call netvariables, EvalFileDefaultNameSmall)
-	$(call fetch_network)
+
 
 format:
 	$(CLANG-FORMAT) -i $(SRCS) $(HEADERS) -style=file
