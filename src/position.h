@@ -101,8 +101,8 @@ class Position {
     Square square(Color c) const;
 
     // Castling
-    bool   can_castle(CastlingRights cr) const;
-    Square castling_rook_square(CastlingRights cr) const;
+    bool can_castle(CastlingRights cr) const;
+    // Square castling_rook_square(CastlingRights cr) const;
 
     // Checking
 
@@ -115,13 +115,13 @@ class Position {
 
 
     // Data members
-    Piece      board[SQUARE_NB];
-    Bitboard   byTypeBB[PIECE_TYPE_NB];
-    Bitboard   byColorBB[COLOR_NB];
-    int        pieceCount[PIECE_NB];
-    int        castlingRightsMask[SQUARE_NB];
-    Square     castlingRookSquare[CASTLING_RIGHT_NB];
-    Bitboard   castlingPath[CASTLING_RIGHT_NB];
+    Piece    board[SQUARE_NB];
+    Bitboard byTypeBB[PIECE_TYPE_NB];
+    Bitboard byColorBB[COLOR_NB];
+    int      pieceCount[PIECE_NB];
+    int      castlingRightsMask[SQUARE_NB];
+    Square   castlingRookSquare[CASTLING_RIGHT_NB];
+    // Bitboard   castlingPath[CASTLING_RIGHT_NB];
     StateInfo* st;
     // int        gamePly;
     Color sideToMove;
@@ -174,11 +174,11 @@ inline Square Position::square(Color c) const {
 inline bool Position::can_castle(CastlingRights cr) const { return st->castlingRights & cr; }
 
 
-inline Square Position::castling_rook_square(CastlingRights cr) const {
-    assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
+// inline Square Position::castling_rook_square(CastlingRights cr) const {
+//     assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
 
-    return castlingRookSquare[cr];
-}
+//     return castlingRookSquare[cr];
+// }
 
 
 inline Key Position::material_key() const { return st->materialKey; }

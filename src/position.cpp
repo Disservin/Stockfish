@@ -246,7 +246,7 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
         else
             continue;
 
-        set_castling_right(c, rsq);
+        // set_castling_right(c, rsq);
     }
 
     // 4. En passant square.
@@ -297,10 +297,10 @@ void Position::set_castling_right(Color c, Square rfrom) {
     castlingRightsMask[rfrom] |= cr;
     castlingRookSquare[cr] = rfrom;
 
-    Square kto = relative_square(c, cr & KING_SIDE ? SQ_G1 : SQ_C1);
-    Square rto = relative_square(c, cr & KING_SIDE ? SQ_F1 : SQ_D1);
+    // Square kto = relative_square(c, cr & KING_SIDE ? SQ_G1 : SQ_C1);
+    // Square rto = relative_square(c, cr & KING_SIDE ? SQ_F1 : SQ_D1);
 
-    castlingPath[cr] = (between_bb(rfrom, rto) | between_bb(kfrom, kto)) & ~(kfrom | rfrom);
+    // castlingPath[cr] = (between_bb(rfrom, rto) | between_bb(kfrom, kto)) & ~(kfrom | rfrom);
 }
 
 
