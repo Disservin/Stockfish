@@ -40,8 +40,6 @@
 #include "../misc.h"
 #include "../position.h"
 
-// #include "../types.h"
-
 #ifndef _WIN32
     #include <fcntl.h>
     #include <sys/mman.h>
@@ -663,7 +661,6 @@ WDLScore map_score(TBTable<WDL>*, File, int value, WDLScore) { return WDLScore(v
 //
 template<typename T, typename Ret = typename T::Ret>
 Ret do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) {
-    std::cout << pos << std::endl;
     Square     squares[TBPIECES];
     Piece      pieces[TBPIECES];
     uint64_t   idx;
