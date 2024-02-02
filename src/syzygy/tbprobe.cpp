@@ -39,6 +39,7 @@
 #include "../intrin.h"
 #include "../misc.h"
 #include "../position.h"
+
 // #include "../types.h"
 
 #ifndef _WIN32
