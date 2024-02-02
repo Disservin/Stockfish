@@ -708,9 +708,8 @@ int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
 //      idx = Binomial[1][s1] + Binomial[2][s2] + ... + Binomial[k][sk]
 //
 template<typename T, typename Ret = typename T::Ret>
-CLANG_AVX512_BUG_FIX Ret
-do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) {
-
+Ret do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) {
+    std::cout << pos << std::endl;
     Square     squares[TBPIECES];
     Piece      pieces[TBPIECES];
     uint64_t   idx;

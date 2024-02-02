@@ -36,13 +36,16 @@ int main(int argc, char* argv[]) {
     Bitboards::init();
     Position::init();
 
-    UCI uci(argc, argv);
+    Tablebases::init("./syzygy");
 
-    Tune::init(uci.options);
+    StateListPtr states(new std::deque<StateInfo>(1));
 
-    uci.evalFiles = Eval::NNUE::load_networks(uci.workingDirectory(), uci.options, uci.evalFiles);
+    Position pos;
+    pos.set("8/8/3K4/1r6/8/8/4k3/2R5 b - - 0 18", false, &states->back());
 
-    uci.loop();
+    Tablebases::ProbeState score = Tablebases::ProbeState::OK;
+    auto                   wdl   = Tablebases::probe_dtz(pos, &score);
+
 
     return 0;
 }

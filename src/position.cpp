@@ -79,19 +79,19 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
     for (Bitboard b = pos.checkers(); b;)
         os << UCI::square(pop_lsb(b)) << " ";
 
-    if (int(Tablebases::MaxCardinality) >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
-    {
-        StateInfo st;
-        ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
+    // if (int(Tablebases::MaxCardinality) >= popcount(pos.pieces()) && !pos.can_castle(ANY_CASTLING))
+    // {
+    //     StateInfo st;
+    //     ASSERT_ALIGNED(&st, Eval::NNUE::CacheLineSize);
 
-        Position p;
-        p.set(pos.fen(), pos.is_chess960(), &st);
-        Tablebases::ProbeState s1, s2;
-        Tablebases::WDLScore   wdl = Tablebases::probe_wdl(p, &s1);
-        int                    dtz = Tablebases::probe_dtz(p, &s2);
-        os << "\nTablebases WDL: " << std::setw(4) << wdl << " (" << s1 << ")"
-           << "\nTablebases DTZ: " << std::setw(4) << dtz << " (" << s2 << ")";
-    }
+    //     Position p;
+    //     p.set(pos.fen(), pos.is_chess960(), &st);
+    //     Tablebases::ProbeState s1, s2;
+    //     Tablebases::WDLScore   wdl = Tablebases::probe_wdl(p, &s1);
+    //     int                    dtz = Tablebases::probe_dtz(p, &s2);
+    //     os << "\nTablebases WDL: " << std::setw(4) << wdl << " (" << s1 << ")"
+    //        << "\nTablebases DTZ: " << std::setw(4) << dtz << " (" << s2 << ")";
+    // }
 
     return os;
 }
