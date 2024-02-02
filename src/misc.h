@@ -20,33 +20,9 @@
 #define MISC_H_INCLUDED
 
 #include <iostream>
-#include <mutex>
 
 
 namespace Stockfish {
-
-enum SyncCout {
-    IO_LOCK,
-    IO_UNLOCK
-};
-
-inline std::ostream& operator<<(std::ostream& os, SyncCout sc) {
-
-    static std::mutex m;
-
-    if (sc == IO_LOCK)
-        m.lock();
-
-    if (sc == IO_UNLOCK)
-        m.unlock();
-
-    return os;
-}
-
-
-#define sync_cout std::cout << IO_LOCK
-#define sync_endl std::endl << IO_UNLOCK
-
 
 // // True if and only if the binary is compiled on a little-endian machine
 static inline const union {

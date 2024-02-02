@@ -38,9 +38,8 @@
 
 #include "../bitboard.h"
 #include "../misc.h"
-#include "../movegen.h"
 #include "../position.h"
-#include "../types.h"
+// #include "../types.h"
 
 #ifndef _WIN32
     #include <fcntl.h>
@@ -1315,7 +1314,7 @@ void Tablebases::init(const std::string& paths) {
         }
     }
 
-    sync_cout << "info string Found " << TBTables.size() << " tablebases" << sync_endl;
+    std::cout << "info string Found " << TBTables.size() << " tablebases" << std::endl;
 }
 
 

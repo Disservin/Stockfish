@@ -33,7 +33,6 @@
 #include "bitboard.h"
 #include "misc.h"
 #include "movegen.h"
-#include "syzygy/tbprobe.h"
 
 using std::string;
 
