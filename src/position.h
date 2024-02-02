@@ -143,14 +143,10 @@ class Position {
 
     // Other properties of the position
     Color side_to_move() const;
-    int   game_ply() const;
     bool  is_chess960() const;
     bool  is_draw(int ply) const;
-    bool  has_game_cycle(int ply) const;
     bool  has_repeated() const;
     int   rule50_count() const;
-    Value non_pawn_material(Color c) const;
-    Value non_pawn_material() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -285,13 +281,6 @@ inline Key Position::adjust_key50(Key k) const {
 
 inline Key Position::material_key() const { return st->materialKey; }
 
-inline Value Position::non_pawn_material(Color c) const { return st->nonPawnMaterial[c]; }
-
-inline Value Position::non_pawn_material() const {
-    return non_pawn_material(WHITE) + non_pawn_material(BLACK);
-}
-
-inline int Position::game_ply() const { return gamePly; }
 
 inline int Position::rule50_count() const { return st->rule50; }
 
