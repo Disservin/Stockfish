@@ -271,7 +271,7 @@ Position& Position::set(const string& fenStr, bool isChess960, StateInfo* si) {
         st->epSquare = SQ_NONE;
 
     // 5-6. Halfmove clock and fullmove number
-    ss >> std::skipws >> st->rule50 >> gamePly;
+    // ss >> std::skipws >> std::string("0") >> gamePly;
 
     // Convert from fullmove starting from 1 to gamePly starting from 0,
     // handle also common incorrect FEN with fullmove = 0.
@@ -310,10 +310,10 @@ void Position::set_castling_right(Color c, Square rfrom) {
 // The function is only used when a new position is set up
 void Position::set_state() const {
 
-    st->key = st->materialKey  = 0;
-    st->pawnKey                = Zobrist::noPawns;
-    st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
-    st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
+    st->key = st->materialKey = 0;
+    // st->pawnKey               = Zobrist::noPawns;
+    // st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
+    // st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
 
     for (Bitboard b = pieces(); b;)
@@ -322,11 +322,11 @@ void Position::set_state() const {
         Piece  pc = piece_on(s);
         st->key ^= Zobrist::psq[pc][s];
 
-        if (type_of(pc) == PAWN)
-            st->pawnKey ^= Zobrist::psq[pc][s];
+        // if (type_of(pc) == PAWN)
+        // st->pawnKey ^= Zobrist::psq[pc][s];
 
-        else if (type_of(pc) != KING)
-            st->nonPawnMaterial[color_of(pc)] += PieceValue[pc];
+        // else if (type_of(pc) != KING)
+        //     st->nonPawnMaterial[color_of(pc)] += PieceValue[pc];
     }
 
     if (st->epSquare != SQ_NONE)
