@@ -109,8 +109,7 @@ enum TBFlag {
     SingleValue = 128
 };
 
-inline WDLScore operator-(WDLScore d) { return WDLScore(-int(d)); }
-inline Square   operator^(Square s, int i) { return Square(int(s) ^ i); }
+inline Square operator^(Square s, int i) { return Square(int(s) ^ i); }
 
 constexpr std::string_view PieceToChar = " PNBRQK  pnbrqk";
 
@@ -152,16 +151,6 @@ T number(void* addr) {
     return v;
 }
 
-// DTZ tables don't store valid scores for moves that reset the rule50 counter
-// like captures and pawn moves but we can easily recover the correct dtz of the
-// previous move if we know the position's WDL score.
-int dtz_before_zeroing(WDLScore wdl) {
-    return wdl == WDLWin         ? 1
-         : wdl == WDLCursedWin   ? 101
-         : wdl == WDLBlessedLoss ? -101
-         : wdl == WDLLoss        ? -1
-                                 : 0;
-}
 
 // Return the sign of a number (-1, 0, 1)
 template<typename T>
@@ -671,11 +660,6 @@ int decompress_pairs(PairsData* d, uint64_t idx) {
 
 bool check_dtz_stm(TBTable<WDL>*, int, File) { return true; }
 
-bool check_dtz_stm(TBTable<DTZ>* entry, int stm, File f) {
-
-    auto flags = entry->get(stm, f)->flags;
-    return (flags & TBFlag::STM) == stm || ((entry->key == entry->key2) && !entry->hasPawns);
-}
 
 // DTZ scores are sorted by frequency of occurrence and then assigned the
 // values 0, 1, 2, ... in order of decreasing frequency. This is done for each
@@ -683,31 +667,6 @@ bool check_dtz_stm(TBTable<DTZ>* entry, int stm, File f) {
 // the original values are stored in the TB file and read during map[] init.
 WDLScore map_score(TBTable<WDL>*, File, int value, WDLScore) { return WDLScore(value - 2); }
 
-int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
-
-    constexpr int WDLMap[] = {1, 3, 0, 2, 0};
-
-    auto flags = entry->get(0, f)->flags;
-
-    uint8_t*  map = entry->map;
-    uint16_t* idx = entry->get(0, f)->map_idx;
-    if (flags & TBFlag::Mapped)
-    {
-        if (flags & TBFlag::Wide)
-            value = ((uint16_t*) map)[idx[WDLMap[wdl + 2]] + value];
-        else
-            value = map[idx[WDLMap[wdl + 2]] + value];
-    }
-
-    // DTZ tables store distance to zero in number of moves or plies. We
-    // want to return plies, so we have to convert to plies when needed.
-    if ((wdl == WDLWin && !(flags & TBFlag::WinPlies))
-        || (wdl == WDLLoss && !(flags & TBFlag::LossPlies)) || wdl == WDLCursedWin
-        || wdl == WDLBlessedLoss)
-        value *= 2;
-
-    return value + 1;
-}
 
 // A temporary fix for the compiler bug with AVX-512. (#4450)
 #ifdef USE_AVX512
@@ -1101,37 +1060,6 @@ uint8_t* set_sizes(PairsData* d, uint8_t* data) {
 
 uint8_t* set_dtz_map(TBTable<WDL>&, uint8_t* data, File) { return data; }
 
-uint8_t* set_dtz_map(TBTable<DTZ>& e, uint8_t* data, File maxFile) {
-
-    e.map = data;
-
-    for (File f = FILE_A; f <= maxFile; ++f)
-    {
-        auto flags = e.get(0, f)->flags;
-        if (flags & TBFlag::Mapped)
-        {
-            if (flags & TBFlag::Wide)
-            {
-                data += uintptr_t(data) & 1;  // Word alignment, we may have a mixed table
-                for (int i = 0; i < 4; ++i)
-                {  // Sequence like 3,x,x,x,1,x,0,2,x,x
-                    e.get(0, f)->map_idx[i] = uint16_t((uint16_t*) data - (uint16_t*) e.map + 1);
-                    data += 2 * number<uint16_t, LittleEndian>(data) + 2;
-                }
-            }
-            else
-            {
-                for (int i = 0; i < 4; ++i)
-                {
-                    e.get(0, f)->map_idx[i] = uint16_t(data - e.map + 1);
-                    data += *data + 1;
-                }
-            }
-        }
-    }
-
-    return data += uintptr_t(data) & 1;  // Word alignment
-}
 
 // Populate entry's PairsData records with data from the just memory-mapped file.
 // Called at first access.
@@ -1259,82 +1187,6 @@ Ret probe_table(const Position& pos, ProbeState* result, WDLScore wdl = WDLDraw)
     return do_probe_table(pos, entry, wdl, result);
 }
 
-// For a position where the side to move has a winning capture it is not necessary
-// to store a winning value so the generator treats such positions as "don't care"
-// and tries to assign to it a value that improves the compression ratio. Similarly,
-// if the side to move has a drawing capture, then the position is at least drawn.
-// If the position is won, then the TB needs to store a win value. But if the
-// position is drawn, the TB may store a loss value if that is better for compression.
-// All of this means that during probing, the engine must look at captures and probe
-// their results and must probe the position itself. The "best" result of these
-// probes is the correct result for the position.
-// DTZ tables do not store values when a following move is a zeroing winning move
-// (winning capture or winning pawn move). Also, DTZ store wrong values for positions
-// where the best move is an ep-move (even if losing). So in all these cases set
-// the state to ZEROING_BEST_MOVE.
-template<bool CheckZeroingMoves>
-WDLScore search(Position& pos, ProbeState* result) {
-
-    WDLScore  value, bestValue = WDLLoss;
-    StateInfo st;
-
-    auto   moveList   = MoveList<LEGAL>(pos);
-    size_t totalCount = moveList.size(), moveCount = 0;
-
-    for (const Move move : moveList)
-    {
-        if (!pos.capture(move) && (!CheckZeroingMoves || type_of(pos.moved_piece(move)) != PAWN))
-            continue;
-
-        moveCount++;
-
-        pos.do_move(move, st);
-        value = -search<false>(pos, result);
-        pos.undo_move(move);
-
-        if (*result == FAIL)
-            return WDLDraw;
-
-        if (value > bestValue)
-        {
-            bestValue = value;
-
-            if (value >= WDLWin)
-            {
-                *result = ZEROING_BEST_MOVE;  // Winning DTZ-zeroing move
-                return value;
-            }
-        }
-    }
-
-    // In case we have already searched all the legal moves we don't have to probe
-    // the TB because the stored score could be wrong. For instance TB tables
-    // do not contain information on position with ep rights, so in this case
-    // the result of probe_wdl_table is wrong. Also in case of only capture
-    // moves, for instance here 4K3/4q3/6p1/2k5/6p1/8/8/8 w - - 0 7, we have to
-    // return with ZEROING_BEST_MOVE set.
-    bool noMoreMoves = (moveCount && moveCount == totalCount);
-
-    if (noMoreMoves)
-        value = bestValue;
-    else
-    {
-        std::cout << "wdl" << std::endl;
-
-        value = probe_table<WDL>(pos, result);
-
-        std::cout << "value: " << value << std::endl;
-
-        if (*result == FAIL)
-            return WDLDraw;
-    }
-
-    // DTZ stores a "don't care" value if bestValue is a win
-    if (bestValue >= value)
-        return *result = (bestValue > WDLDraw || noMoreMoves ? ZEROING_BEST_MOVE : OK), bestValue;
-
-    return *result = OK, value;
-}
 
 }  // namespace
 
