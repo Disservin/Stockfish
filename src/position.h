@@ -112,7 +112,6 @@ class Position {
     // Attacks to/from a given square
     Bitboard attackers_to(Square s) const;
     Bitboard attackers_to(Square s, Bitboard occupied) const;
-    void     update_slider_blockers(Color c) const;
 
 
     // Properties of moves
@@ -137,7 +136,6 @@ class Position {
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
     void set_state() const;
-    void set_check_info() const;
 
 
     // Data members

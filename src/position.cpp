@@ -305,23 +305,6 @@ void Position::set_castling_right(Color c, Square rfrom) {
 }
 
 
-// Sets king attacks to detect if a move gives check
-void Position::set_check_info() const {
-
-    update_slider_blockers(WHITE);
-    update_slider_blockers(BLACK);
-
-    Square ksq = square<KING>(~sideToMove);
-
-    st->checkSquares[PAWN]   = pawn_attacks_bb(~sideToMove, ksq);
-    st->checkSquares[KNIGHT] = attacks_bb<KNIGHT>(ksq);
-    st->checkSquares[BISHOP] = attacks_bb<BISHOP>(ksq, pieces());
-    st->checkSquares[ROOK]   = attacks_bb<ROOK>(ksq, pieces());
-    st->checkSquares[QUEEN]  = st->checkSquares[BISHOP] | st->checkSquares[ROOK];
-    st->checkSquares[KING]   = 0;
-}
-
-
 // Computes the hash keys of the position, and other
 // data that once computed is updated incrementally as moves are made.
 // The function is only used when a new position is set up
@@ -332,7 +315,6 @@ void Position::set_state() const {
     st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
 
-    set_check_info();
 
     for (Bitboard b = pieces(); b;)
     {
@@ -425,36 +407,6 @@ string Position::fen() const {
         ss << '-';
 
     return ss.str();
-}
-
-// Calculates st->blockersForKing[c] and st->pinners[~c],
-// which store respectively the pieces preventing king of color c from being in check
-// and the slider pieces of color ~c pinning pieces of color c to the king.
-void Position::update_slider_blockers(Color c) const {
-
-    Square ksq = square<KING>(c);
-
-    st->blockersForKing[c] = 0;
-    st->pinners[~c]        = 0;
-
-    // Snipers are sliders that attack 's' when a piece and other snipers are removed
-    Bitboard snipers = ((attacks_bb<ROOK>(ksq) & pieces(QUEEN, ROOK))
-                        | (attacks_bb<BISHOP>(ksq) & pieces(QUEEN, BISHOP)))
-                     & pieces(~c);
-    Bitboard occupancy = pieces() ^ snipers;
-
-    while (snipers)
-    {
-        Square   sniperSq = pop_lsb(snipers);
-        Bitboard b        = between_bb(ksq, sniperSq) & occupancy;
-
-        if (b && !more_than_one(b))
-        {
-            st->blockersForKing[c] |= b;
-            if (b & pieces(c))
-                st->pinners[~c] |= sniperSq;
-        }
-    }
 }
 
 
