@@ -36,7 +36,6 @@
 #include <utility>
 #include <vector>
 
-#include "../bitboard.h"
 #include "../intrin.h"
 #include "../misc.h"
 #include "../position.h"
