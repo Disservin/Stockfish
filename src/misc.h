@@ -23,8 +23,6 @@
 #include <cstdint>
 #include <iostream>
 
-// #include "bitboard.h"
-
 
 namespace Stockfish {
 
