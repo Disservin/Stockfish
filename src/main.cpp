@@ -19,7 +19,6 @@
 #include <iostream>
 #include <unordered_map>
 
-#include "bitboard.h"
 #include "misc.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"

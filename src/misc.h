@@ -21,6 +21,8 @@
 
 #include <iostream>
 
+#include "bitboard.h"
+
 
 namespace Stockfish {
 
