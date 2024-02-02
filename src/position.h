@@ -128,7 +128,6 @@ class Position {
     bool  capture_stage(Move m) const;
     bool  gives_check(Move m) const;
     Piece moved_piece(Move m) const;
-    Piece captured_piece() const;
 
     // Doing and undoing moves
     void do_move(Move m, StateInfo& newSt);
@@ -137,13 +136,10 @@ class Position {
     void undo_null_move();
 
     // Static Exchange Evaluation
-    bool see_ge(Move m, int threshold = 0) const;
 
     // Accessing hash keys
     Key key() const;
-    Key key_after(Move m) const;
     Key material_key() const;
-    Key pawn_key() const;
 
     // Other properties of the position
     Color side_to_move() const;
@@ -286,7 +282,6 @@ inline Key Position::adjust_key50(Key k) const {
     return st->rule50 < 14 - AfterMove ? k : k ^ make_key((st->rule50 - (14 - AfterMove)) / 8);
 }
 
-inline Key Position::pawn_key() const { return st->pawnKey; }
 
 inline Key Position::material_key() const { return st->materialKey; }
 
@@ -315,7 +310,6 @@ inline bool Position::capture_stage(Move m) const {
     return capture(m) || m.promotion_type() == QUEEN;
 }
 
-inline Piece Position::captured_piece() const { return st->capturedPiece; }
 
 inline void Position::put_piece(Piece pc, Square s) {
 
