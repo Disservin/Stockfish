@@ -105,11 +105,9 @@ class Position {
 
     // Castling
     bool   can_castle(CastlingRights cr) const;
-    bool   castling_impeded(CastlingRights cr) const;
     Square castling_rook_square(CastlingRights cr) const;
 
     // Checking
-    Bitboard checkers() const;
     Bitboard blockers_for_king(Color c) const;
     Bitboard check_squares(PieceType pt) const;
     Bitboard pinners(Color c) const;
@@ -206,12 +204,6 @@ inline Square Position::ep_square() const { return st->epSquare; }
 inline bool Position::can_castle(CastlingRights cr) const { return st->castlingRights & cr; }
 
 
-inline bool Position::castling_impeded(CastlingRights cr) const {
-    assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
-
-    return pieces() & castlingPath[cr];
-}
-
 inline Square Position::castling_rook_square(CastlingRights cr) const {
     assert(cr == WHITE_OO || cr == WHITE_OOO || cr == BLACK_OO || cr == BLACK_OOO);
 
@@ -220,8 +212,6 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
 
 inline Bitboard Position::attackers_to(Square s) const { return attackers_to(s, pieces()); }
 
-
-inline Bitboard Position::checkers() const { return st->checkersBB; }
 
 inline Bitboard Position::blockers_for_king(Color c) const { return st->blockersForKing[c]; }
 
