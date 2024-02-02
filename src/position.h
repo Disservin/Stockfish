@@ -123,7 +123,6 @@ class Position {
 
     // Properties of moves
     bool  legal(Move m) const;
-    bool  pseudo_legal(const Move m) const;
     Piece moved_piece(Move m) const;
 
     // Static Exchange Evaluation
@@ -133,7 +132,6 @@ class Position {
 
     // Other properties of the position
     Color side_to_move() const;
-    bool  is_chess960() const;
     bool  is_draw(int ply) const;
     bool  has_repeated() const;
 
@@ -254,9 +252,6 @@ inline Bitboard Position::check_squares(PieceType pt) const { return st->checkSq
 
 
 inline Key Position::material_key() const { return st->materialKey; }
-
-
-inline bool Position::is_chess960() const { return chess960; }
 
 
 inline void Position::put_piece(Piece pc, Square s) {
