@@ -124,9 +124,6 @@ class Position {
     // Properties of moves
     bool  legal(Move m) const;
     bool  pseudo_legal(const Move m) const;
-    bool  capture(Move m) const;
-    bool  capture_stage(Move m) const;
-    bool  gives_check(Move m) const;
     Piece moved_piece(Move m) const;
 
     // Static Exchange Evaluation
@@ -139,7 +136,6 @@ class Position {
     bool  is_chess960() const;
     bool  is_draw(int ply) const;
     bool  has_repeated() const;
-    int   rule50_count() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -148,7 +144,6 @@ class Position {
     StateInfo* state() const;
 
     void put_piece(Piece pc, Square s);
-    void remove_piece(Square s);
 
    private:
     // Initialization helpers (used while setting up a position)
@@ -156,8 +151,6 @@ class Position {
     void set_state() const;
     void set_check_info() const;
 
-    // Other helpers
-    void move_piece(Square from, Square to);
 
     // Data members
     Piece      board[SQUARE_NB];
@@ -263,22 +256,7 @@ inline Bitboard Position::check_squares(PieceType pt) const { return st->checkSq
 inline Key Position::material_key() const { return st->materialKey; }
 
 
-inline int Position::rule50_count() const { return st->rule50; }
-
 inline bool Position::is_chess960() const { return chess960; }
-
-inline bool Position::capture(Move m) const {
-    assert(m.is_ok());
-    return (!empty(m.to_sq()) && m.type_of() != CASTLING) || m.type_of() == EN_PASSANT;
-}
-
-// Returns true if a move is generated from the capture stage, having also
-// queen promotions covered, i.e. consistency with the capture stage move generation
-// is needed to avoid the generation of duplicate moves.
-inline bool Position::capture_stage(Move m) const {
-    assert(m.is_ok());
-    return capture(m) || m.promotion_type() == QUEEN;
-}
 
 
 inline void Position::put_piece(Piece pc, Square s) {
@@ -288,28 +266,6 @@ inline void Position::put_piece(Piece pc, Square s) {
     byColorBB[color_of(pc)] |= s;
     pieceCount[pc]++;
     pieceCount[make_piece(color_of(pc), ALL_PIECES)]++;
-}
-
-inline void Position::remove_piece(Square s) {
-
-    Piece pc = board[s];
-    byTypeBB[ALL_PIECES] ^= s;
-    byTypeBB[type_of(pc)] ^= s;
-    byColorBB[color_of(pc)] ^= s;
-    board[s] = NO_PIECE;
-    pieceCount[pc]--;
-    pieceCount[make_piece(color_of(pc), ALL_PIECES)]--;
-}
-
-inline void Position::move_piece(Square from, Square to) {
-
-    Piece    pc     = board[from];
-    Bitboard fromTo = from | to;
-    byTypeBB[ALL_PIECES] ^= fromTo;
-    byTypeBB[type_of(pc)] ^= fromTo;
-    byColorBB[color_of(pc)] ^= fromTo;
-    board[from] = NO_PIECE;
-    board[to]   = pc;
 }
 
 

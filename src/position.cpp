@@ -600,53 +600,6 @@ bool Position::pseudo_legal(const Move m) const {
 }
 
 
-// Tests whether a pseudo-legal move gives a check
-bool Position::gives_check(Move m) const {
-
-    assert(m.is_ok());
-    assert(color_of(moved_piece(m)) == sideToMove);
-
-    Square from = m.from_sq();
-    Square to   = m.to_sq();
-
-    // Is there a direct check?
-    if (check_squares(type_of(piece_on(from))) & to)
-        return true;
-
-    // Is there a discovered check?
-    if (blockers_for_king(~sideToMove) & from)
-        return !aligned(from, to, square<KING>(~sideToMove)) || m.type_of() == CASTLING;
-
-    switch (m.type_of())
-    {
-    case NORMAL :
-        return false;
-
-    case PROMOTION :
-        return attacks_bb(m.promotion_type(), to, pieces() ^ from) & square<KING>(~sideToMove);
-
-    // En passant capture with check? We have already handled the case of direct
-    // checks and ordinary discovered check, so the only case we need to handle
-    // is the unusual case of a discovered check through the captured pawn.
-    case EN_PASSANT : {
-        Square   capsq = make_square(file_of(to), rank_of(from));
-        Bitboard b     = (pieces() ^ from ^ capsq) | to;
-
-        return (attacks_bb<ROOK>(square<KING>(~sideToMove), b) & pieces(sideToMove, QUEEN, ROOK))
-             | (attacks_bb<BISHOP>(square<KING>(~sideToMove), b)
-                & pieces(sideToMove, QUEEN, BISHOP));
-    }
-    default :  //CASTLING
-    {
-        // Castling is encoded as 'king captures the rook'
-        Square rto = relative_square(sideToMove, to > from ? SQ_F1 : SQ_D1);
-
-        return check_squares(ROOK) & rto;
-    }
-    }
-}
-
-
 // Tests whether the position is drawn by 50-move rule
 // or by repetition. It does not detect stalemates.
 bool Position::is_draw(int ply) const {
