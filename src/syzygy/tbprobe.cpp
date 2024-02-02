@@ -709,6 +709,7 @@ Ret do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* resu
         tbFile = File(edge_distance(file_of(squares[0])));
     }
 
+
     // DTZ tables are one-sided, i.e. they store positions only for white to
     // move or only for black to move, so check for side to move to be stm,
     // early exit otherwise.
@@ -726,6 +727,11 @@ Ret do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* resu
     } while (b);
 
     assert(size >= 2);
+
+
+    // THIS EXITS??!!
+    // if (squares[0] < 0)
+    //     _exit(20);
 
     d = entry->get(stm, tbFile);
 
