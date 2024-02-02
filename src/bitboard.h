@@ -55,7 +55,6 @@ constexpr Bitboard Rank6BB = Rank1BB << (8 * 5);
 constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
-extern uint8_t PopCnt16[1 << 16];
 extern uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];
 
 extern Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
@@ -266,15 +265,7 @@ inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 // Counts the number of non-zero bits in a bitboard.
 inline int popcount(Bitboard b) {
 
-#ifndef USE_POPCNT
-
-    union {
-        Bitboard bb;
-        uint16_t u[4];
-    } v = {b};
-    return PopCnt16[v.u[0]] + PopCnt16[v.u[1]] + PopCnt16[v.u[2]] + PopCnt16[v.u[3]];
-
-#elif defined(_MSC_VER)
+#if defined(_MSC_VER)
 
     return int(_mm_popcnt_u64(b));
 
