@@ -15,6 +15,7 @@ jobs:
       EXT: ${{ matrix.config.ext }}
       NAME: ${{ matrix.config.simple_name }}
       BINARY: ${{ matrix.binaries }}
+      SDE: ${{ matrix.config.sde }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(inputs.matrix) }}
@@ -51,10 +52,6 @@ jobs:
           environmentVariableName: SDE_DIR
           sdeVersion: 9.27.0
 
-      - name: Set SDE ENV
-        if: runner.os == 'Linux' || runner.os == 'Windows'
-        run: echo "SDE=$SDE_DIR/sde -future --" >> $GITHUB_ENV
-
       - name: Download the used network from the fishtest framework
         run: make net
 
@@ -86,9 +83,9 @@ jobs:
 
       - name: Compile ${{ matrix.binaries }} build
         run: |
-          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="${{ env.SDE }}"
+          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE"
           make strip ARCH=$BINARY COMP=$COMP
-          WINE_PATH="${{ env.SDE }}" ../tests/signature.sh $benchref
+          WINE_PATH="$SDE" ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-$NAME-$BINARY$EXT
 
       - name: Remove non src files
