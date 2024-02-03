@@ -13,7 +13,6 @@ jobs:
       COMPILER: ${{ matrix.config.compiler }}
       COMP: ${{ matrix.config.comp }}
       EXT: ${{ matrix.config.ext }}
-      SDE: ${{ matrix.config.sde }}
       NAME: ${{ matrix.config.simple_name }}
       BINARY: ${{ matrix.binaries }}
     strategy:
@@ -52,6 +51,10 @@ jobs:
           environmentVariableName: SDE_DIR
           sdeVersion: 9.27.0
 
+      - name: Set SDE ENV
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        run: echo "SDE=$SDE_DIR/sde --" >> $GITHUB_ENV
+
       - name: Download the used network from the fishtest framework
         run: make net
 
@@ -84,9 +87,9 @@ jobs:
       - name: Compile ${{ matrix.binaries }} build
         continue-on-error: true
         run: |
-          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE_DIR/sde"
+          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="${{ env.SDE }}"
           make strip ARCH=$BINARY COMP=$COMP
-          WINE_PATH="$SDE_DIR/sde" ../tests/signature.sh $benchref
+          WINE_PATH="${{ env.SDE }}"" ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-$NAME-$BINARY$EXT
 
       - name: Check binary
