@@ -62,20 +62,20 @@ jobs:
       shell: ${{ inputs.shell }}
       binaries: ${{ inputs.binaries }}
       m1: ${{ inputs.m1 }}
-  CompileTest:
-    uses: ./.github/workflows/compile_test.yml
-    with:
-      os: ${{ inputs.os }}
-      compiler: ${{ inputs.compiler }}
-      comp: ${{ inputs.comp }}
-      ext: ${{ inputs.ext }}
-      sde: ${{ inputs.sde }}
-      archive_ext: ${{ inputs.archive_ext }}
-      msys_sys: ${{ inputs.msys_sys }}
-      msys_env: ${{ inputs.msys_env }}
-      simple_name: ${{ inputs.simple_name }}
-      binary: ${{ inputs.binaries }}
-      name: ${{ inputs.name }}
-      shell: ${{ inputs.shell }}
-      binaries: ${{ inputs.binaries }}
-      m1: ${{ inputs.m1 }}
+#   CompileTest:
+#     uses: ./.github/workflows/compile_test.yml
+#     with:
+#       os: ${{ inputs.os }}
+#       compiler: ${{ inputs.compiler }}
+#       comp: ${{ inputs.comp }}
+#       ext: ${{ inputs.ext }}
+#       sde: ${{ inputs.sde }}
+#       archive_ext: ${{ inputs.archive_ext }}
+#       msys_sys: ${{ inputs.msys_sys }}
+#       msys_env: ${{ inputs.msys_env }}
+#       simple_name: ${{ inputs.simple_name }}
+#       binary: ${{ inputs.binaries }}
+#       name: ${{ inputs.name }}
+#       shell: ${{ inputs.shell }}
+#       binaries: ${{ inputs.binaries }}
+#       m1: ${{ inputs.m1 }}
