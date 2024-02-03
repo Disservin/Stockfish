@@ -79,7 +79,7 @@ jobs:
             export LDFLAGS="-static -Wno-unused-command-line-argument"
           fi
           make clean
-          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH=$EMU
+          make -j4 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH=$EMU
           make strip ARCH=$BINARY COMP=$COMP
           WINE_PATH=$EMU ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-android-$BINARY$EXT
