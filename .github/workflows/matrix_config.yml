@@ -94,7 +94,7 @@ jobs:
             config: { os: macos-13 }
           - binaries: apple-silicon
             config: { os: ubuntu-20.04 }
-    uses: ./.github/workflows/jobs.yml
+    uses: ./.github/workflows/binaries.yml
     with:
       os: ${{ matrix.config.os }}
       compiler: ${{ matrix.config.compiler }}
