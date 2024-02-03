@@ -51,24 +51,24 @@ jobs:
     uses: ./.github/workflows/compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
-  #   ARMCompilation:
-  #     needs: [Matrix]
-  #     uses: ./.github/workflows/arm_compilation.yml
-  #     with:
-  #       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-  #   IWYU:
-  #     uses: ./.github/workflows/iwyu.yml
-  #   Sanitizers:
-  #     uses: ./.github/workflows/sanitizers.yml
-  #   Tests:
-  #     uses: ./.github/workflows/tests.yml
+  ARMCompilation:
+    needs: [Matrix]
+    uses: ./.github/workflows/arm_compilation.yml
+    with:
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+  IWYU:
+    uses: ./.github/workflows/iwyu.yml
+  Sanitizers:
+    uses: ./.github/workflows/sanitizers.yml
+  Tests:
+    uses: ./.github/workflows/tests.yml
   Binaries:
     needs: [Matrix, Prerelease, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
-#   ARM_Binaries:
-#     needs: [Matrix, Prerelease, ARMCompilation]
-#     uses: ./.github/workflows/upload_binaries.yml
-#     with:
-#       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+  ARM_Binaries:
+    needs: [Matrix, Prerelease, ARMCompilation]
+    uses: ./.github/workflows/upload_binaries.yml
+    with:
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
