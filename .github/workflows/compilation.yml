@@ -6,7 +6,7 @@ on:
         type: string
         required: true
 jobs:
-  Compilation:
+  Test-compile:
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:

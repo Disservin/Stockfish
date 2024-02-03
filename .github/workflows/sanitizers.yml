@@ -2,7 +2,7 @@ name: Sanitizers
 on:
   workflow_call:
 jobs:
-  Sanitizers:
+  Test-under-sanitizers:
     name: ${{ matrix.sanitizers.name }}
     runs-on: ${{ matrix.config.os }}
     env:

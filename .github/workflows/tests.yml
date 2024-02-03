@@ -2,7 +2,7 @@ name: Tests
 on:
   workflow_call:
 jobs:
-  Tests:
+  Test-Targets:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     env:
