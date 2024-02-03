@@ -53,7 +53,7 @@ jobs:
   Tests:
     uses: ./.github/workflows/tests.yml
   Binaries:
-    needs: [Matrix, Prerelease]
+    needs: [Matrix, Prerelease, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}

@@ -6,7 +6,7 @@ on:
         type: string
         required: true
 jobs:
-  Test-compile:
+  Compilation:
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:
@@ -38,6 +38,13 @@ jobs:
           msystem: ${{ matrix.config.msys_sys }}
           install: mingw-w64-${{ matrix.config.msys_env }} make git zip
 
+      - name: Download SDE package
+        if: runner.os == 'Linux' || runner.os == 'Windows'
+        uses: petarpetrovt/setup-sde@91a1a03434384e064706634125a15f7446d2aafb # @v2.3
+        with:
+          environmentVariableName: SDE_DIR
+          sdeVersion: 9.27.0
+
       - name: Download the used network from the fishtest framework
         run: make net
 
@@ -66,4 +73,16 @@ jobs:
       - name: Compile ${{ matrix.config.binaries }} build
         run: |
           make clean
-          make -j2 build ARCH=$BINARY COMP=$COMP
+          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE"
+          make strip ARCH=$BINARY COMP=$COMP
+          WINE_PATH="$SDE" ../tests/signature.sh $benchref
+          mv ./stockfish$EXT ../stockfish-$NAME-$BINARY$EXT
+
+      - name: Remove non src files
+        run: git clean -fx
+
+      - name: Upload artifact for (pre)-release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
+          path: stockfish
