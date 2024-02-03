@@ -114,3 +114,4 @@ jobs:
       binary: ${{ matrix.binaries }}
       name: ${{ matrix.config.name }}
       shell: ${{ matrix.config.shell }}
+      binaries: ${{ matrix.binaries }}
