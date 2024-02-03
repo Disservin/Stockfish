@@ -12,22 +12,22 @@ on:
         required: true
         type: string
       ext:
-        required: true
+        required: false
         type: string
       sde:
-        required: true
+        required: false
         type: string
       archive_ext:
-        required: true
+        required: false
         type: string
       msys_sys:
-        required: true
+        required: false
         type: string
       msys_env:
-        required: true
+        required: false
         type: string
       simple_name:
-        required: true
+        required: false
         type: string
       binary:
         required: true
@@ -36,13 +36,13 @@ on:
         required: true
         type: string
       shell:
-        required: true
+        required: false
         type: string
       binaries:
         required: true
         type: string
       m1:
-        required: true
+        required: false
         type: boolean
 jobs:
   Binaries:
