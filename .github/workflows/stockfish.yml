@@ -12,6 +12,25 @@ on:
       - master
       - tools
 jobs:
+  Delete-Prerelease:
+    if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      # returns null if no pre-release exists
+      - name: Get Commit SHA of Latest Pre-release
+        run: |
+          # Install required packages
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+
+          echo "COMMIT_SHA=$(jq -r 'map(select(.prerelease)) | first | .tag_name' <<< $(curl -s https://api.github.com/repos/${{ github.repository_owner }}/Stockfish/releases))" >> $GITHUB_ENV
+
+        # delete old previous pre-release and tag
+      - uses: dev-drprasad/delete-tag-and-release@8cd619d00037e4aeb781909c9a6b03940507d0da # @v1.0.1
+        if: env.COMMIT_SHA != 'null'
+        with:
+          tag_name: ${{ env.COMMIT_SHA }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
   Matrix:
     runs-on: ubuntu-latest
     outputs:
@@ -22,13 +41,24 @@ jobs:
         run: |
           TASKS=$(echo $(cat .github/workflows/matrix.json) )
           echo "::set-output name=matrix::$TASKS"
+          echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Binaries:
-    needs: [Matrix]
-    uses: ./.github/workflows/binaries.yml
+    needs: [Matrix, Delete-Prerelease]
+    uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.matrix.outputs.matrix }}
-  Compile-Test:
+      matrix: ${{ needs.Matrix.outputs.matrix }}
+  ARM_Binaries:
+    # if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
+    needs: [Delete-Prerelease]
+    uses: ./.github/workflows/upload_arm_binaries.yml
+  Compilation-Check:
     needs: [Matrix]
-    uses: ./.github/workflows/compile_test.yml
+    uses: ./.github/workflows/compilation_check.yml
     with:
-      matrix: ${{ needs.matrix.outputs.matrix }}
+      matrix: ${{ needs.Matrix.outputs.matrix }}
+  IWYU:
+    uses: ./.github/workflows/iwyu.yml
+  Sanitizers:
+    uses: ./.github/workflows/sanitizers.yml
+  Tests:
+    uses: ./.github/workflows/tests.yml
