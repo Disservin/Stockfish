@@ -19,11 +19,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(inputs.matrix) }}
-
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Download artifact from compilation
         uses: actions/download-artifact@v4
@@ -38,15 +35,17 @@ jobs:
       - name: Create directory.
         run: |
           mkdir stockfish
-          cp -r wiki stockfish/
-          cp -r src stockfish/
-          cp stockfish-$NAME-$BINARY$EXT stockfish/
-          cp "Top CPU Contributors.txt" stockfish/
-          cp Copying.txt stockfish/
-          cp AUTHORS stockfish/
-          cp CITATION.cff stockfish/
-          cp README.md stockfish/
-          cp CONTRIBUTING.md stockfish/
+          mv "${{ matrix.config.simple_name }} ${{ matrix.binaries }}" stockfish-workflow
+          cd stockfish-workflow
+          cp -r wiki ../stockfish/
+          cp -r src ../stockfish/
+          cp stockfish-$NAME-$BINARY$EXT ../stockfish/
+          cp "Top CPU Contributors.txt" ../stockfish/
+          cp Copying.txt ../stockfish/
+          cp AUTHORS ../stockfish/
+          cp CITATION.cff ../stockfish/
+          cp README.md ../stockfish/
+          cp CONTRIBUTING.md ../stockfish/
 
       - name: Create tar
         if: runner.os != 'Windows'
@@ -57,22 +56,6 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           zip -r stockfish-$NAME-$BINARY.zip stockfish
-
-      #   - name: Upload binaries
-      #     if: runner.os != 'Windows'
-      #     uses: actions/upload-artifact@v3
-      #     with:
-      #       name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-      #       path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
-
-      # Artifacts automatically get zipped.
-      # To avoid double-zipping, we use the unzipped directory
-      - name: Upload binaries
-        if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v3
-        with:
-          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-          path: stockfish
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
