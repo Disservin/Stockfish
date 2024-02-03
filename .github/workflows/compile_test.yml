@@ -48,6 +48,10 @@ jobs:
   Binaries:
     name: ${{ inputs.name }}
     runs-on: ${{ inputs.os }}
+    defaults:
+      run:
+        working-directory: src
+        shell: ${{ inputs.shell }}
     steps:
       - uses: actions/checkout@v4
 
