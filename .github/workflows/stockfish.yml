@@ -35,14 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      arm_matrix: ${{ steps.set-matrix.outputs.arm_matrix }}
+      arm_matrix: ${{ steps.set-arm-matrix.outputs.arm_matrix }}
     steps:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
           TASKS=$(echo $(cat .github/ci/matrix.json) )
-          TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
+      - id: set-arm-matrix
+        run: |
+          TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
           echo "ARM_MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Compilation:
     needs: [Matrix]
