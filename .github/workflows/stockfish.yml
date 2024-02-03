@@ -41,9 +41,9 @@ jobs:
         run: |
           TASKS=$(echo $(cat .github/ci/matrix.json) )
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
-  Compilation-Check:
+  Compilation:
     needs: [Matrix]
-    uses: ./.github/workflows/compilation_check.yml
+    uses: ./.github/workflows/compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
   IWYU:
