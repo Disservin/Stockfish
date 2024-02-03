@@ -100,10 +100,6 @@ jobs:
             config: { os: macos-13 }
           - binaries: apple-silicon
             config: { os: ubuntu-20.04 }
-    defaults:
-      run:
-        working-directory: src
-        shell: ${{ matrix.config.shell }}
     uses: ./.github/workflows/test.yml
     with:
       os: ${{ matrix.config.os }}
