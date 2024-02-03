@@ -38,6 +38,7 @@ jobs:
             comp: clang
             shell: bash
             archive_ext: tar
+            m1: true
           - name: Windows 2022 Mingw-w64 GCC x86_64
             os: windows-2022
             simple_name: windows
@@ -100,7 +101,7 @@ jobs:
             config: { os: macos-13 }
           - binaries: apple-silicon
             config: { os: ubuntu-20.04 }
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/jobs.yml
     with:
       os: ${{ matrix.config.os }}
       compiler: ${{ matrix.config.compiler }}
@@ -115,3 +116,4 @@ jobs:
       name: ${{ matrix.config.name }}
       shell: ${{ matrix.config.shell }}
       binaries: ${{ matrix.binaries }}
+      m1: ${{ matrix.config.m1 }}
