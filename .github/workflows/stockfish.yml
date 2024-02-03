@@ -12,10 +12,23 @@ on:
       - master
       - tools
 jobs:
+  Matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: set-matrix
+        run: |
+          TASKS=$(echo $(cat .github/workflows/matrix.json) | sed 's/ //g' )
+          echo "::set-output name=matrix::$TASKS"
   Binaries:
-    uses: ./.github/workflows/matrix_config.yml
+    needs: [Matrix]
+    uses: ./.github/workflows/binaries.yml
     with:
-      workflow: "binaries.yml"
+      matrix: ${{ needs.matrix.outputs.matrix }}
+    # with:
+    #   workflow: ""
 #   CompileTest:
 #     uses: ./.github/workflows/matrix_config.yml
 #     with:

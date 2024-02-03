@@ -1,61 +1,28 @@
-name: Create Binaries
+name: Stockfish
 on:
   workflow_call:
     inputs:
-      os:
+      matrix:
+        type: string
         required: true
-        type: string
-      compiler:
-        required: true
-        type: string
-      comp:
-        required: true
-        type: string
-      ext:
-        required: false
-        type: string
-      sde:
-        required: false
-        type: string
-      archive_ext:
-        required: false
-        type: string
-      msys_sys:
-        required: false
-        type: string
-      msys_env:
-        required: false
-        type: string
-      simple_name:
-        required: false
-        type: string
-      binary:
-        required: true
-        type: string
-      name:
-        required: true
-        type: string
-      shell:
-        required: false
-        type: string
-      binaries:
-        required: true
-        type: string
 jobs:
-  Binaries:
+  Stockfish:
+    name: ${{ matrix.config.name }} ${{ matrix.binaries }}
+    runs-on: ${{ matrix.config.os }}
     env:
-      COMPILER: ${{ inputs.compiler }}
-      COMP: ${{ inputs.comp }}
-      EXT: ${{ inputs.ext }}
-      SDE: ${{ inputs.sde }}
-      NAME: ${{ inputs.simple_name }}
-      BINARY: ${{ inputs.binaries }}
-    name: ${{ inputs.name }} ${{ inputs.binaries }}
-    runs-on: ${{ inputs.os }}
+      COMPILER: ${{ matrix.config.compiler }}
+      COMP: ${{ matrix.config.comp }}
+      EXT: ${{ matrix.config.ext }}
+      SDE: ${{ matrix.config.sde }}
+      NAME: ${{ matrix.config.simple_name }}
+      BINARY: ${{ matrix.binaries }}
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(inputs.matrix) }}
     defaults:
       run:
         working-directory: src
-        shell: ${{ inputs.shell }}
+        shell: ${{ matrix.config.shell }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -75,8 +42,8 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ inputs.msys_sys }}
-          install: mingw-w64-${{ inputs.msys_env }} make git zip
+          msystem: ${{ matrix.config.msys_sys }}
+          install: mingw-w64-${{ matrix.config.msys_env }} make git zip
 
       - name: Download SDE package
         if: runner.os == 'Linux' || runner.os == 'Windows'
@@ -114,7 +81,7 @@ jobs:
 
       # Compile profile guided builds
 
-      - name: Compile ${{ inputs.binaries }} build
+      - name: Compile ${{ matrix.binaries }} build
         run: |
           make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE"
           make strip ARCH=$BINARY COMP=$COMP
@@ -159,8 +126,8 @@ jobs:
         if: runner.os != 'Windows'
         uses: actions/upload-artifact@v3
         with:
-          name: stockfish-${{ inputs.os }}-${{ inputs.binaries }}
-          path: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.tar
+          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
+          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
 
       # Artifacts automatically get zipped.
       # To avoid double-zipping, we use the unzipped directory
@@ -168,14 +135,14 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v3
         with:
-          name: stockfish-${{ inputs.os }}-${{ inputs.binaries }}
+          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
           path: stockfish
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # @v1
         with:
-          files: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.${{ inputs.archive_ext }}
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
 
       - name: Get last commit sha
         id: last_commit
@@ -201,4 +168,4 @@ jobs:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
-          files: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.${{ inputs.archive_ext }}
+          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
