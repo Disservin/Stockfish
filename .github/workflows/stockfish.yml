@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
-      matrix_arm: ${{ steps.set-matrix.outputs.matrix_arm }}
+      arm_matrix: ${{ steps.set-matrix.outputs.arm_matrix }}
     steps:
       - uses: actions/checkout@v4
       - id: set-matrix
@@ -43,7 +43,7 @@ jobs:
           TASKS=$(echo $(cat .github/ci/matrix.json) )
           TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
-          echo "MATRIX_ARM=$TASKS" >> $GITHUB_OUTPUT
+          echo "ARM_MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Compilation:
     needs: [Matrix]
     uses: ./.github/workflows/compilation.yml
@@ -53,7 +53,7 @@ jobs:
     needs: [Matrix]
     uses: ./.github/workflows/arm_compilation.yml
     with:
-      matrix: ${{ needs.Matrix.outputs.matrix_arm }}
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
   IWYU:
     uses: ./.github/workflows/iwyu.yml
   Sanitizers:
@@ -69,4 +69,4 @@ jobs:
     needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.Matrix.outputs.matrix_arm }}
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
