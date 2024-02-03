@@ -1,0 +1,48 @@
+name: Stockfish
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+      comp:
+        required: true
+        type: string
+      ext:
+        required: true
+        type: string
+      sde:
+        required: true
+        type: string
+      archive_ext:
+        required: true
+        type: string
+      msys_sys:
+        required: true
+        type: string
+      msys_env:
+        required: true
+        type: string
+      simple_name:
+        required: true
+        type: string
+      binary:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+      shell:
+        required: true
+        type: string
+jobs:
+  Stockfish:
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check git
+        run: git --version
