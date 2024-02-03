@@ -46,11 +46,11 @@ jobs:
         run: |
           TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
           echo "ARM_MATRIX=$TASKS_ARM" >> $GITHUB_OUTPUT
-  Compilation:
-    needs: [Matrix]
-    uses: ./.github/workflows/compilation.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
+  #   Compilation:
+  #     needs: [Matrix]
+  #     uses: ./.github/workflows/compilation.yml
+  #     with:
+  #       matrix: ${{ needs.Matrix.outputs.matrix }}
   ARMCompilation:
     needs: [Matrix]
     uses: ./.github/workflows/arm_compilation.yml
@@ -62,11 +62,11 @@ jobs:
   #     uses: ./.github/workflows/sanitizers.yml
   #   Tests:
   #     uses: ./.github/workflows/tests.yml
-  Binaries:
-    needs: [Matrix, Prerelease, Compilation]
-    uses: ./.github/workflows/upload_binaries.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
+  #   Binaries:
+  #     needs: [Matrix, Prerelease, Compilation]
+  #     uses: ./.github/workflows/upload_binaries.yml
+  #     with:
+  #       matrix: ${{ needs.Matrix.outputs.matrix }}
   ARM_Binaries:
     needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
