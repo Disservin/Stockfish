@@ -41,7 +41,6 @@ on:
       binaries:
         required: true
         type: string
-
 jobs:
   Compilation-Check:
     env:

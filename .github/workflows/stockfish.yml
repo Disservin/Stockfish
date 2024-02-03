@@ -1,16 +1,16 @@
-name: Stockfish
-on:
-  push:
-    tags:
-      - "*"
-    branches:
-      - master
-      - tools
-      - github_ci
-  pull_request:
-    branches:
-      - master
-      - tools
-jobs:
-  Matrix:
-    uses: ./.github/workflows/matrix_config.yml
+# name: Stockfish
+# on:
+#   push:
+#     tags:
+#       - "*"
+#     branches:
+#       - master
+#       - tools
+#       - github_ci
+#   pull_request:
+#     branches:
+#       - master
+#       - tools
+# jobs:
+#   Matrix:
+#     uses: ./.github/workflows/matrix_config.yml

@@ -1,6 +1,16 @@
 name: Matrix Generator
 on:
-  workflow_call:
+  push:
+    tags:
+      - "*"
+    branches:
+      - master
+      - tools
+      - github_ci
+  pull_request:
+    branches:
+      - master
+      - tools
 jobs:
   Stockfish:
     # name: ${{ matrix.config.name }} ${{ matrix.binaries }}
