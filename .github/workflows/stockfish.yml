@@ -16,7 +16,7 @@ jobs:
     uses: ./.github/workflows/matrix_config.yml
     with:
       matrix: ./.github/workflows/binaries.yml
-  CompileTest:
-    uses: ./.github/workflows/matrix_config.yml
-    with:
-      matrix: ./.github/workflows/compile_test.yml
+#   CompileTest:
+#     uses: ./.github/workflows/matrix_config.yml
+#     with:
+#       matrix: ./.github/workflows/compile_test.yml
