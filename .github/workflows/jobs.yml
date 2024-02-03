@@ -1,76 +1,76 @@
-name: Stockfish Jobs
-on:
-  workflow_call:
-    inputs:
-      os:
-        required: true
-        type: string
-      compiler:
-        required: true
-        type: string
-      comp:
-        required: true
-        type: string
-      ext:
-        required: true
-        type: string
-      sde:
-        required: true
-        type: string
-      archive_ext:
-        required: true
-        type: string
-      msys_sys:
-        required: true
-        type: string
-      msys_env:
-        required: true
-        type: string
-      simple_name:
-        required: true
-        type: string
-      binary:
-        required: true
-        type: string
-      name:
-        required: true
-        type: string
-      shell:
-        required: true
-        type: string
-      binaries:
-        required: true
-        type: string
-jobs:
-  Binaries:
-    uses: ./.github/workflows/binaries.yml
-    with:
-      os: ${{ inputs.os }}
-      compiler: ${{ inputs.compiler }}
-      comp: ${{ inputs.comp }}
-      ext: ${{ inputs.ext }}
-      sde: ${{ inputs.sde }}
-      archive_ext: ${{ inputs.archive_ext }}
-      msys_sys: ${{ inputs.msys_sys }}
-      msys_env: ${{ inputs.msys_env }}
-      simple_name: ${{ inputs.simple_name }}
-      binary: ${{ inputs.binaries }}
-      name: ${{ inputs.name }}
-      shell: ${{ inputs.shell }}
-      binaries: ${{ inputs.binaries }}
-  CompileTest:
-    uses: ./.github/workflows/compile_test.yml
-    with:
-      os: ${{ inputs.os }}
-      compiler: ${{ inputs.compiler }}
-      comp: ${{ inputs.comp }}
-      ext: ${{ inputs.ext }}
-      sde: ${{ inputs.sde }}
-      archive_ext: ${{ inputs.archive_ext }}
-      msys_sys: ${{ inputs.msys_sys }}
-      msys_env: ${{ inputs.msys_env }}
-      simple_name: ${{ inputs.simple_name }}
-      binary: ${{ inputs.binaries }}
-      name: ${{ inputs.name }}
-      shell: ${{ inputs.shell }}
-      binaries: ${{ inputs.binaries }}
+# name: Stockfish Jobs
+# on:
+#   workflow_call:
+#     inputs:
+#       os:
+#         required: true
+#         type: string
+#       compiler:
+#         required: true
+#         type: string
+#       comp:
+#         required: true
+#         type: string
+#       ext:
+#         required: true
+#         type: string
+#       sde:
+#         required: true
+#         type: string
+#       archive_ext:
+#         required: true
+#         type: string
+#       msys_sys:
+#         required: true
+#         type: string
+#       msys_env:
+#         required: true
+#         type: string
+#       simple_name:
+#         required: true
+#         type: string
+#       binary:
+#         required: true
+#         type: string
+#       name:
+#         required: true
+#         type: string
+#       shell:
+#         required: true
+#         type: string
+#       binaries:
+#         required: true
+#         type: string
+# jobs:
+#   Binaries:
+#     uses: ./.github/workflows/binaries.yml
+#     with:
+#       os: ${{ inputs.os }}
+#       compiler: ${{ inputs.compiler }}
+#       comp: ${{ inputs.comp }}
+#       ext: ${{ inputs.ext }}
+#       sde: ${{ inputs.sde }}
+#       archive_ext: ${{ inputs.archive_ext }}
+#       msys_sys: ${{ inputs.msys_sys }}
+#       msys_env: ${{ inputs.msys_env }}
+#       simple_name: ${{ inputs.simple_name }}
+#       binary: ${{ inputs.binaries }}
+#       name: ${{ inputs.name }}
+#       shell: ${{ inputs.shell }}
+#       binaries: ${{ inputs.binaries }}
+#   CompileTest:
+#     uses: ./.github/workflows/compile_test.yml
+#     with:
+#       os: ${{ inputs.os }}
+#       compiler: ${{ inputs.compiler }}
+#       comp: ${{ inputs.comp }}
+#       ext: ${{ inputs.ext }}
+#       sde: ${{ inputs.sde }}
+#       archive_ext: ${{ inputs.archive_ext }}
+#       msys_sys: ${{ inputs.msys_sys }}
+#       msys_env: ${{ inputs.msys_env }}
+#       simple_name: ${{ inputs.simple_name }}
+#       binary: ${{ inputs.binaries }}
+#       name: ${{ inputs.name }}
+#       shell: ${{ inputs.shell }}
+#       binaries: ${{ inputs.binaries }}
