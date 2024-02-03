@@ -1,4 +1,4 @@
-name: Stockfish
+name: Create Binaries
 on:
   workflow_call:
     inputs:
@@ -38,8 +38,12 @@ on:
       shell:
         required: true
         type: string
+      binaries:
+        required: true
+        type: string
 jobs:
-  Stockfish:
+  Binaries:
+    name: ${{ inputs.name }} ${{ inputs.binaries }}
     runs-on: ${{ inputs.os }}
     steps:
       - uses: actions/checkout@v4
