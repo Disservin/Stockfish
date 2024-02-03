@@ -7,7 +7,6 @@ on:
         required: true
 jobs:
   Stockfish:
-    continue-on-error: true
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:
