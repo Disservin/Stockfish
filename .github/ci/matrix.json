@@ -18,20 +18,6 @@
         "comp": "clang",
         "shell": "bash",
         "archive_ext": "tar"
-      },
-
-      {
-        "name": "Windows 2022 Mingw-w64 GCC x86_64",
-        "os": "windows-2022",
-        "simple_name": "windows",
-        "compiler": "g++",
-        "comp": "mingw",
-        "msys_sys": "mingw64",
-        "msys_env": "x86_64-gcc",
-        "shell": "msys2 {0}",
-        "ext": ".exe",
-        "sde": "/d/a/Stockfish/Stockfish/.output/sde-temp-files/sde-external-9.27.0-2023-09-13-win/sde.exe -future --",
-        "archive_ext": "zip"
       }
     ],
     "binaries": [

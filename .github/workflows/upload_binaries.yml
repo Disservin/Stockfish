@@ -28,16 +28,18 @@ jobs:
           name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
           path: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
 
-      - name: Download wiki
-        run: |
-          ls -la
-          git clone https://github.com/official-stockfish/Stockfish.wiki.git wiki
-          rm -rf wiki/.git
-
-      - name: Create directory.
+      - name: Create Package
         run: |
           mkdir stockfish
-          cp -r wiki ../stockfish/
+
+      - name: Download wiki
+        run: |
+          git clone https://github.com/official-stockfish/Stockfish.wiki.git wiki
+          rm -rf wiki/.git
+          mv wiki stockfish/
+
+      - name: Copy files
+        run: |
           mv "${{ matrix.config.simple_name }} ${{ matrix.binaries }}" stockfish-workflow
           cd stockfish-workflow
           cp -r src ../stockfish/
