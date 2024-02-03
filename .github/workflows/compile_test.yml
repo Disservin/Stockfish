@@ -45,7 +45,14 @@ on:
         required: true
         type: boolean
 jobs:
-  Binaries:
+  Compilation-Check:
+    env:
+      COMPILER: ${{ inputs.compiler }}
+      COMP: ${{ inputs.comp }}
+      EXT: ${{ inputs.ext }}
+      SDE: ${{ inputs.sde }}
+      NAME: ${{ inputs.simple_name }}
+      BINARY: ${{ inputs.binaries }}
     name: ${{ inputs.name }}
     runs-on: ${{ inputs.os }}
     defaults:
