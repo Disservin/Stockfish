@@ -15,6 +15,7 @@ jobs:
       EXT: ${{ matrix.config.ext }}
       NAME: ${{ matrix.config.simple_name }}
       BINARY: ${{ matrix.binaries }}
+      SDE: ${{ matrix.config.sde }}
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(inputs.matrix) }}
@@ -86,3 +87,9 @@ jobs:
         with:
           name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
           path: stockfish
+
+      - name: Call the pre-release workflow
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: ./.github/workflows/pre-release.yml
+        with:
+          matrix: ${{ toJson(fromJson(inputs.matrix)) }}
