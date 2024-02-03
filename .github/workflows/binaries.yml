@@ -83,8 +83,8 @@ jobs:
 
       - name: Compile ${{ matrix.binaries }} build
         run: |
-          $SDE_DIR/bin/sde --version
-          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="sde"
+          $SDE_DIR/sde --version
+          make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE_DIR/sde"
           make strip ARCH=$BINARY COMP=$COMP
           WINE_PATH="$SDE" ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-$NAME-$BINARY$EXT
