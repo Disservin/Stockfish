@@ -63,12 +63,12 @@ jobs:
   Tests:
     uses: ./.github/workflows/tests.yml
   Binaries:
-    needs: [Prerelease, Compilation]
+    needs: [Matrix, Prerelease, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.Compilation.outputs.matrix }}
+      matrix: ${{ needs.Matrix.outputs.matrix }}
   ARM_Binaries:
-    needs: [Prerelease, ARMCompilation]
+    needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.ARMCompilation.outputs.matrix }}
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
