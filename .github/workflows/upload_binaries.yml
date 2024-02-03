@@ -1,4 +1,4 @@
-name: Stockfish
+name: Upload Binaries
 on:
   workflow_call:
     inputs:
@@ -6,7 +6,7 @@ on:
         type: string
         required: true
 jobs:
-  Stockfish:
+  Artifacts:
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:

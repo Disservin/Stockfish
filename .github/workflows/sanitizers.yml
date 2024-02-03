@@ -1,8 +1,8 @@
-name: Stockfish
+name: Sanitizers
 on:
   workflow_call:
 jobs:
-  Stockfish:
+  Sanitizers:
     name: ${{ matrix.sanitizers.name }}
     runs-on: ${{ matrix.config.os }}
     env:

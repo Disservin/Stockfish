@@ -1,8 +1,8 @@
-name: Stockfish
+name: Upload Arm Binaries
 on:
   workflow_call:
 jobs:
-  Stockfish:
+  Artifacts:
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
     env:
