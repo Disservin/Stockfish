@@ -12,7 +12,7 @@ on:
       - master
       - tools
 jobs:
-  Delete-Prerelease:
+  Prerelease:
     if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
     runs-on: ubuntu-latest
     steps:
@@ -40,16 +40,15 @@ jobs:
       - id: set-matrix
         run: |
           TASKS=$(echo $(cat .github/workflows/matrix.json) )
-          echo "::set-output name=matrix::$TASKS"
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Binaries:
-    needs: [Matrix, Delete-Prerelease]
+    needs: [Matrix, Prerelease]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
   ARM_Binaries:
     # if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
-    needs: [Delete-Prerelease]
+    needs: [Prerelease]
     uses: ./.github/workflows/upload_arm_binaries.yml
   Compilation-Check:
     needs: [Matrix]
