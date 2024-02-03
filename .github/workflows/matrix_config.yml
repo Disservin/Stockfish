@@ -97,7 +97,7 @@ jobs:
             config: { os: macos-13 }
           - binaries: apple-silicon
             config: { os: ubuntu-20.04 }
-    uses: ${{ inputs.workflow }}
+    uses: ./.github/workflows/${{ inputs.workflow }}
     with:
       os: ${{ matrix.config.os }}
       compiler: ${{ matrix.config.compiler }}
