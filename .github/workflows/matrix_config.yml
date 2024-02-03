@@ -104,18 +104,17 @@ jobs:
       run:
         working-directory: src
         shell: ${{ matrix.config.shell }}
-    steps:
-      - uses: ./.github/workflows/test.yml
-        with:
-          os: ${{ matrix.config.os }}
-          compiler: ${{ matrix.config.compiler }}
-          comp: ${{ matrix.config.comp }}
-          ext: ${{ matrix.config.ext }}
-          sde: ${{ matrix.config.sde }}
-          archive_ext: ${{ matrix.config.archive_ext }}
-          msys_sys: ${{ matrix.config.msys_sys }}
-          msys_env: ${{ matrix.config.msys_env }}
-          simple_name: ${{ matrix.config.simple_name }}
-          binary: ${{ matrix.binaries }}
-          name: ${{ matrix.config.name }}
-          shell: ${{ matrix.config.shell }}
+    uses: ./.github/workflows/test.yml
+    with:
+      os: ${{ matrix.config.os }}
+      compiler: ${{ matrix.config.compiler }}
+      comp: ${{ matrix.config.comp }}
+      ext: ${{ matrix.config.ext }}
+      sde: ${{ matrix.config.sde }}
+      archive_ext: ${{ matrix.config.archive_ext }}
+      msys_sys: ${{ matrix.config.msys_sys }}
+      msys_env: ${{ matrix.config.msys_env }}
+      simple_name: ${{ matrix.config.simple_name }}
+      binary: ${{ matrix.binaries }}
+      name: ${{ matrix.config.name }}
+      shell: ${{ matrix.config.shell }}
