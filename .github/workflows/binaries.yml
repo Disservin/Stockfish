@@ -43,7 +43,7 @@ on:
         type: string
       m1:
         required: false
-        type: boolean
+        type: string
 jobs:
   Binaries:
     env:
