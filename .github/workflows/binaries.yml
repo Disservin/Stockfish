@@ -53,7 +53,7 @@ jobs:
 
       - name: Set SDE ENV
         if: runner.os == 'Linux' || runner.os == 'Windows'
-        run: echo "SDE=$SDE_DIR/sde --" >> $GITHUB_ENV
+        run: echo "SDE=$SDE_DIR/sde -future --" >> $GITHUB_ENV
 
       - name: Download the used network from the fishtest framework
         run: make net
