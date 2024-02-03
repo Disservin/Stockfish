@@ -1,0 +1,95 @@
+name: Compilation Check
+on:
+  workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+      comp:
+        required: true
+        type: string
+      ext:
+        required: true
+        type: string
+      sde:
+        required: true
+        type: string
+      archive_ext:
+        required: true
+        type: string
+      msys_sys:
+        required: true
+        type: string
+      msys_env:
+        required: true
+        type: string
+      simple_name:
+        required: true
+        type: string
+      binary:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+      shell:
+        required: true
+        type: string
+      binaries:
+        required: true
+        type: string
+      m1:
+        required: true
+        type: boolean
+jobs:
+  Binaries:
+    name: ${{ inputs.name }}
+    runs-on: ${{ inputs.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install fixed GCC on Linux
+        if: runner.os == 'Linux'
+        uses: egor-tensin/setup-gcc@eaa888eb19115a521fa72b65cd94fe1f25bbcaac # @v1.3
+        with:
+          version: 11
+
+      - name: Setup msys and install required packages
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ inputs.msys_sys }}
+          install: mingw-w64-${{ inputs.msys_env }} make git zip
+
+      - name: Download the used network from the fishtest framework
+        run: make net
+
+      - name: Check compiler
+        run: $COMPILER -v
+
+      - name: Test help target
+        run: make help
+
+      - name: Check git
+        run: git --version
+
+      - name: Check compiler
+        run: $COMPILER -v
+
+      - name: Show g++ cpu info
+        if: runner.os != 'macOS'
+        run: g++ -Q -march=native --help=target
+
+      - name: Show clang++ cpu info
+        if: runner.os == 'macOS'
+        run: clang++ -E - -march=native -###
+
+      # x86-64 with newer extensions tests
+
+      - name: Compile ${{ inputs.binaries }} build
+        run: |
+          make clean
+          make -j2 build ARCH=$BINARY COMP=$COMP

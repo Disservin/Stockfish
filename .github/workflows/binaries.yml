@@ -1,109 +1,53 @@
-name: Stockfish
+name: Create Binaries
 on:
   workflow_call:
+    inputs:
+      os:
+        required: true
+        type: string
+      compiler:
+        required: true
+        type: string
+      comp:
+        required: true
+        type: string
+      ext:
+        required: true
+        type: string
+      sde:
+        required: true
+        type: string
+      archive_ext:
+        required: true
+        type: string
+      msys_sys:
+        required: true
+        type: string
+      msys_env:
+        required: true
+        type: string
+      simple_name:
+        required: true
+        type: string
+      binary:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+      shell:
+        required: true
+        type: string
+      binaries:
+        required: true
+        type: string
+      m1:
+        required: true
+        type: boolean
 jobs:
-  Stockfish:
-    name: ${{ matrix.config.name }} ${{ matrix.binaries }}
-    runs-on: ${{ matrix.config.os }}
-    env:
-      COMPILER: ${{ matrix.config.compiler }}
-      COMP: ${{ matrix.config.comp }}
-      EXT: ${{ matrix.config.ext }}
-      SDE: ${{ matrix.config.sde }}
-      NAME: ${{ matrix.config.simple_name }}
-      BINARY: ${{ matrix.binaries }}
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          - name: Ubuntu 20.04 GCC
-            os: ubuntu-20.04
-            simple_name: ubuntu
-            compiler: g++
-            comp: gcc
-            shell: bash
-            archive_ext: tar
-            sde: /home/runner/work/Stockfish/Stockfish/.output/sde-temp-files/sde-external-9.27.0-2023-09-13-lin/sde -future --
-          - name: MacOS 13 Apple Clang
-            os: macos-13
-            simple_name: macos
-            compiler: clang++
-            comp: clang
-            shell: bash
-            archive_ext: tar
-          - name: MacOS 14 Apple Clang M1
-            os: macos-14
-            simple_name: macos-m1
-            compiler: clang++
-            comp: clang
-            shell: bash
-            archive_ext: tar
-          - name: Windows 2022 Mingw-w64 GCC x86_64
-            os: windows-2022
-            simple_name: windows
-            compiler: g++
-            comp: mingw
-            msys_sys: mingw64
-            msys_env: x86_64-gcc
-            shell: msys2 {0}
-            ext: .exe
-            sde: /d/a/Stockfish/Stockfish/.output/sde-temp-files/sde-external-9.27.0-2023-09-13-win/sde.exe -future --
-            archive_ext: zip
-        binaries:
-          - x86-64
-          - x86-64-sse41-popcnt
-          - x86-64-avx2
-          - x86-64-bmi2
-          - x86-64-avxvnni
-          - x86-64-avx512
-          - x86-64-vnni256
-          - x86-64-vnni512
-          - apple-silicon
-        exclude:
-          # Apple M1
-          - binaries: x86-64
-            config: { os: macos-14 }
-          - binaries: x86-64-sse41-popcnt
-            config: { os: macos-14 }
-          - binaries: x86-64-avx2
-            config: { os: macos-14 }
-          - binaries: x86-64-bmi2
-            config: { os: macos-14 }
-          - binaries: x86-64-avxvnni
-            config: { os: macos-14 }
-          - binaries: x86-64-avxvnni
-            config: { os: macos-14 }
-          - binaries: x86-64-avx512
-            config: { os: macos-14 }
-          - binaries: x86-64-vnni256
-            config: { os: macos-14 }
-          - binaries: x86-64-vnni512
-            config: { os: macos-14 }
-
-          - binaries: x86-64-avxvnni
-            config: { ubuntu-20.04 }
-
-          # Apple x86_64 (no sde)
-          - binaries: x86-64-avxvnni
-            config: { os: macos-13 }
-          - binaries: x86-64-avx512
-            config: { os: macos-13 }
-          - binaries: x86-64-vnni256
-            config: { os: macos-13 }
-          - binaries: x86-64-vnni512
-            config: { os: macos-13 }
-
-          # Apple silicon from windows, macos-13 and ubuntu
-          - binaries: apple-silicon
-            config: { os: windows-2022 }
-          - binaries: apple-silicon
-            config: { os: macos-13 }
-          - binaries: apple-silicon
-            config: { os: ubuntu-20.04 }
-    defaults:
-      run:
-        working-directory: src
-        shell: ${{ matrix.config.shell }}
+  Binaries:
+    name: ${{ inputs.name }} ${{ inputs.binaries }}
+    runs-on: ${{ inputs.os }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -123,8 +67,8 @@ jobs:
         if: runner.os == 'Windows'
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.config.msys_sys }}
-          install: mingw-w64-${{ matrix.config.msys_env }} make git zip
+          msystem: ${{ inputs.msys_sys }}
+          install: mingw-w64-${{ inputs.msys_env }} make git zip
 
       - name: Download SDE package
         if: runner.os == 'Linux' || runner.os == 'Windows'
@@ -162,7 +106,7 @@ jobs:
 
       # Compile profile guided builds
 
-      - name: Compile ${{ matrix.binaries }} build
+      - name: Compile ${{ inputs.binaries }} build
         run: |
           make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE"
           make strip ARCH=$BINARY COMP=$COMP
@@ -207,8 +151,8 @@ jobs:
         if: runner.os != 'Windows'
         uses: actions/upload-artifact@v3
         with:
-          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
-          path: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.tar
+          name: stockfish-${{ inputs.os }}-${{ inputs.binaries }}
+          path: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.tar
 
       # Artifacts automatically get zipped.
       # To avoid double-zipping, we use the unzipped directory
@@ -216,14 +160,14 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-artifact@v3
         with:
-          name: stockfish-${{ matrix.config.os }}-${{ matrix.binaries }}
+          name: stockfish-${{ inputs.os }}-${{ inputs.binaries }}
           path: stockfish
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # @v1
         with:
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
+          files: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.${{ inputs.archive_ext }}
 
       - name: Get last commit sha
         id: last_commit
@@ -249,4 +193,4 @@ jobs:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
-          files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
+          files: stockfish-${{ inputs.simple_name }}-${{ inputs.binaries }}.${{ inputs.archive_ext }}
