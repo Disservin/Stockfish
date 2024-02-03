@@ -26,9 +26,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
+          path: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
 
       - name: Download wiki
         run: |
+          ls -la
           git clone https://github.com/official-stockfish/Stockfish.wiki.git wiki
           rm -rf wiki/.git
 
