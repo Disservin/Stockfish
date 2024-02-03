@@ -1,16 +1,10 @@
 name: Matrix Generator
 on:
-  push:
-    tags:
-      - "*"
-    branches:
-      - master
-      - tools
-      - github_ci
-  pull_request:
-    branches:
-      - master
-      - tools
+  workflow_call:
+    inputs:
+      workflow:
+        required: true
+        type: string
 jobs:
   Stockfish:
     # name: ${{ matrix.config.name }} ${{ matrix.binaries }}
@@ -103,7 +97,7 @@ jobs:
             config: { os: macos-13 }
           - binaries: apple-silicon
             config: { os: ubuntu-20.04 }
-    uses: ./.github/workflows/jobs.yml
+    uses: ${{ inputs.workflow }}
     with:
       os: ${{ matrix.config.os }}
       compiler: ${{ matrix.config.compiler }}
