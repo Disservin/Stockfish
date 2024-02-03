@@ -13,7 +13,7 @@ on:
       - tools
 jobs:
   Prerelease:
-    if: github.ref == 'refs/heads/master' || github.ref_type == 'tag'
+    if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
     runs-on: ubuntu-latest
     steps:
       # returns null if no pre-release exists
@@ -39,25 +39,24 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          TASKS=$(echo $(cat .github/workflows/matrix.json) | sed 's/ //g' )
+          TASKS=$(echo $(cat .github/ci/matrix.json) )
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Compilation-Check:
     needs: [Matrix]
     uses: ./.github/workflows/compilation_check.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
-  #   IWYU:
-  #     uses: ./.github/workflows/iwyu.yml
-  #   Sanitizers:
-  #     uses: ./.github/workflows/sanitizers.yml
-  #   Tests:
-  #     uses: ./.github/workflows/tests.yml
-#   Binaries:
-#     needs: [Matrix, Prerelease]
-#     uses: ./.github/workflows/upload_binaries.yml
-#     with:
-#       matrix: ${{ needs.Matrix.outputs.matrix }}
-#   ARM_Binaries:
-#     # if: github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag')
-#     needs: [Prerelease]
-#     uses: ./.github/workflows/upload_arm_binaries.yml
+  IWYU:
+    uses: ./.github/workflows/iwyu.yml
+  Sanitizers:
+    uses: ./.github/workflows/sanitizers.yml
+  Tests:
+    uses: ./.github/workflows/tests.yml
+  Binaries:
+    needs: [Matrix, Prerelease]
+    uses: ./.github/workflows/upload_binaries.yml
+    with:
+      matrix: ${{ needs.Matrix.outputs.matrix }}
+  ARM_Binaries:
+    needs: [Prerelease]
+    uses: ./.github/workflows/upload_arm_binaries.yml
