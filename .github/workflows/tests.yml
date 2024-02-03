@@ -1,8 +1,8 @@
-name: Stockfish
+name: Tests
 on:
   workflow_call:
 jobs:
-  Stockfish:
+  Test-Targets:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     env:
