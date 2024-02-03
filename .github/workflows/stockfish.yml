@@ -39,7 +39,7 @@ jobs:
       - uses: actions/checkout@v4
       - id: set-matrix
         run: |
-          TASKS=$(echo $(cat .github/workflows/matrix.json) )
+          TASKS=$(echo $(cat .github/workflows/matrix.json) | sed 's/ //g' )
           echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
   Compilation-Check:
     needs: [Matrix]
