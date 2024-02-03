@@ -27,9 +27,8 @@ jobs:
     uses: ./.github/workflows/binaries.yml
     with:
       matrix: ${{ needs.matrix.outputs.matrix }}
-    # with:
-    #   workflow: ""
-#   CompileTest:
-#     uses: ./.github/workflows/matrix_config.yml
-#     with:
-#       matrix: ./.github/workflows/compile_test.yml
+  CompileTest:
+    needs: [Matrix]
+    uses: ./.github/workflows/compile_test.yml
+    with:
+      matrix: ${{ needs.matrix.outputs.matrix }}

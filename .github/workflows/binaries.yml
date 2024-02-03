@@ -85,15 +85,11 @@ jobs:
       # Compile profile guided builds
 
       - name: Compile ${{ matrix.binaries }} build
-        continue-on-error: true
         run: |
           make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="${{ env.SDE }}"
           make strip ARCH=$BINARY COMP=$COMP
           WINE_PATH="${{ env.SDE }}"" ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-$NAME-$BINARY$EXT
-
-      - name: Check binary
-        run: cat PGOBENCH.out
 
       - name: Remove non src files
         run: git clean -fx
