@@ -41,9 +41,7 @@ on:
       binaries:
         required: true
         type: string
-      m1:
-        required: true
-        type: boolean
+
 jobs:
   Compilation-Check:
     env:

@@ -41,9 +41,6 @@ on:
       binaries:
         required: true
         type: string
-      m1:
-        required: false
-        type: string
 jobs:
   Binaries:
     env:
