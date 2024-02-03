@@ -34,13 +34,13 @@ jobs:
           - armv7-neon
         exclude:
           - binaries: armv8-dotprod
-            config: {compiler: armv7a-linux-androideabi21-clang++}
+            config: { compiler: armv7a-linux-androideabi21-clang++ }
           - binaries: armv8
-            config: {compiler: armv7a-linux-androideabi21-clang++}
+            config: { compiler: armv7a-linux-androideabi21-clang++ }
           - binaries: armv7
-            config: {compiler: aarch64-linux-android21-clang++}
+            config: { compiler: aarch64-linux-android21-clang++ }
           - binaries: armv7-neon
-            config: {compiler: aarch64-linux-android21-clang++}
+            config: { compiler: aarch64-linux-android21-clang++ }
     defaults:
       run:
         working-directory: src
@@ -107,14 +107,15 @@ jobs:
           WINE_PATH=$EMU ../tests/signature.sh $benchref
           mv ./stockfish$EXT ../stockfish-android-$BINARY$EXT
 
+      # PRE/RELEASE RELATED LOGIC
+
       - name: Remove non src files
-        run: rm -f *.o .depend *.nnue
+        run: git clean -fx
 
       - name: Download wiki
         run: |
           git clone https://github.com/official-stockfish/Stockfish.wiki.git ../wiki
-          cd ../wiki
-          rm -rf .git
+          rm -rf ../wiki/.git
 
       - name: Create tar archive.
         run: |
@@ -131,6 +132,13 @@ jobs:
           cp CONTRIBUTING.md stockfish/
           tar -cvf stockfish-android-$BINARY.tar stockfish
 
+      - name: Create tar
+        run: |
+          cd ..
+          tar -cvf stockfish-android-$BINARY.tar stockfish
+
+      # Artifacts automatically get zipped.
+      # To avoid double-zipping, we use the unzipped directory
       - name: Upload binaries
         uses: actions/upload-artifact@v3
         with:
@@ -139,7 +147,7 @@ jobs:
 
       - name: Release
         if: startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844  # @v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # @v1
         with:
           files: stockfish-android-${{ matrix.binaries }}.tar
 
@@ -162,7 +170,7 @@ jobs:
       - name: Prerelease
         if: github.ref_name == 'master' && env.CHANGES == '0'
         continue-on-error: true
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844  # @v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # @v1
         with:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
