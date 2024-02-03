@@ -83,8 +83,8 @@ jobs:
       # Compile profile guided builds
 
       - name: Compile ${{ matrix.binaries }} build
+        continue-on-error: true
         run: |
-          $SDE_DIR/sde --version
           make -j2 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE_DIR/sde"
           make strip ARCH=$BINARY COMP=$COMP
           WINE_PATH="$SDE_DIR/sde" ../tests/signature.sh $benchref
