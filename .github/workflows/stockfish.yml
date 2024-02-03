@@ -45,7 +45,7 @@ jobs:
       - id: set-arm-matrix
         run: |
           TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
-          echo "ARM_MATRIX=$TASKS" >> $GITHUB_OUTPUT
+          echo "ARM_MATRIX=$TASKS_ARM" >> $GITHUB_OUTPUT
   Compilation:
     needs: [Matrix]
     uses: ./.github/workflows/compilation.yml
