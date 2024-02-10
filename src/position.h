@@ -161,6 +161,7 @@ class Position {
     int   rule50_count() const;
     Value non_pawn_material(Color c) const;
     Value non_pawn_material() const;
+    bool  is_on_semiopen_file(Color c, Square s) const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -361,6 +362,9 @@ inline void Position::do_move(Move m, StateInfo& newSt) { do_move(m, newSt, give
 
 inline StateInfo* Position::state() const { return st; }
 
+inline bool Position::is_on_semiopen_file(Color c, Square s) const {
+    return !(pieces(c, PAWN) & file_bb(s));
+}
 }  // namespace Stockfish
 
 #endif  // #ifndef POSITION_H_INCLUDED
