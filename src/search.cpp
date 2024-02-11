@@ -27,8 +27,8 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
-#include <utility>
 #include <sstream>
+#include <utility>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -420,7 +420,8 @@ void Search::Worker::iterative_deepening() {
         if (limits.use_time_management() && !threads.stop && !mainThread->stopOnPonderhit)
         {
             auto bestmove    = rootMoves[0].pv[0];
-            int  nodesEffort = effort[bestmove.from_to()][bestmove.to_sq()] * 100 / nodes;
+            int  nodesEffort = effort[bestmove.from_to()][bestmove.to_sq()] * 100
+                            / std::max(size_t(1), size_t(nodes));
 
             double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
                                   + 6 * (mainThread->iterValue[iterIdx] - bestValue))
@@ -494,8 +495,6 @@ void Search::Worker::clear() {
 
     for (size_t i = 1; i < reductions.size(); ++i)
         reductions[i] = int((20.37 + std::log(size_t(options["Threads"])) / 2) * std::log(i));
-
-    effort.fill({});
 }
 
 
