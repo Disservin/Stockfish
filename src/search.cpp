@@ -1205,7 +1205,8 @@ moves_loop:  // When in check, search starts here
         // Step 19. Undo move
         pos.undo_move(move);
 
-        effort[move.from_sq()][move.to_sq()] += nodes - nodeCount;
+        if (rootNode)
+            effort[move.from_sq()][move.to_sq()] += nodes - nodeCount;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
