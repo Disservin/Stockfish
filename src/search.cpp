@@ -23,6 +23,7 @@
 #include <atomic>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
@@ -418,6 +419,9 @@ void Search::Worker::iterative_deepening() {
         // Do we have time for the next iteration? Can we stop searching now?
         if (limits.use_time_management() && !threads.stop && !mainThread->stopOnPonderhit)
         {
+            auto bestmove    = rootMoves[0].pv[0];
+            int  nodesEffort = effort[bestmove.from_to()][bestmove.to_sq()] * 100 / nodes;
+
             double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
                                   + 6 * (mainThread->iterValue[iterIdx] - bestValue))
                                / 616.6;
@@ -434,6 +438,13 @@ void Search::Worker::iterative_deepening() {
             // Cap used time in case of a single legal move for a better viewer experience
             if (rootMoves.size() == 1)
                 totalTime = std::min(500.0, totalTime);
+
+            if (completedDepth >= 10 && nodesEffort >= 95
+                && mainThread->tm.elapsed(threads.nodes_searched()) > totalTime * 3 / 4
+                && !mainThread->ponder)
+            {
+                threads.stop = true;
+            }
 
             // Stop the search if we have exceeded the totalTime
             if (mainThread->tm.elapsed(threads.nodes_searched()) > totalTime)
@@ -483,6 +494,8 @@ void Search::Worker::clear() {
 
     for (size_t i = 1; i < reductions.size(); ++i)
         reductions[i] = int((20.37 + std::log(size_t(options["Threads"])) / 2) * std::log(i));
+
+    effort.fill({});
 }
 
 
@@ -1087,6 +1100,10 @@ moves_loop:  // When in check, search starts here
         ss->continuationHistory =
           &thisThread->continuationHistory[ss->inCheck][capture][movedPiece][move.to_sq()];
 
+        uint64_t nodeCount = 0;
+        if (rootNode)
+            nodeCount = nodes;
+
         // Step 16. Make the move
         thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
         pos.do_move(move, st, givesCheck);
@@ -1185,6 +1202,8 @@ moves_loop:  // When in check, search starts here
 
         // Step 19. Undo move
         pos.undo_move(move);
+
+        effort[move.from_sq()][move.to_sq()] += nodes - nodeCount;
 
         assert(value > -VALUE_INFINITE && value < VALUE_INFINITE);
 
