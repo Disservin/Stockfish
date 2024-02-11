@@ -420,7 +420,7 @@ void Search::Worker::iterative_deepening() {
         if (limits.use_time_management() && !threads.stop && !mainThread->stopOnPonderhit)
         {
             auto bestmove    = rootMoves[0].pv[0];
-            int  nodesEffort = effort[bestmove.from_to()][bestmove.to_sq()] * 100
+            int  nodesEffort = effort[bestmove.from_sq()][bestmove.to_sq()] * 100
                             / std::max(size_t(1), size_t(nodes));
 
             double fallingEval = (66 + 14 * (mainThread->bestPreviousAverageScore - bestValue)
