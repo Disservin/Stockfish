@@ -183,7 +183,14 @@ class Worker {
 
     // Called at instantiation to initialize Reductions tables
     // Reset histories, usually before a new game
-    void clear();
+    void reset_search();
+
+    void reset_soft(const LimitsType&         searchLimits,
+                    const RootMoves&          rootMoves,
+                    const Position&           pos,
+                    const StateListPtr&       setupStates,
+                    const Tablebases::Config& tbConfig,
+                    bool                      ponderMode);
 
     // Called when the program receives the UCI 'go' command.
     // It searches from the root position and outputs the "bestmove".

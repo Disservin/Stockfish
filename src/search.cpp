@@ -134,7 +134,7 @@ Search::Worker::Worker(SharedState&                    sharedState,
     options(sharedState.options),
     threads(sharedState.threads),
     tt(sharedState.tt) {
-    clear();
+    reset_search();
 }
 
 void Search::Worker::start_searching() {
@@ -144,9 +144,6 @@ void Search::Worker::start_searching() {
         iterative_deepening();
         return;
     }
-
-    main_manager()->tm.init(limits, rootPos.side_to_move(), rootPos.game_ply(), options);
-    tt.new_search();
 
     if (rootMoves.empty())
     {
@@ -242,14 +239,6 @@ void Search::Worker::iterative_deepening() {
         (ss + i)->ply = i;
 
     ss->pv = pv;
-
-    if (mainThread)
-    {
-        if (mainThread->bestPreviousScore == VALUE_INFINITE)
-            mainThread->iterValue.fill(VALUE_ZERO);
-        else
-            mainThread->iterValue.fill(mainThread->bestPreviousScore);
-    }
 
     size_t multiPV = size_t(options["MultiPV"]);
     Skill skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
@@ -480,7 +469,7 @@ void Search::Worker::iterative_deepening() {
                              skill.best ? skill.best : skill.pick_best(rootMoves, multiPV)));
 }
 
-void Search::Worker::clear() {
+void Search::Worker::reset_search() {
     counterMoves.fill(Move::none());
     mainHistory.fill(0);
     captureHistory.fill(0);
@@ -495,8 +484,55 @@ void Search::Worker::clear() {
 
     for (size_t i = 1; i < reductions.size(); ++i)
         reductions[i] = int((18.79 + std::log(size_t(options["Threads"])) / 2) * std::log(i));
+
+    SearchManager* mainManager = (thread_idx == 0 ? main_manager() : nullptr);
+
+    if (mainManager == nullptr)
+        return;
+
+    mainManager->callsCnt                 = 0;
+    mainManager->bestPreviousScore        = VALUE_INFINITE;
+    mainManager->bestPreviousAverageScore = VALUE_INFINITE;
+    mainManager->previousTimeReduction    = 1.0;
+    mainManager->tm.clear();
 }
 
+void Search::Worker::reset_soft(const LimitsType&         searchLimits,
+                                const RootMoves&          moves,
+                                const Position&           pos,
+                                const StateListPtr&       setupStates,
+                                const Tablebases::Config& config,
+                                bool                      ponderModer) {
+    nodes           = 0;
+    tbHits          = 0;
+    nmpMinPly       = 0;
+    bestMoveChanges = 0;
+    rootDepth       = 0;
+    completedDepth  = 0;
+    limits          = searchLimits;
+    tbConfig        = config;
+    rootMoves       = moves;
+    effort          = {};
+
+    rootPos.set(pos.fen(), pos.is_chess960(), &rootState);
+    rootState = setupStates->back();
+
+    tt.increment_age();
+
+    SearchManager* mainManager = (thread_idx == 0 ? main_manager() : nullptr);
+
+    if (mainManager == nullptr)
+        return;
+
+    mainManager->tm.init(limits, rootPos.side_to_move(), rootPos.game_ply(), options);
+    mainManager->stopOnPonderhit = false;
+    mainManager->ponder          = ponderModer;
+
+    if (mainManager->bestPreviousScore == VALUE_INFINITE)
+        mainManager->iterValue.fill(VALUE_ZERO);
+    else
+        mainManager->iterValue.fill(mainManager->bestPreviousScore);
+}
 
 // Main search function for both PV and non-PV nodes.
 template<NodeType nodeType>

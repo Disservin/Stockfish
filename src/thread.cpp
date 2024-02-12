@@ -20,11 +20,9 @@
 
 #include <algorithm>
 #include <cassert>
-#include <deque>
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include <array>
 
 #include "misc.h"
 #include "movegen.h"
@@ -148,13 +146,7 @@ void ThreadPool::set(Search::SharedState sharedState) {
 void ThreadPool::clear() {
 
     for (Thread* th : threads)
-        th->worker->clear();
-
-    main_manager()->callsCnt                 = 0;
-    main_manager()->bestPreviousScore        = VALUE_INFINITE;
-    main_manager()->bestPreviousAverageScore = VALUE_INFINITE;
-    main_manager()->previousTimeReduction    = 1.0;
-    main_manager()->tm.clear();
+        th->worker->reset_search();
 }
 
 
@@ -168,10 +160,8 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
 
     main_thread()->wait_for_search_finished();
 
-    main_manager()->stopOnPonderhit = stop = abortedSearch = false;
-    main_manager()->ponder                                 = ponderMode;
-
-    increaseDepth = true;
+    stop = abortedSearch = false;
+    increaseDepth        = true;
 
     Search::RootMoves rootMoves;
 
@@ -195,17 +185,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     // setupStates->back() later. The rootState is per thread, earlier states are shared
     // since they are read-only.
     for (Thread* th : threads)
-    {
-        th->worker->limits = limits;
-        th->worker->nodes = th->worker->tbHits = th->worker->nmpMinPly =
-          th->worker->bestMoveChanges          = 0;
-        th->worker->rootDepth = th->worker->completedDepth = 0;
-        th->worker->rootMoves                              = rootMoves;
-        th->worker->rootPos.set(pos.fen(), pos.is_chess960(), &th->worker->rootState);
-        th->worker->rootState = setupStates->back();
-        th->worker->tbConfig  = tbConfig;
-        th->worker->effort    = {};
-    }
+        th->worker->reset_soft(limits, rootMoves, pos, setupStates, tbConfig, ponderMode);
 
     main_thread()->start_searching();
 }
