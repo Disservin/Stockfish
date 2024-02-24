@@ -63,13 +63,11 @@ jobs:
   Tests:
     uses: ./.github/workflows/tests.yml
   Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
     needs: [Matrix, Prerelease, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
   ARM_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
     needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
