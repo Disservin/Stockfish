@@ -19,12 +19,12 @@
 #include "thread.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <deque>
 #include <memory>
 #include <unordered_map>
 #include <utility>
-#include <array>
 
 #include "misc.h"
 #include "movegen.h"
@@ -241,32 +241,24 @@ Thread* ThreadPool::get_best_thread() const {
         const auto bestThreadMoveVote = votes[bestThreadPV[0]];
         const auto newThreadMoveVote  = votes[newThreadPV[0]];
 
-        const bool bestThreadInProvenWin = bestThreadScore >= VALUE_TB_WIN_IN_MAX_PLY;
-        const bool newThreadInProvenWin  = newThreadScore >= VALUE_TB_WIN_IN_MAX_PLY;
-
-        const bool bestThreadInProvenLoss =
-          bestThreadScore != -VALUE_INFINITE && bestThreadScore <= VALUE_TB_LOSS_IN_MAX_PLY;
-        const bool newThreadInProvenLoss =
-          newThreadScore != -VALUE_INFINITE && newThreadScore <= VALUE_TB_LOSS_IN_MAX_PLY;
-
         // Note that we make sure not to pick a thread with truncated-PV for better viewer experience.
         const bool betterVotingValue =
           thread_voting_value(th) * int(newThreadPV.size() > 2)
           > thread_voting_value(bestThread) * int(bestThreadPV.size() > 2);
 
-        if (bestThreadInProvenWin)
+        if (greater_than_tb_win(bestThreadScore))
         {
             // Make sure we pick the shortest mate / TB conversion
             if (newThreadScore > bestThreadScore)
                 bestThread = th;
         }
-        else if (bestThreadInProvenLoss)
+        else if (less_than_tb_loss(bestThreadScore))
         {
             // Make sure we pick the shortest mated / TB conversion
-            if (newThreadInProvenLoss && newThreadScore < bestThreadScore)
+            if (less_than_tb_loss(newThreadScore) && newThreadScore < bestThreadScore)
                 bestThread = th;
         }
-        else if (newThreadInProvenWin || newThreadInProvenLoss
+        else if (greater_than_tb_win(newThreadScore) || less_than_tb_loss(newThreadScore)
                  || (newThreadScore > VALUE_TB_LOSS_IN_MAX_PLY
                      && (newThreadMoveVote > bestThreadMoveVote
                          || (newThreadMoveVote == bestThreadMoveVote && betterVotingValue))))

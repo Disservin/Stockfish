@@ -203,6 +203,12 @@ void move_to_front(std::vector<T>& vec, Predicate pred) {
 }
 }
 
+bool in_mate_range(Value v) { return v >= VALUE_MATE_IN_MAX_PLY; }
+bool in_mated_range(Value v) { return v <= VALUE_MATED_IN_MAX_PLY && v >= -VALUE_MATE; }
+bool less_than_tb_loss(Value v) { return v <= VALUE_TB_LOSS_IN_MAX_PLY && v >= -VALUE_MATE; }
+bool greater_than_tb_win(Value v) { return v >= VALUE_TB_WIN_IN_MAX_PLY; }
+
+
 }  // namespace Stockfish
 
 #endif  // #ifndef MISC_H_INCLUDED

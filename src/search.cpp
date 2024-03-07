@@ -27,8 +27,8 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
-#include <utility>
 #include <sstream>
+#include <utility>
 
 #include "evaluate.h"
 #include "misc.h"
@@ -404,10 +404,9 @@ void Search::Worker::iterative_deepening() {
 
         // Have we found a "mate in x"?
         if (limits.mate && rootMoves[0].score == rootMoves[0].uciScore
-            && ((rootMoves[0].score >= VALUE_MATE_IN_MAX_PLY
+            && ((in_mate_range(rootMoves[0].score)
                  && VALUE_MATE - rootMoves[0].score <= 2 * limits.mate)
-                || (rootMoves[0].score != -VALUE_INFINITE
-                    && rootMoves[0].score <= VALUE_TB_LOSS_IN_MAX_PLY
+                || (in_mated_range(rootMoves[0].score)
                     && VALUE_MATE + rootMoves[0].score <= 2 * limits.mate)))
             threads.stop = true;
 
@@ -629,7 +628,7 @@ Value Search::Worker::search(
         // Partial workaround for the graph history interaction problem
         // For high rule50 counts don't produce transposition table cutoffs.
         if (pos.rule50_count() < 90)
-            return ttValue >= beta && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY
+            return ttValue >= beta && !greater_than_tb_win(std::abs(ttValue))
                    ? (ttValue * 3 + beta) / 4
                    : ttValue;
     }
@@ -792,7 +791,8 @@ Value Search::Worker::search(
         pos.undo_null_move();
 
         // Do not return unproven mate or TB scores
-        if (nullValue >= beta && nullValue < VALUE_TB_WIN_IN_MAX_PLY)
+        if (nullValue >= beta && !greater_than_tb_win(nullValue))
+            return nullValue;
         {
             if (thisThread->nmpMinPly || depth < 16)
                 return nullValue;
@@ -831,7 +831,7 @@ Value Search::Worker::search(
     probCutBeta = beta + 181 - 68 * improving;
     if (
       !PvNode && depth > 3
-      && std::abs(beta) < VALUE_TB_WIN_IN_MAX_PLY
+      && !greater_than_tb_win(std::abs(beta))
       // If value from transposition table is lower than probCutBeta, don't attempt probCut
       // there and in further interactions with transposition table cutoff depth is set to depth - 3
       // because probCut search has depth set to depth - 4 but we also do a move before it
@@ -873,8 +873,8 @@ Value Search::Worker::search(
                     // Save ProbCut data into transposition table
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, BOUND_LOWER, depth - 3,
                               move, unadjustedStaticEval, tt.generation());
-                    return std::abs(value) < VALUE_TB_WIN_IN_MAX_PLY ? value - (probCutBeta - beta)
-                                                                     : value;
+                    return !greater_than_tb_win(std::abs(value)) ? value - (probCutBeta - beta)
+                                                                 : value;
                 }
             }
 
@@ -887,7 +887,7 @@ moves_loop:  // When in check, search starts here
     probCutBeta = beta + 452;
     if (ss->inCheck && !PvNode && ttCapture && (tte->bound() & BOUND_LOWER)
         && tte->depth() >= depth - 4 && ttValue >= probCutBeta
-        && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && std::abs(beta) < VALUE_TB_WIN_IN_MAX_PLY)
+        && !greater_than_tb_win(std::abs(ttValue)) && !greater_than_tb_win(std::abs(beta)))
         return probCutBeta;
 
     const PieceToHistory* contHist[] = {(ss - 1)->continuationHistory,
@@ -1025,7 +1025,7 @@ moves_loop:  // When in check, search starts here
             // Recursive singular search is avoided.
             if (!rootNode && move == ttMove && !excludedMove
                 && depth >= 4 - (thisThread->completedDepth > 30) + ss->ttPv
-                && std::abs(ttValue) < VALUE_TB_WIN_IN_MAX_PLY && (tte->bound() & BOUND_LOWER)
+                && !greater_than_tb_win(ttValue) && (tte->bound() & BOUND_LOWER)
                 && tte->depth() >= depth - 3)
             {
                 Value singularBeta  = ttValue - (60 + 54 * (ss->ttPv && !PvNode)) * depth / 64;
@@ -1046,7 +1046,8 @@ moves_loop:  // When in check, search starts here
                         extension = 2 + (value < singularBeta - 78 && !ttCapture);
                         depth += depth < 16;
                     }
-                    if (PvNode && !ttCapture && ss->multipleExtensions <= 5 && value < singularBeta - 50)
+                    if (PvNode && !ttCapture && ss->multipleExtensions <= 5
+                        && value < singularBeta - 50)
                         extension = 2;
                 }
 
@@ -1304,8 +1305,8 @@ moves_loop:  // When in check, search starts here
     assert(moveCount || !ss->inCheck || excludedMove || !MoveList<LEGAL>(pos).size());
 
     // Adjust best value for fail high cases at non-pv nodes
-    if (!PvNode && bestValue >= beta && std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY
-        && std::abs(beta) < VALUE_TB_WIN_IN_MAX_PLY && std::abs(alpha) < VALUE_TB_WIN_IN_MAX_PLY)
+    if (!PvNode && bestValue >= beta && !greater_than_tb_win(std::abs(bestValue))
+        && !greater_than_tb_win(std::abs(beta)) && !greater_than_tb_win(std::abs(alpha)))
         bestValue = (bestValue * (depth + 2) + beta) / (depth + 3);
 
     if (!moveCount)
@@ -1609,7 +1610,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         return mated_in(ss->ply);  // Plies to mate from the root
     }
 
-    if (std::abs(bestValue) < VALUE_TB_WIN_IN_MAX_PLY && bestValue >= beta)
+    if (!greater_than_tb_win(bestValue) && bestValue >= beta)
         bestValue = (3 * bestValue + beta) / 4;
 
     // Save gathered info in transposition table
@@ -1635,7 +1636,7 @@ namespace {
 Value value_to_tt(Value v, int ply) {
 
     assert(v != VALUE_NONE);
-    return v >= VALUE_TB_WIN_IN_MAX_PLY ? v + ply : v <= VALUE_TB_LOSS_IN_MAX_PLY ? v - ply : v;
+    return (v >= VALUE_TB_WIN_IN_MAX_PLY) ? v + ply : v <= VALUE_TB_LOSS_IN_MAX_PLY ? v - ply : v;
 }
 
 
