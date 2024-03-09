@@ -27,11 +27,12 @@
 #include <optional>
 #include <string>
 
-#include "../evaluate.h"
+// #include "../evaluate.h"
 #include "../misc.h"
 #include "../types.h"
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
+
 
 namespace Stockfish {
 class Position;
@@ -70,19 +71,22 @@ template<typename T>
 using LargePagePtr = std::unique_ptr<T, LargePageDeleter<T>>;
 
 std::string trace(Position& pos);
-template<NetSize Net_Size>
-Value evaluate(const Position& pos,
-               bool            adjusted   = false,
-               int*            complexity = nullptr,
-               bool            psqtOnly   = false);
-void  hint_common_parent_position(const Position& pos);
 
-std::optional<std::string> load_eval(std::istream& stream, NetSize netSize);
-bool                       save_eval(std::ostream&      stream,
-                                     NetSize            netSize,
-                                     const std::string& name,
-                                     const std::string& netDescription);
-bool save_eval(const std::optional<std::string>& filename, NetSize netSize, const EvalFiles&);
+struct Networks;
+
+// template<NetSize Net_Size>
+// Value evaluate(const Position& pos,
+//                bool            adjusted   = false,
+//                int*            complexity = nullptr,
+//                bool            psqtOnly   = false);
+void hint_common_parent_position(const Position& pos, Networks& networks);
+
+// std::optional<std::string> load_eval(std::istream& stream, NetSize netSize);
+// bool                       save_eval(std::ostream&      stream,
+//                                      NetSize            netSize,
+//                                      const std::string& name,
+//                                      const std::string& netDescription);
+// bool save_eval(const std::optional<std::string>& filename, NetSize netSize, const EvalFiles&);
 
 }  // namespace Stockfish::Eval::NNUE
 

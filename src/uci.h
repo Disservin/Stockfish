@@ -29,6 +29,7 @@
 #include "tt.h"
 #include "ucioption.h"
 #include "search.h"
+#include "nnue/network.h"
 
 namespace Stockfish {
 
@@ -53,13 +54,18 @@ class UCI {
 
     const std::string& working_directory() const { return cli.workingDirectory; }
 
-    OptionsMap            options;
-    Eval::NNUE::EvalFiles evalFiles;
+    OptionsMap options;
+    // Eval::NNUE::EvalFiles evalFiles;
+
+
+    Eval::NNUE::Networks networks = {
+      Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
+      Eval::NNUE::NetworkSmall({"EvalFile", EvalFileDefaultNameSmall, "None", ""})};
 
    private:
-    TranspositionTable tt;
-    ThreadPool         threads;
-    CommandLine        cli;
+    TranspositionTable          tt;
+    ThreadPool                  threads;
+    CommandLine                 cli;
 
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
     void bench(Position& pos, std::istream& args, StateListPtr& states);

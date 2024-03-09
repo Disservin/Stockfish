@@ -51,14 +51,14 @@ constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 UCI::UCI(int argc, char** argv) :
     cli(argc, argv) {
 
-    evalFiles = {{Eval::NNUE::Big, {"EvalFile", EvalFileDefaultNameBig, "None", ""}},
-                 {Eval::NNUE::Small, {"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""}}};
+    // evalFiles = {{Eval::NNUE::Big, {"EvalFile", EvalFileDefaultNameBig, "None", ""}},
+    //              {Eval::NNUE::Small, {"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""}}};
 
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
 
     options["Threads"] << Option(1, 1, 1024, [this](const Option&) {
-        threads.set({options, threads, tt});
+        threads.set({options, threads, tt, networks});
     });
 
     options["Hash"] << Option(16, 1, MaxHashMB, [this](const Option& o) {
@@ -80,14 +80,17 @@ UCI::UCI(int argc, char** argv) :
     options["SyzygyProbeDepth"] << Option(1, 1, 100);
     options["Syzygy50MoveRule"] << Option(true);
     options["SyzygyProbeLimit"] << Option(7, 0, 7);
-    options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option&) {
-        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
+    options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option& o) {
+        // evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
+        networks.networkBig.load(cli.binaryDirectory, o);
     });
-    options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option&) {
-        evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
+    options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option& o) {
+        networks.networkBig.load(cli.binaryDirectory, o);
+
+        // evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
     });
 
-    threads.set({options, threads, tt});
+    threads.set({options, threads, tt, networks});
 
     search_clear();  // After threads are up
 }
@@ -157,7 +160,8 @@ void UCI::loop() {
             std::string                f;
             if (is >> std::skipws >> f)
                 filename = f;
-            Eval::NNUE::save_eval(filename, Eval::NNUE::Big, evalFiles);
+            // Eval::NNUE::save_eval(filename, Eval::NNUE::Big, evalFiles);
+            networks.networkBig.save_eval(filename);
         }
         else if (token == "--help" || token == "help" || token == "--license" || token == "license")
             sync_cout
@@ -218,7 +222,9 @@ void UCI::go(Position& pos, std::istringstream& is, StateListPtr& states) {
 
     Search::LimitsType limits = parse_limits(pos, is);
 
-    Eval::NNUE::verify(options, evalFiles);
+    // Eval::NNUE::verify(options, evalFiles);
+    networks.networkBig.verify(options["EvalFile"]);
+    networks.networkSmall.verify(options["EvalFileSmall"]);
 
     if (limits.perft)
     {
@@ -283,7 +289,10 @@ void UCI::trace_eval(Position& pos) {
     Position     p;
     p.set(pos.fen(), options["UCI_Chess960"], &states->back());
 
-    Eval::NNUE::verify(options, evalFiles);
+    // Eval::NNUE::verify(options, evalFiles);
+    networks.networkBig.verify(options["EvalFile"]);
+    networks.networkSmall.verify(options["EvalFileSmall"]);
+
 
     sync_cout << "\n" << Eval::trace(p) << sync_endl;
 }

@@ -28,10 +28,18 @@
 #include <vector>
 
 #include "position.h"
-#include "search.h"
+// #include "search.h"
 #include "thread_win32_osx.h"
 
 namespace Stockfish {
+
+namespace Search {
+class ISearchManager;
+class SearchManager;
+struct SharedState;
+class Worker;
+struct LimitsType;
+}
 
 class OptionsMap;
 using Value = int;
@@ -83,15 +91,13 @@ class ThreadPool {
     void clear();
     void set(Search::SharedState);
 
-    Search::SearchManager* main_manager() const {
-        return static_cast<Search::SearchManager*>(main_thread()->worker.get()->manager.get());
-    };
-    Thread*  main_thread() const { return threads.front(); }
-    uint64_t nodes_searched() const { return accumulate(&Search::Worker::nodes); }
-    uint64_t tb_hits() const { return accumulate(&Search::Worker::tbHits); }
-    Thread*  get_best_thread() const;
-    void     start_searching();
-    void     wait_for_search_finished() const;
+    Search::SearchManager* main_manager();
+    Thread*                main_thread() const { return threads.front(); }
+    uint64_t               nodes_searched() const;
+    uint64_t               tb_hits() const;
+    Thread*                get_best_thread() const;
+    void                   start_searching();
+    void                   wait_for_search_finished() const;
 
     std::atomic_bool stop, abortedSearch, increaseDepth;
 

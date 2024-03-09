@@ -34,6 +34,7 @@
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
+#include "nnue/network.h"
 
 namespace Stockfish {
 
@@ -125,16 +126,19 @@ struct LimitsType {
 // The UCI stores the uci options, thread pool, and transposition table.
 // This struct is used to easily forward data to the Search::Worker class.
 struct SharedState {
-    SharedState(const OptionsMap&   optionsMap,
-                ThreadPool&         threadPool,
-                TranspositionTable& transpositionTable) :
+    SharedState(const OptionsMap&     optionsMap,
+                ThreadPool&           threadPool,
+                TranspositionTable&   transpositionTable,
+                Eval::NNUE::Networks& nets) :
         options(optionsMap),
         threads(threadPool),
-        tt(transpositionTable) {}
+        tt(transpositionTable),
+        networks(nets) {}
 
-    const OptionsMap&   options;
-    ThreadPool&         threads;
-    TranspositionTable& tt;
+    const OptionsMap&     options;
+    ThreadPool&           threads;
+    TranspositionTable&   tt;
+    Eval::NNUE::Networks& networks;
 };
 
 class Worker;
@@ -175,6 +179,7 @@ class NullSearchManager: public ISearchManager {
    public:
     void check_time(Search::Worker&) override {}
 };
+
 
 // Search::Worker is the class that does the actual search.
 // It is instantiated once per thread, and it is responsible for keeping track
@@ -247,9 +252,10 @@ class Worker {
 
     Tablebases::Config tbConfig;
 
-    const OptionsMap&   options;
-    ThreadPool&         threads;
-    TranspositionTable& tt;
+    const OptionsMap&                options;
+    ThreadPool&                      threads;
+    TranspositionTable&              tt;
+    Stockfish::Eval::NNUE::Networks& networks;
 
     friend class Stockfish::ThreadPool;
     friend class SearchManager;

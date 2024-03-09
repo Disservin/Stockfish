@@ -52,110 +52,110 @@ namespace Eval {
 // network may be embedded in the binary), in the active working directory and
 // in the engine directory. Distro packagers may define the DEFAULT_NNUE_DIRECTORY
 // variable to have the engine search in a special directory in their distro.
-NNUE::EvalFiles NNUE::load_networks(const std::string& rootDirectory,
-                                    const OptionsMap&  options,
-                                    NNUE::EvalFiles    evalFiles) {
+// NNUE::EvalFiles NNUE::load_networks(const std::string& rootDirectory,
+//                                     const OptionsMap&  options,
+//                                     NNUE::EvalFiles    evalFiles) {
 
-    //     for (auto& [netSize, evalFile] : evalFiles)
-    //     {
-    //         std::string user_eval_file = options[evalFile.optionName];
+//         for (auto& [netSize, evalFile] : evalFiles)
+//         {
+//             std::string user_eval_file = options[evalFile.optionName];
 
-    //         if (user_eval_file.empty())
-    //             user_eval_file = evalFile.defaultName;
+//             if (user_eval_file.empty())
+//                 user_eval_file = evalFile.defaultName;
 
-    // #if defined(DEFAULT_NNUE_DIRECTORY)
-    //         std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
-    //                                          stringify(DEFAULT_NNUE_DIRECTORY)};
-    // #else
-    //         std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
-    // #endif
+//     #if defined(DEFAULT_NNUE_DIRECTORY)
+//             std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
+//                                              stringify(DEFAULT_NNUE_DIRECTORY)};
+//     #else
+//             std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
+//     #endif
 
-    //         for (const std::string& directory : dirs)
-    //         {
-    //             if (evalFile.current != user_eval_file)
-    //             {
-    //                 if (directory != "<internal>")
-    //                 {
-    //                     std::ifstream stream(directory + user_eval_file, std::ios::binary);
-    //                     auto          description = NNUE::load_eval(stream, netSize);
+//             for (const std::string& directory : dirs)
+//             {
+//                 if (evalFile.current != user_eval_file)
+//                 {
+//                     if (directory != "<internal>")
+//                     {
+//                         std::ifstream stream(directory + user_eval_file, std::ios::binary);
+//                         auto          description = NNUE::load_eval(stream, netSize);
 
-    //                     if (description.has_value())
-    //                     {
-    //                         evalFile.current        = user_eval_file;
-    //                         evalFile.netDescription = description.value();
-    //                     }
-    //                 }
+//                         if (description.has_value())
+//                         {
+//                             evalFile.current        = user_eval_file;
+//                             evalFile.netDescription = description.value();
+//                         }
+//                     }
 
-    //                 if (directory == "<internal>" && user_eval_file == evalFile.defaultName)
-    //                 {
-    //                     // C++ way to prepare a buffer for a memory stream
-    //                     class MemoryBuffer: public std::basic_streambuf<char> {
-    //                        public:
-    //                         MemoryBuffer(char* p, size_t n) {
-    //                             setg(p, p, p + n);
-    //                             setp(p, p + n);
-    //                         }
-    //                     };
+//                     if (directory == "<internal>" && user_eval_file == evalFile.defaultName)
+//                     {
+//                         // C++ way to prepare a buffer for a memory stream
+//                         class MemoryBuffer: public std::basic_streambuf<char> {
+//                            public:
+//                             MemoryBuffer(char* p, size_t n) {
+//                                 setg(p, p, p + n);
+//                                 setp(p, p + n);
+//                             }
+//                         };
 
-    //                     MemoryBuffer buffer(
-    //                       const_cast<char*>(reinterpret_cast<const char*>(
-    //                         netSize == Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData)),
-    //                       size_t(netSize == Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize));
-    //                     (void) gEmbeddedNNUEBigEnd;  // Silence warning on unused variable
-    //                     (void) gEmbeddedNNUESmallEnd;
+//                         MemoryBuffer buffer(
+//                           const_cast<char*>(reinterpret_cast<const char*>(
+//                             netSize == Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData)),
+//                           size_t(netSize == Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize));
+//                         (void) gEmbeddedNNUEBigEnd;  // Silence warning on unused variable
+//                         (void) gEmbeddedNNUESmallEnd;
 
-    //                     std::istream stream(&buffer);
-    //                     auto         description = NNUE::load_eval(stream, netSize);
+//                         std::istream stream(&buffer);
+//                         auto         description = NNUE::load_eval(stream, netSize);
 
-    //                     if (description.has_value())
-    //                     {
-    //                         evalFile.current        = user_eval_file;
-    //                         evalFile.netDescription = description.value();
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
+//                         if (description.has_value())
+//                         {
+//                             evalFile.current        = user_eval_file;
+//                             evalFile.netDescription = description.value();
+//                         }
+//                     }
+//                 }
+//             }
+//         }
 
-    return evalFiles;
-}
+//     return evalFiles;
+// }
 
-// Verifies that the last net used was loaded successfully
-void NNUE::verify(const OptionsMap&                                        options,
-                  const std::unordered_map<Eval::NNUE::NetSize, EvalFile>& evalFiles) {
+// // Verifies that the last net used was loaded successfully
+// void NNUE::verify(const OptionsMap&                                        options,
+//                   const std::unordered_map<Eval::NNUE::NetSize, EvalFile>& evalFiles) {
 
-    for (const auto& [netSize, evalFile] : evalFiles)
-    {
-        std::string user_eval_file = options[evalFile.optionName];
+//     for (const auto& [netSize, evalFile] : evalFiles)
+//     {
+//         std::string user_eval_file = options[evalFile.optionName];
 
-        if (user_eval_file.empty())
-            user_eval_file = evalFile.defaultName;
+//         if (user_eval_file.empty())
+//             user_eval_file = evalFile.defaultName;
 
-        if (evalFile.current != user_eval_file)
-        {
-            std::string msg1 =
-              "Network evaluation parameters compatible with the engine must be available.";
-            std::string msg2 =
-              "The network file " + user_eval_file + " was not loaded successfully.";
-            std::string msg3 = "The UCI option EvalFile might need to specify the full path, "
-                               "including the directory name, to the network file.";
-            std::string msg4 = "The default net can be downloaded from: "
-                               "https://tests.stockfishchess.org/api/nn/"
-                             + evalFile.defaultName;
-            std::string msg5 = "The engine will be terminated now.";
+//         if (evalFile.current != user_eval_file)
+//         {
+//             std::string msg1 =
+//               "Network evaluation parameters compatible with the engine must be available.";
+//             std::string msg2 =
+//               "The network file " + user_eval_file + " was not loaded successfully.";
+//             std::string msg3 = "The UCI option EvalFile might need to specify the full path, "
+//                                "including the directory name, to the network file.";
+//             std::string msg4 = "The default net can be downloaded from: "
+//                                "https://tests.stockfishchess.org/api/nn/"
+//                              + evalFile.defaultName;
+//             std::string msg5 = "The engine will be terminated now.";
 
-            sync_cout << "info string ERROR: " << msg1 << sync_endl;
-            sync_cout << "info string ERROR: " << msg2 << sync_endl;
-            sync_cout << "info string ERROR: " << msg3 << sync_endl;
-            sync_cout << "info string ERROR: " << msg4 << sync_endl;
-            sync_cout << "info string ERROR: " << msg5 << sync_endl;
+//             sync_cout << "info string ERROR: " << msg1 << sync_endl;
+//             sync_cout << "info string ERROR: " << msg2 << sync_endl;
+//             sync_cout << "info string ERROR: " << msg3 << sync_endl;
+//             sync_cout << "info string ERROR: " << msg4 << sync_endl;
+//             sync_cout << "info string ERROR: " << msg5 << sync_endl;
 
-            exit(EXIT_FAILURE);
-        }
+//             exit(EXIT_FAILURE);
+//         }
 
-        sync_cout << "info string NNUE evaluation using " << user_eval_file << sync_endl;
-    }
-}
+//         sync_cout << "info string NNUE evaluation using " << user_eval_file << sync_endl;
+//     }
+// }
 }
 
 // Returns a static, purely materialistic evaluation of the position from
@@ -169,7 +169,7 @@ int Eval::simple_eval(const Position& pos, Color c) {
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
-Value Eval::evaluate(const Position& pos, int optimism) {
+Value Eval::evaluate(Eval::NNUE::Networks& networks, const Position& pos, int optimism) {
 
     assert(!pos.checkers());
 
@@ -179,8 +179,12 @@ Value Eval::evaluate(const Position& pos, int optimism) {
 
     int nnueComplexity;
 
-    Value nnue = smallNet ? NNUE::evaluate<NNUE::Small>(pos, true, &nnueComplexity, psqtOnly)
-                          : NNUE::evaluate<NNUE::Big>(pos, true, &nnueComplexity, false);
+
+    // Value nnue = smallNet ? NNUE::evaluate<NNUE::Small>(pos, true, &nnueComplexity, psqtOnly)
+    //                       : NNUE::evaluate<NNUE::Big>(pos, true, &nnueComplexity, false);
+
+    Value nnue = smallNet ? networks.networkSmall.evaluate(pos, true, &nnueComplexity, psqtOnly)
+                          : networks.networkBig.evaluate(pos, true, &nnueComplexity, false);
 
     // Blend optimism and eval with nnue complexity and material imbalance
     optimism += optimism * (nnueComplexity + std::abs(simpleEval - nnue)) / 512;
@@ -214,12 +218,12 @@ std::string Eval::trace(Position& pos) {
 
     ss << std::showpoint << std::showpos << std::fixed << std::setprecision(2) << std::setw(15);
 
-    Value v;
-    v = NNUE::evaluate<NNUE::Big>(pos, false);
+    Value v = 1;
+    // v = NNUE::evaluate<NNUE::Big>(pos, false);
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * UCI::to_cp(v) << " (white side)\n";
 
-    v = evaluate(pos, VALUE_ZERO);
+    // v = evaluate(pos, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
     ss << "Final evaluation       " << 0.01 * UCI::to_cp(v) << " (white side)";
     ss << " [with scaled NNUE, ...]";
