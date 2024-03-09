@@ -133,8 +133,7 @@ struct SharedState {
         options(optionsMap),
         threads(threadPool),
         tt(transpositionTable),
-        networks(nets) {
-    }
+        networks(nets) {}
 
 
     const OptionsMap&     options;
