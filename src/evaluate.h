@@ -42,13 +42,6 @@ int   simple_eval(const Position& pos, Color c);
 Value evaluate(NNUE::Networks& networks, const Position& pos, int optimism);
 
 
-namespace NNUE {
-
-enum NetSize : int;
-
-
-}  // namespace NNUE
-
 }  // namespace Eval
 
 }  // namespace Stockfish

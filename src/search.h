@@ -258,10 +258,10 @@ class Worker {
 
     Tablebases::Config tbConfig;
 
-    const OptionsMap&                options;
-    ThreadPool&                      threads;
-    TranspositionTable&              tt;
-    Stockfish::Eval::NNUE::Networks& networks;
+    const OptionsMap&     options;
+    ThreadPool&           threads;
+    TranspositionTable&   tt;
+    Eval::NNUE::Networks& networks;
 
     friend class Stockfish::ThreadPool;
     friend class SearchManager;

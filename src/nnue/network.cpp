@@ -116,6 +116,7 @@ void Network<NetSize, Arch, Transformer>::load(const std::string& rootDirectory,
     }
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 void Network<NetSize, Arch, Transformer>::loadUserNet(const std::string& dir,
                                                       const std::string& user_eval_file_path) {
@@ -129,6 +130,7 @@ void Network<NetSize, Arch, Transformer>::loadUserNet(const std::string& dir,
     }
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 void Network<NetSize, Arch, Transformer>::loadInternal() {
     // C++ way to prepare a buffer for a memory stream
@@ -140,8 +142,10 @@ void Network<NetSize, Arch, Transformer>::loadInternal() {
         }
     };
 
-    const auto embeddedData = NetSize == Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData;
-    const auto embeddedSize = NetSize == Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize;
+    const auto embeddedData =
+      NetSize == NetSize::Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData;
+    const auto embeddedSize =
+      NetSize == NetSize::Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize;
 
     MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(embeddedData)),
                         size_t(embeddedSize));
@@ -158,9 +162,9 @@ void Network<NetSize, Arch, Transformer>::loadInternal() {
     }
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::save_eval(const std::optional<std::string>& filename) {
-
     std::string actualFilename;
     std::string msg;
 
@@ -176,9 +180,8 @@ bool Network<NetSize, Arch, Transformer>::save_eval(const std::optional<std::str
             sync_cout << msg << sync_endl;
             return false;
         }
-        actualFilename =
-          evalFile
-            .defaultName;  //(NetSize == Small ? EvalFileDefaultNameSmall : EvalFileDefaultNameBig);
+
+        actualFilename = evalFile.defaultName;
     }
 
     std::ofstream stream(actualFilename, std::ios_base::binary);
@@ -196,7 +199,6 @@ Value Network<NetSize, Arch, Transformer>::evaluate(const Position& pos,
                                                     bool            adjusted,
                                                     int*            complexity,
                                                     bool            psqtOnly) {
-
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
 
@@ -231,6 +233,7 @@ Value Network<NetSize, Arch, Transformer>::evaluate(const Position& pos,
         return static_cast<Value>((psqt + positional) / OutputScale);
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 void Network<NetSize, Arch, Transformer>::verify(std::string user_eval_file) {
     if (user_eval_file.empty())
@@ -259,14 +262,15 @@ void Network<NetSize, Arch, Transformer>::verify(std::string user_eval_file) {
     sync_cout << "info string NNUE evaluation using " << user_eval_file << sync_endl;
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 void Network<NetSize, Arch, Transformer>::hint_common_access(const Position& pos, bool psqtOnl) {
     featureTransformer->hint_common_access(pos, psqtOnl);
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 NnueEvalTrace Network<NetSize, Arch, Transformer>::trace_evaluate(const Position& pos) {
-
     // We manually align the arrays on the stack because with gcc < 9.3
     // overaligning stack variables with alignas() doesn't work correctly.
     constexpr uint64_t alignment = CacheLineSize;
@@ -301,6 +305,14 @@ NnueEvalTrace Network<NetSize, Arch, Transformer>::trace_evaluate(const Position
 
 
 template<NetSize NetSize, typename Arch, typename Transformer>
+void Network<NetSize, Arch, Transformer>::initialize() {
+    Detail::initialize(featureTransformer);
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+        Detail::initialize(network[i]);
+}
+
+
+template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::save(std::ostream&      stream,
                                                const std::string& name,
                                                const std::string& netDescription) {
@@ -310,6 +322,7 @@ bool Network<NetSize, Arch, Transformer>::save(std::ostream&      stream,
     return write_parameters(stream, netDescription);
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 std::optional<std::string> Network<NetSize, Arch, Transformer>::load(std::istream& stream) {
     initialize();
@@ -318,12 +331,6 @@ std::optional<std::string> Network<NetSize, Arch, Transformer>::load(std::istrea
     return read_parameters(stream, description) ? std::make_optional(description) : std::nullopt;
 }
 
-template<NetSize NetSize, typename Arch, typename Transformer>
-void Network<NetSize, Arch, Transformer>::initialize() {
-    Detail::initialize(featureTransformer);
-    for (std::size_t i = 0; i < LayerStacks; ++i)
-        Detail::initialize(network[i]);
-}
 
 // Read network header
 template<NetSize NetSize, typename Arch, typename Transformer>
@@ -342,6 +349,7 @@ bool Network<NetSize, Arch, Transformer>::read_header(std::istream&  stream,
     return !stream.fail();
 }
 
+
 // Write network header
 template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::write_header(std::ostream&      stream,
@@ -354,13 +362,14 @@ bool Network<NetSize, Arch, Transformer>::write_header(std::ostream&      stream
     return !stream.fail();
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::read_parameters(std::istream& stream,
                                                           std::string&  netDescription) {
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return false;
-    if (hashValue != HashValue[NetSize])
+    if (hashValue != Transformer::get_hash_value())
         return false;
     if (!Detail::read_parameters(stream, *featureTransformer))
         return false;
@@ -372,11 +381,11 @@ bool Network<NetSize, Arch, Transformer>::read_parameters(std::istream& stream,
     return stream && stream.peek() == std::ios::traits_type::eof();
 }
 
+
 template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::write_parameters(std::ostream&      stream,
                                                            const std::string& netDescription) {
-
-    if (!write_header(stream, HashValue[NetSize], netDescription))
+    if (!write_header(stream, Transformer::get_hash_value(), netDescription))
         return false;
     if (!Detail::write_parameters(stream, *featureTransformer))
         return false;
@@ -388,6 +397,7 @@ bool Network<NetSize, Arch, Transformer>::write_parameters(std::ostream&      st
     return bool(stream);
 }
 
+// Explicit template instantiation
 
 template class Network<
   NetSize::Big,
@@ -399,5 +409,4 @@ template class Network<
   NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
   FeatureTransformer<TransformedFeatureDimensionsSmall, &StateInfo::accumulatorSmall>>;
 
-
-}
+}  // namespace Stockfish::Eval::NNUE

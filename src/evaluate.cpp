@@ -56,10 +56,6 @@ Value Eval::evaluate(Eval::NNUE::Networks& networks, const Position& pos, int op
 
     int nnueComplexity;
 
-
-    // Value nnue = smallNet ? NNUE::evaluate<NNUE::Small>(pos, true, &nnueComplexity, psqtOnly)
-    //                       : NNUE::evaluate<NNUE::Big>(pos, true, &nnueComplexity, false);
-
     Value nnue = smallNet ? networks.networkSmall.evaluate(pos, true, &nnueComplexity, psqtOnly)
                           : networks.networkBig.evaluate(pos, true, &nnueComplexity, false);
 

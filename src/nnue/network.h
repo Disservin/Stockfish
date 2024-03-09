@@ -32,12 +32,9 @@
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
 
-
 namespace Stockfish::Eval::NNUE {
 
 struct EvalFile {
-    // UCI option name
-    std::string optionName;
     // Default net name, will use one of the macros above
     std::string defaultName;
     // Selected net name, either via uci option or default
@@ -79,17 +76,15 @@ class Network {
     NnueEvalTrace trace_evaluate(const Position& pos);
 
    private:
+    void initialize();
+
     bool save(std::ostream& stream, const std::string& name, const std::string& netDescription);
     std::optional<std::string> load(std::istream& stream);
-    void                       initialize();
-    // Read network header
-    static bool read_header(std::istream& stream, std::uint32_t* hashValue, std::string* desc);
 
-    // Write network header
-    static bool
-         write_header(std::ostream& stream, std::uint32_t hashValue, const std::string& desc);
+    bool read_header(std::istream& stream, std::uint32_t* hashValue, std::string* desc);
+    bool write_header(std::ostream& stream, std::uint32_t hashValue, const std::string& desc);
+
     bool read_parameters(std::istream& stream, std::string& netDescription);
-
     bool write_parameters(std::ostream& stream, const std::string& netDescription);
 
     // Input feature converter
@@ -121,8 +116,6 @@ struct Networks {
     NetworkSmall networkSmall;
 };
 
-
 }  // namespace Stockfish
-
 
 #endif

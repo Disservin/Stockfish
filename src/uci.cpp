@@ -47,9 +47,9 @@ constexpr int  NormalizeToPawnValue = 356;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
 UCI::UCI(int argc, char** argv) :
-    networks(Eval::NNUE::Networks(
-      Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
-      Eval::NNUE::NetworkSmall({"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""}))),
+    networks(
+      Eval::NNUE::Networks(Eval::NNUE::NetworkBig({EvalFileDefaultNameBig, "None", ""}),
+                           Eval::NNUE::NetworkSmall({EvalFileDefaultNameSmall, "None", ""}))),
     cli(argc, argv) {
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
