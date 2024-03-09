@@ -33,8 +33,6 @@
 #include "benchmark.h"
 #include "evaluate.h"
 #include "movegen.h"
-#include "nnue/evaluate_nnue.h"
-#include "nnue/nnue_architecture.h"
 #include "perft.h"
 #include "position.h"
 #include "search.h"
@@ -290,7 +288,7 @@ void UCI::trace_eval(Position& pos) {
     networks.networkSmall.verify(options["EvalFileSmall"]);
 
 
-    sync_cout << "\n" << Eval::trace(p) << sync_endl;
+    sync_cout << "\n" << Eval::trace(p, networks) << sync_endl;
 }
 
 void UCI::search_clear() {

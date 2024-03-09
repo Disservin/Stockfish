@@ -19,29 +19,18 @@
 #ifndef NETWORK_H_INCLUDED
 #define NETWORK_H_INCLUDED
 
-#include <cmath>
+#include <cstdint>
 #include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <optional>
-#include <sstream>
-#include <string_view>
-#include <type_traits>
+#include <string>
+#include <utility>
 
-#include "../incbin/incbin.h"
-
-
-// #include "../evaluate.h"
-#include "../misc.h"
 #include "../position.h"
 #include "../types.h"
-// #include "../uci.h"
 #include "evaluate_nnue.h"
-#include "nnue_accumulator.h"
 #include "nnue_architecture.h"
-#include "nnue_common.h"
+#include "nnue_feature_transformer.h"
 
 
 namespace Stockfish::Eval::NNUE {
@@ -80,7 +69,10 @@ class Network {
     bool save_eval(const std::optional<std::string>& filename);
 
 
-    Value evaluate(const Position& pos, bool adjusted, int* complexity, bool psqtOnly);
+    Value evaluate(const Position& pos,
+                   bool            adjusted   = false,
+                   int*            complexity = nullptr,
+                   bool            psqtOnly   = false);
     void  verify(std::string user_eval_file);
 
     void          hint_common_access(const Position& pos, bool psqtOnl);

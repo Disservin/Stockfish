@@ -30,13 +30,18 @@
 
 #include "misc.h"
 #include "movepick.h"
-#include "nnue/network.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
 
 namespace Stockfish {
+
+namespace Eval {
+namespace NNUE {
+struct Networks;
+}
+}
 
 // Different node types, used as a template parameter
 enum NodeType {

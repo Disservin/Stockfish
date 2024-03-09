@@ -22,22 +22,15 @@
 #include <cassert>
 #include <cmath>
 #include <cstdlib>
-#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <optional>
 #include <sstream>
-#include <unordered_map>
-#include <vector>
 
-#include "incbin/incbin.h"
-#include "misc.h"
 #include "nnue/evaluate_nnue.h"
-#include "nnue/nnue_architecture.h"
+#include "nnue/network.h"
 #include "position.h"
 #include "types.h"
 #include "uci.h"
-#include "ucioption.h"
 
 namespace Stockfish {
 
@@ -91,14 +84,14 @@ Value Eval::evaluate(Eval::NNUE::Networks& networks, const Position& pos, int op
 // a string (suitable for outputting to stdout) that contains the detailed
 // descriptions and values of each evaluation term. Useful for debugging.
 // Trace scores are from white's point of view
-std::string Eval::trace(Position& pos) {
+std::string Eval::trace(Position& pos, Eval::NNUE::Networks& networks) {
 
     if (pos.checkers())
         return "Final evaluation: none (in check)";
 
     std::stringstream ss;
     ss << std::showpoint << std::noshowpos << std::fixed << std::setprecision(2);
-    ss << '\n' << NNUE::trace(pos) << '\n';
+    ss << '\n' << NNUE::trace(pos, networks) << '\n';
 
     ss << std::showpoint << std::showpos << std::fixed << std::setprecision(2) << std::setw(15);
 

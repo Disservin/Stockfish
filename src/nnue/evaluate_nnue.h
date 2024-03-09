@@ -22,14 +22,10 @@
 #define NNUE_EVALUATE_NNUE_H_INCLUDED
 
 #include <cstdint>
-#include <iosfwd>
 #include <memory>
-#include <optional>
 #include <string>
 
-// #include "../evaluate.h"
 #include "../misc.h"
-#include "../types.h"
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
 
@@ -70,12 +66,10 @@ using AlignedPtr = std::unique_ptr<T, AlignedDeleter<T>>;
 template<typename T>
 using LargePagePtr = std::unique_ptr<T, LargePageDeleter<T>>;
 
-std::string trace(Position& pos);
-
 struct Networks;
 
-
-void hint_common_parent_position(const Position& pos, Networks& networks);
+std::string trace(Position& pos, Networks& networks);
+void        hint_common_parent_position(const Position& pos, Networks& networks);
 
 
 }  // namespace Stockfish::Eval::NNUE

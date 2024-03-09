@@ -1,29 +1,21 @@
 #include "network.h"
 
-#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <iomanip>
 #include <iostream>
+#include <memory>
 #include <optional>
-#include <sstream>
-#include <string_view>
 #include <type_traits>
+#include <vector>
 
 #include "../incbin/incbin.h"
-
-
-// #include "../evaluate.h"
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
-// #include "../uci.h"
-#include "nnue_architecture.h"
-#include "nnue_accumulator.h"
-#include "nnue_common.h"
 #include "evaluate_nnue.h"
-
+#include "nnue_architecture.h"
+#include "nnue_common.h"
 
 namespace {
 // Macro to embed the default efficiently updatable neural network (NNUE) file

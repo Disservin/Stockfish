@@ -23,22 +23,17 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
-#include <fstream>
 #include <iomanip>
+#include <iosfwd>
 #include <iostream>
-#include <optional>
 #include <sstream>
 #include <string_view>
-#include <type_traits>
 
 #include "../evaluate.h"
-#include "../misc.h"
 #include "../position.h"
 #include "../types.h"
 #include "../uci.h"
-#include "nnue_accumulator.h"
-#include "nnue_common.h"
-
+#include "network.h"
 namespace Stockfish::Eval::NNUE {
 
 
@@ -106,7 +101,7 @@ static void format_cp_aligned_dot(Value v, std::stringstream& stream) {
 
 // Returns a string with the value of each piece on a board,
 // and a table for (PSQT, Layers) values bucket by bucket.
-std::string trace(Position& pos) {
+std::string trace(Position& pos, Eval::NNUE::Networks& networks) {
 
     std::stringstream ss;
 
@@ -132,71 +127,71 @@ std::string trace(Position& pos) {
 
     // We estimate the value of each piece by doing a differential evaluation from
     // the current base eval, simulating the removal of the piece from its square.
-    // Value base = evaluate<NNUE::Big>(pos);
-    // base       = pos.side_to_move() == WHITE ? base : -base;
+    Value base = networks.networkBig.evaluate(pos);
+    base       = pos.side_to_move() == WHITE ? base : -base;
 
-    // for (File f = FILE_A; f <= FILE_H; ++f)
-    //     for (Rank r = RANK_1; r <= RANK_8; ++r)
-    //     {
-    //         Square sq = make_square(f, r);
-    //         Piece  pc = pos.piece_on(sq);
-    //         Value  v  = VALUE_NONE;
+    for (File f = FILE_A; f <= FILE_H; ++f)
+        for (Rank r = RANK_1; r <= RANK_8; ++r)
+        {
+            Square sq = make_square(f, r);
+            Piece  pc = pos.piece_on(sq);
+            Value  v  = VALUE_NONE;
 
-    //         if (pc != NO_PIECE && type_of(pc) != KING)
-    //         {
-    //             auto st = pos.state();
+            if (pc != NO_PIECE && type_of(pc) != KING)
+            {
+                auto st = pos.state();
 
-    //             pos.remove_piece(sq);
-    //             st->accumulatorBig.computed[WHITE]       = st->accumulatorBig.computed[BLACK] =
-    //               st->accumulatorBig.computedPSQT[WHITE] = st->accumulatorBig.computedPSQT[BLACK] =
-    //                 false;
+                pos.remove_piece(sq);
+                st->accumulatorBig.computed[WHITE]       = st->accumulatorBig.computed[BLACK] =
+                  st->accumulatorBig.computedPSQT[WHITE] = st->accumulatorBig.computedPSQT[BLACK] =
+                    false;
 
-    //             Value eval = evaluate<NNUE::Big>(pos);
-    //             eval       = pos.side_to_move() == WHITE ? eval : -eval;
-    //             v          = base - eval;
+                Value eval = networks.networkBig.evaluate(pos);
+                eval       = pos.side_to_move() == WHITE ? eval : -eval;
+                v          = base - eval;
 
-    //             pos.put_piece(pc, sq);
-    //             st->accumulatorBig.computed[WHITE]       = st->accumulatorBig.computed[BLACK] =
-    //               st->accumulatorBig.computedPSQT[WHITE] = st->accumulatorBig.computedPSQT[BLACK] =
-    //                 false;
-    //         }
+                pos.put_piece(pc, sq);
+                st->accumulatorBig.computed[WHITE]       = st->accumulatorBig.computed[BLACK] =
+                  st->accumulatorBig.computedPSQT[WHITE] = st->accumulatorBig.computedPSQT[BLACK] =
+                    false;
+            }
 
-    //         writeSquare(f, r, pc, v);
-    //     }
+            writeSquare(f, r, pc, v);
+        }
 
     ss << " NNUE derived piece values:\n";
     for (int row = 0; row < 3 * 8 + 1; ++row)
         ss << board[row] << '\n';
     ss << '\n';
 
-    // auto t = trace_evaluate(pos);
+    auto t = networks.networkBig.trace_evaluate(pos);
 
-    // ss << " NNUE network contributions "
-    //    << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)") << std::endl
-    //    << "+------------+------------+------------+------------+\n"
-    //    << "|   Bucket   |  Material  | Positional |   Total    |\n"
-    //    << "|            |   (PSQT)   |  (Layers)  |            |\n"
-    //    << "+------------+------------+------------+------------+\n";
+    ss << " NNUE network contributions "
+       << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)") << std::endl
+       << "+------------+------------+------------+------------+\n"
+       << "|   Bucket   |  Material  | Positional |   Total    |\n"
+       << "|            |   (PSQT)   |  (Layers)  |            |\n"
+       << "+------------+------------+------------+------------+\n";
 
-    // for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket)
-    // {
-    //     ss << "|  " << bucket << "        ";
-    //     ss << " |  ";
-    //     format_cp_aligned_dot(t.psqt[bucket], ss);
-    //     ss << "  "
-    //        << " |  ";
-    //     format_cp_aligned_dot(t.positional[bucket], ss);
-    //     ss << "  "
-    //        << " |  ";
-    //     format_cp_aligned_dot(t.psqt[bucket] + t.positional[bucket], ss);
-    //     ss << "  "
-    //        << " |";
-    //     if (bucket == t.correctBucket)
-    //         ss << " <-- this bucket is used";
-    //     ss << '\n';
-    // }
+    for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket)
+    {
+        ss << "|  " << bucket << "        ";
+        ss << " |  ";
+        format_cp_aligned_dot(t.psqt[bucket], ss);
+        ss << "  "
+           << " |  ";
+        format_cp_aligned_dot(t.positional[bucket], ss);
+        ss << "  "
+           << " |  ";
+        format_cp_aligned_dot(t.psqt[bucket] + t.positional[bucket], ss);
+        ss << "  "
+           << " |";
+        if (bucket == t.correctBucket)
+            ss << " <-- this bucket is used";
+        ss << '\n';
+    }
 
-    // ss << "+------------+------------+------------+------------+\n";
+    ss << "+------------+------------+------------+------------+\n";
 
     return ss.str();
 }

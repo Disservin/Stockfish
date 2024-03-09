@@ -20,9 +20,7 @@
 #define EVALUATE_H_INCLUDED
 
 #include <string>
-#include <unordered_map>
 
-// #include "nnue/network.h"
 #include "types.h"
 
 namespace Stockfish {
@@ -31,7 +29,6 @@ namespace Stockfish {
 #define EvalFileDefaultNameSmall "nn-baff1ede1f90.nnue"
 
 class Position;
-class OptionsMap;
 
 namespace Eval {
 
@@ -39,7 +36,7 @@ namespace NNUE {
 struct Networks;
 }
 
-std::string trace(Position& pos);
+std::string trace(Position& pos, Eval::NNUE::Networks& networks);
 
 int   simple_eval(const Position& pos, Color c);
 Value evaluate(NNUE::Networks& networks, const Position& pos, int optimism);

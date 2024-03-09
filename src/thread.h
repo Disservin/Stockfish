@@ -28,18 +28,11 @@
 #include <vector>
 
 #include "position.h"
-// #include "search.h"
+#include "search.h"
 #include "thread_win32_osx.h"
 
 namespace Stockfish {
 
-namespace Search {
-class ISearchManager;
-class SearchManager;
-struct SharedState;
-class Worker;
-struct LimitsType;
-}
 
 class OptionsMap;
 using Value = int;

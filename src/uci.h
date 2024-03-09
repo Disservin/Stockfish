@@ -22,7 +22,6 @@
 #include <iostream>
 #include <string>
 
-#include "evaluate.h"
 #include "misc.h"
 #include "nnue/network.h"
 #include "position.h"
@@ -57,10 +56,6 @@ class UCI {
     OptionsMap options;
 
     Eval::NNUE::Networks networks;
-
-    // Eval::NNUE::NetworkBig   networkBig;
-    // Eval::NNUE::NetworkSmall networkSmall;
-
 
    private:
     TranspositionTable tt;
