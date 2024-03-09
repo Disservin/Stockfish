@@ -55,7 +55,7 @@ constexpr IndexType PSQTBuckets = 8;
 constexpr IndexType LayerStacks = 8;
 
 template<IndexType L1, int L2, int L3>
-struct Network {
+struct NetworkArchitecture {
     static constexpr IndexType TransformedFeatureDimensions = L1;
     static constexpr int       FC_0_OUTPUTS                 = L2;
     static constexpr int       FC_1_OUTPUTS                 = L3;

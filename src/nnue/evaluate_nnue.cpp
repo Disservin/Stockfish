@@ -48,8 +48,10 @@ LargePagePtr<FeatureTransformer<TransformedFeatureDimensionsSmall, &StateInfo::a
   featureTransformerSmall;
 
 // Evaluation function
-AlignedPtr<Network<TransformedFeatureDimensionsBig, L2Big, L3Big>>       networkBig[LayerStacks];
-AlignedPtr<Network<TransformedFeatureDimensionsSmall, L2Small, L3Small>> networkSmall[LayerStacks];
+AlignedPtr<NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>>
+  networkBig[LayerStacks];
+AlignedPtr<NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>>
+  networkSmall[LayerStacks];
 
 // Evaluation function file names
 

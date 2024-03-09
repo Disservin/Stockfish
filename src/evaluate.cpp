@@ -39,25 +39,6 @@
 #include "uci.h"
 #include "ucioption.h"
 
-// Macro to embed the default efficiently updatable neural network (NNUE) file
-// data in the engine binary (using incbin.h, by Dale Weiler).
-// This macro invocation will declare the following three variables
-//     const unsigned char        gEmbeddedNNUEData[];  // a pointer to the embedded data
-//     const unsigned char *const gEmbeddedNNUEEnd;     // a marker to the end
-//     const unsigned int         gEmbeddedNNUESize;    // the size of the embedded file
-// Note that this does not work in Microsoft Visual Studio.
-#if !defined(_MSC_VER) && !defined(NNUE_EMBEDDING_OFF)
-INCBIN(EmbeddedNNUEBig, EvalFileDefaultNameBig);
-INCBIN(EmbeddedNNUESmall, EvalFileDefaultNameSmall);
-#else
-const unsigned char        gEmbeddedNNUEBigData[1]   = {0x0};
-const unsigned char* const gEmbeddedNNUEBigEnd       = &gEmbeddedNNUEBigData[1];
-const unsigned int         gEmbeddedNNUEBigSize      = 1;
-const unsigned char        gEmbeddedNNUESmallData[1] = {0x0};
-const unsigned char* const gEmbeddedNNUESmallEnd     = &gEmbeddedNNUESmallData[1];
-const unsigned int         gEmbeddedNNUESmallSize    = 1;
-#endif
-
 
 namespace Stockfish {
 
@@ -75,66 +56,66 @@ NNUE::EvalFiles NNUE::load_networks(const std::string& rootDirectory,
                                     const OptionsMap&  options,
                                     NNUE::EvalFiles    evalFiles) {
 
-    for (auto& [netSize, evalFile] : evalFiles)
-    {
-        std::string user_eval_file = options[evalFile.optionName];
+    //     for (auto& [netSize, evalFile] : evalFiles)
+    //     {
+    //         std::string user_eval_file = options[evalFile.optionName];
 
-        if (user_eval_file.empty())
-            user_eval_file = evalFile.defaultName;
+    //         if (user_eval_file.empty())
+    //             user_eval_file = evalFile.defaultName;
 
-#if defined(DEFAULT_NNUE_DIRECTORY)
-        std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
-                                         stringify(DEFAULT_NNUE_DIRECTORY)};
-#else
-        std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
-#endif
+    // #if defined(DEFAULT_NNUE_DIRECTORY)
+    //         std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
+    //                                          stringify(DEFAULT_NNUE_DIRECTORY)};
+    // #else
+    //         std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
+    // #endif
 
-        for (const std::string& directory : dirs)
-        {
-            if (evalFile.current != user_eval_file)
-            {
-                if (directory != "<internal>")
-                {
-                    std::ifstream stream(directory + user_eval_file, std::ios::binary);
-                    auto          description = NNUE::load_eval(stream, netSize);
+    //         for (const std::string& directory : dirs)
+    //         {
+    //             if (evalFile.current != user_eval_file)
+    //             {
+    //                 if (directory != "<internal>")
+    //                 {
+    //                     std::ifstream stream(directory + user_eval_file, std::ios::binary);
+    //                     auto          description = NNUE::load_eval(stream, netSize);
 
-                    if (description.has_value())
-                    {
-                        evalFile.current        = user_eval_file;
-                        evalFile.netDescription = description.value();
-                    }
-                }
+    //                     if (description.has_value())
+    //                     {
+    //                         evalFile.current        = user_eval_file;
+    //                         evalFile.netDescription = description.value();
+    //                     }
+    //                 }
 
-                if (directory == "<internal>" && user_eval_file == evalFile.defaultName)
-                {
-                    // C++ way to prepare a buffer for a memory stream
-                    class MemoryBuffer: public std::basic_streambuf<char> {
-                       public:
-                        MemoryBuffer(char* p, size_t n) {
-                            setg(p, p, p + n);
-                            setp(p, p + n);
-                        }
-                    };
+    //                 if (directory == "<internal>" && user_eval_file == evalFile.defaultName)
+    //                 {
+    //                     // C++ way to prepare a buffer for a memory stream
+    //                     class MemoryBuffer: public std::basic_streambuf<char> {
+    //                        public:
+    //                         MemoryBuffer(char* p, size_t n) {
+    //                             setg(p, p, p + n);
+    //                             setp(p, p + n);
+    //                         }
+    //                     };
 
-                    MemoryBuffer buffer(
-                      const_cast<char*>(reinterpret_cast<const char*>(
-                        netSize == Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData)),
-                      size_t(netSize == Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize));
-                    (void) gEmbeddedNNUEBigEnd;  // Silence warning on unused variable
-                    (void) gEmbeddedNNUESmallEnd;
+    //                     MemoryBuffer buffer(
+    //                       const_cast<char*>(reinterpret_cast<const char*>(
+    //                         netSize == Small ? gEmbeddedNNUESmallData : gEmbeddedNNUEBigData)),
+    //                       size_t(netSize == Small ? gEmbeddedNNUESmallSize : gEmbeddedNNUEBigSize));
+    //                     (void) gEmbeddedNNUEBigEnd;  // Silence warning on unused variable
+    //                     (void) gEmbeddedNNUESmallEnd;
 
-                    std::istream stream(&buffer);
-                    auto         description = NNUE::load_eval(stream, netSize);
+    //                     std::istream stream(&buffer);
+    //                     auto         description = NNUE::load_eval(stream, netSize);
 
-                    if (description.has_value())
-                    {
-                        evalFile.current        = user_eval_file;
-                        evalFile.netDescription = description.value();
-                    }
-                }
-            }
-        }
-    }
+    //                     if (description.has_value())
+    //                     {
+    //                         evalFile.current        = user_eval_file;
+    //                         evalFile.netDescription = description.value();
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
 
     return evalFiles;
 }

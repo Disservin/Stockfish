@@ -26,6 +26,8 @@
 #include "types.h"
 #include "uci.h"
 
+#include "nnue/network.h"
+
 using namespace Stockfish;
 
 int main(int argc, char* argv[]) {
@@ -35,13 +37,24 @@ int main(int argc, char* argv[]) {
     Bitboards::init();
     Position::init();
 
-    UCI uci(argc, argv);
 
-    Tune::init(uci.options);
+    Eval::NNUE::NetworkBig networkBig;
+    networkBig.loadInternal();
 
-    uci.evalFiles = Eval::NNUE::load_networks(uci.working_directory(), uci.options, uci.evalFiles);
+    Position     pos;
+    StateListPtr states(new std::deque<StateInfo>(1));
+    pos.set("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, &states->back());
 
-    uci.loop();
+    std::cout << networkBig.evaluate(pos, false, nullptr, false) << std::endl;
+
+
+    // UCI uci(argc, argv);
+
+    // Tune::init(uci.options);
+
+    // uci.evalFiles = Eval::NNUE::load_networks(uci.working_directory(), uci.options, uci.evalFiles);
+
+    // uci.loop();
 
     return 0;
 }
