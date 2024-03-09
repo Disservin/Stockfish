@@ -74,19 +74,9 @@ std::string trace(Position& pos);
 
 struct Networks;
 
-// template<NetSize Net_Size>
-// Value evaluate(const Position& pos,
-//                bool            adjusted   = false,
-//                int*            complexity = nullptr,
-//                bool            psqtOnly   = false);
+
 void hint_common_parent_position(const Position& pos, Networks& networks);
 
-// std::optional<std::string> load_eval(std::istream& stream, NetSize netSize);
-// bool                       save_eval(std::ostream&      stream,
-//                                      NetSize            netSize,
-//                                      const std::string& name,
-//                                      const std::string& netDescription);
-// bool save_eval(const std::optional<std::string>& filename, NetSize netSize, const EvalFiles&);
 
 }  // namespace Stockfish::Eval::NNUE
 

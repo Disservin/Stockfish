@@ -51,10 +51,6 @@ constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 UCI::UCI(int argc, char** argv) :
     cli(argc, argv) {
 
-    // evalFiles = {{Eval::NNUE::Big, {"EvalFile", EvalFileDefaultNameBig, "None", ""}},
-    //              {Eval::NNUE::Small, {"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""}}};
-
-
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });
 
     options["Threads"] << Option(1, 1, 1024, [this](const Option&) {
@@ -81,13 +77,10 @@ UCI::UCI(int argc, char** argv) :
     options["Syzygy50MoveRule"] << Option(true);
     options["SyzygyProbeLimit"] << Option(7, 0, 7);
     options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option& o) {
-        // evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
         networks.networkBig.load(cli.binaryDirectory, o);
     });
     options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option& o) {
         networks.networkBig.load(cli.binaryDirectory, o);
-
-        // evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
     });
 
     networks.networkBig.load(cli.binaryDirectory, options["EvalFile"]);
@@ -163,7 +156,6 @@ void UCI::loop() {
             std::string                f;
             if (is >> std::skipws >> f)
                 filename = f;
-            // Eval::NNUE::save_eval(filename, Eval::NNUE::Big, evalFiles);
             networks.networkBig.save_eval(filename);
         }
         else if (token == "--help" || token == "help" || token == "--license" || token == "license")
@@ -225,7 +217,6 @@ void UCI::go(Position& pos, std::istringstream& is, StateListPtr& states) {
 
     Search::LimitsType limits = parse_limits(pos, is);
 
-    // Eval::NNUE::verify(options, evalFiles);
     networks.networkBig.verify(options["EvalFile"]);
     networks.networkSmall.verify(options["EvalFileSmall"]);
 
@@ -292,7 +283,6 @@ void UCI::trace_eval(Position& pos) {
     Position     p;
     p.set(pos.fen(), options["UCI_Chess960"], &states->back());
 
-    // Eval::NNUE::verify(options, evalFiles);
     networks.networkBig.verify(options["EvalFile"]);
     networks.networkSmall.verify(options["EvalFileSmall"]);
 

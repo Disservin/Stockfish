@@ -55,8 +55,6 @@ class UCI {
     const std::string& working_directory() const { return cli.workingDirectory; }
 
     OptionsMap options;
-    // Eval::NNUE::EvalFiles evalFiles;
-
 
     Eval::NNUE::Networks networks = {
       Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
