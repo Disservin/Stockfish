@@ -38,24 +38,24 @@ int main(int argc, char* argv[]) {
     Position::init();
 
 
-    Position     pos;
-    StateListPtr states(new std::deque<StateInfo>(1));
-    pos.set("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, &states->back());
+    // Position     pos;
+    // StateListPtr states(new std::deque<StateInfo>(1));
+    // pos.set("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, &states->back());
 
-    Eval::NNUE::NetworkBig networkBig =
-      Eval::NNUE::NetworkBig({"EvalFile", "nn-1ceb1ade0001.nnue", "None", ""});
-    networkBig.loadInternal();
+    // Eval::NNUE::NetworkBig networkBig =
+    //   Eval::NNUE::NetworkBig({"EvalFile", "nn-1ceb1ade0001.nnue", "None", ""});
+    // networkBig.loadInternal();
 
-    std::cout << networkBig.evaluate(pos, false, nullptr, false) << std::endl;
+    // std::cout << networkBig.evaluate(pos, false, nullptr, false) << std::endl;
 
 
-    // UCI uci(argc, argv);
+    UCI uci(argc, argv);
 
-    // Tune::init(uci.options);
+    Tune::init(uci.options);
 
     // uci.evalFiles = Eval::NNUE::load_networks(uci.working_directory(), uci.options, uci.evalFiles);
 
-    // uci.loop();
+    uci.loop();
 
     return 0;
 }

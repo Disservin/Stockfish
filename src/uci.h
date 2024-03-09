@@ -60,12 +60,12 @@ class UCI {
 
     Eval::NNUE::Networks networks = {
       Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
-      Eval::NNUE::NetworkSmall({"EvalFile", EvalFileDefaultNameSmall, "None", ""})};
+      Eval::NNUE::NetworkSmall({"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""})};
 
    private:
-    TranspositionTable          tt;
-    ThreadPool                  threads;
-    CommandLine                 cli;
+    TranspositionTable tt;
+    ThreadPool         threads;
+    CommandLine        cli;
 
     void go(Position& pos, std::istringstream& is, StateListPtr& states);
     void bench(Position& pos, std::istream& args, StateListPtr& states);

@@ -90,6 +90,9 @@ UCI::UCI(int argc, char** argv) :
         // evalFiles = Eval::NNUE::load_networks(cli.binaryDirectory, options, evalFiles);
     });
 
+    networks.networkBig.load(cli.binaryDirectory, options["EvalFile"]);
+    networks.networkSmall.load(cli.binaryDirectory, options["EvalFileSmall"]);
+
     threads.set({options, threads, tt, networks});
 
     search_clear();  // After threads are up
