@@ -46,9 +46,9 @@ void hint_common_parent_position(const Position& pos, const Networks& networks) 
 
     int simpleEvalAbs = std::abs(simple_eval(pos, pos.side_to_move()));
     if (simpleEvalAbs > 1050)
-        networks.networkSmall.hint_common_access(pos, simpleEvalAbs > 2500);
+        networks.small.hint_common_access(pos, simpleEvalAbs > 2500);
     else
-        networks.networkBig.hint_common_access(pos, false);
+        networks.big.hint_common_access(pos, false);
 }
 
 
@@ -129,7 +129,7 @@ std::string trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     // We estimate the value of each piece by doing a differential evaluation from
     // the current base eval, simulating the removal of the piece from its square.
-    Value base = networks.networkBig.evaluate(pos);
+    Value base = networks.big.evaluate(pos);
     base       = pos.side_to_move() == WHITE ? base : -base;
 
     for (File f = FILE_A; f <= FILE_H; ++f)
@@ -148,7 +148,7 @@ std::string trace(Position& pos, const Eval::NNUE::Networks& networks) {
                   st->accumulatorBig.computedPSQT[WHITE] = st->accumulatorBig.computedPSQT[BLACK] =
                     false;
 
-                Value eval = networks.networkBig.evaluate(pos);
+                Value eval = networks.big.evaluate(pos);
                 eval       = pos.side_to_move() == WHITE ? eval : -eval;
                 v          = base - eval;
 
@@ -166,7 +166,7 @@ std::string trace(Position& pos, const Eval::NNUE::Networks& networks) {
         ss << board[row] << '\n';
     ss << '\n';
 
-    auto t = networks.networkBig.trace_evaluate(pos);
+    auto t = networks.big.trace_evaluate(pos);
 
     ss << " NNUE network contributions "
        << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)") << std::endl

@@ -94,11 +94,11 @@ using NetworkSmall = Network<NetSize::Small, SmallNetworkArchitecture, SmallFeat
 
 struct Networks {
     Networks(NetworkBig&& nB, NetworkSmall&& nS) :
-        networkBig(std::move(nB)),
-        networkSmall(std::move(nS)) {}
+        big(std::move(nB)),
+        small(std::move(nS)) {}
 
-    NetworkBig   networkBig;
-    NetworkSmall networkSmall;
+    NetworkBig   big;
+    NetworkSmall small;
 };
 
 }  // namespace Stockfish

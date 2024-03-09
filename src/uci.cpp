@@ -78,14 +78,14 @@ UCI::UCI(int argc, char** argv) :
     options["Syzygy50MoveRule"] << Option(true);
     options["SyzygyProbeLimit"] << Option(7, 0, 7);
     options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option& o) {
-        networks.networkBig.load(cli.binaryDirectory, o);
+        networks.big.load(cli.binaryDirectory, o);
     });
     options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option& o) {
-        networks.networkBig.load(cli.binaryDirectory, o);
+        networks.big.load(cli.binaryDirectory, o);
     });
 
-    networks.networkBig.load(cli.binaryDirectory, options["EvalFile"]);
-    networks.networkSmall.load(cli.binaryDirectory, options["EvalFileSmall"]);
+    networks.big.load(cli.binaryDirectory, options["EvalFile"]);
+    networks.small.load(cli.binaryDirectory, options["EvalFileSmall"]);
 
     threads.set({options, threads, tt, networks});
 
@@ -157,7 +157,7 @@ void UCI::loop() {
             std::string                f;
             if (is >> std::skipws >> f)
                 filename = f;
-            networks.networkBig.save(filename);
+            networks.big.save(filename);
         }
         else if (token == "--help" || token == "help" || token == "--license" || token == "license")
             sync_cout
@@ -218,8 +218,8 @@ void UCI::go(Position& pos, std::istringstream& is, StateListPtr& states) {
 
     Search::LimitsType limits = parse_limits(pos, is);
 
-    networks.networkBig.verify(options["EvalFile"]);
-    networks.networkSmall.verify(options["EvalFileSmall"]);
+    networks.big.verify(options["EvalFile"]);
+    networks.small.verify(options["EvalFileSmall"]);
 
     if (limits.perft)
     {
@@ -284,8 +284,8 @@ void UCI::trace_eval(Position& pos) {
     Position     p;
     p.set(pos.fen(), options["UCI_Chess960"], &states->back());
 
-    networks.networkBig.verify(options["EvalFile"]);
-    networks.networkSmall.verify(options["EvalFileSmall"]);
+    networks.big.verify(options["EvalFile"]);
+    networks.small.verify(options["EvalFileSmall"]);
 
 
     sync_cout << "\n" << Eval::trace(p, networks) << sync_endl;

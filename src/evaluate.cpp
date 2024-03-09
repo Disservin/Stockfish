@@ -55,8 +55,8 @@ Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, 
 
     int nnueComplexity;
 
-    Value nnue = smallNet ? networks.networkSmall.evaluate(pos, true, &nnueComplexity, psqtOnly)
-                          : networks.networkBig.evaluate(pos, true, &nnueComplexity, false);
+    Value nnue = smallNet ? networks.small.evaluate(pos, true, &nnueComplexity, psqtOnly)
+                          : networks.big.evaluate(pos, true, &nnueComplexity, false);
 
     // Blend optimism and eval with nnue complexity and material imbalance
     optimism += optimism * (nnueComplexity + std::abs(simpleEval - nnue)) / 512;
@@ -90,7 +90,7 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     ss << std::showpoint << std::showpos << std::fixed << std::setprecision(2) << std::setw(15);
 
-    Value v = networks.networkBig.evaluate(pos, false);
+    Value v = networks.big.evaluate(pos, false);
     v       = pos.side_to_move() == WHITE ? v : -v;
     ss << "NNUE evaluation        " << 0.01 * UCI::to_cp(v) << " (white side)\n";
 
