@@ -19,14 +19,11 @@
 #include <iostream>
 
 #include "bitboard.h"
-#include "evaluate.h"
 #include "misc.h"
 #include "position.h"
 #include "tune.h"
 #include "types.h"
 #include "uci.h"
-
-#include "nnue/network.h"
 
 using namespace Stockfish;
 
@@ -36,18 +33,6 @@ int main(int argc, char* argv[]) {
 
     Bitboards::init();
     Position::init();
-
-
-    // Position     pos;
-    // StateListPtr states(new std::deque<StateInfo>(1));
-    // pos.set("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", false, &states->back());
-
-    // Eval::NNUE::NetworkBig networkBig =
-    //   Eval::NNUE::NetworkBig({"EvalFile", "nn-1ceb1ade0001.nnue", "None", ""});
-    // networkBig.loadInternal();
-
-    // std::cout << networkBig.evaluate(pos, false, nullptr, false) << std::endl;
-
 
     UCI uci(argc, argv);
 
