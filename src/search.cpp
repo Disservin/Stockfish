@@ -27,15 +27,15 @@
 #include <cstdlib>
 #include <initializer_list>
 #include <iostream>
-#include <utility>
 #include <sstream>
+#include <utility>
 
 #include "evaluate.h"
 #include "misc.h"
 #include "movegen.h"
 #include "movepick.h"
-#include "nnue/evaluate_nnue.h"
 #include "nnue/nnue_common.h"
+#include "nnue/nnue_misc.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "thread.h"

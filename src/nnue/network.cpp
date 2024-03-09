@@ -13,9 +13,9 @@
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
-#include "evaluate_nnue.h"
 #include "nnue_architecture.h"
 #include "nnue_common.h"
+#include "nnue_misc.h"
 
 namespace {
 // Macro to embed the default efficiently updatable neural network (NNUE) file

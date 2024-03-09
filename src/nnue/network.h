@@ -28,30 +28,11 @@
 
 #include "../position.h"
 #include "../types.h"
-#include "evaluate_nnue.h"
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
+#include "nnue_misc.h"
 
 namespace Stockfish::Eval::NNUE {
-
-struct EvalFile {
-    // Default net name, will use one of the macros above
-    std::string defaultName;
-    // Selected net name, either via uci option or default
-    std::string current;
-    // Net description extracted from the net file
-    std::string netDescription;
-};
-
-
-struct NnueEvalTrace {
-    static_assert(LayerStacks == PSQTBuckets);
-
-    Value       psqt[LayerStacks];
-    Value       positional[LayerStacks];
-    std::size_t correctBucket;
-};
-
 
 template<NetSize NetSize, typename Arch, typename Transformer>
 class Network {

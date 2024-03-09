@@ -18,7 +18,7 @@
 
 // Code for calculating NNUE evaluation function
 
-#include "evaluate_nnue.h"
+#include "nnue_misc.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -34,6 +34,7 @@
 #include "../types.h"
 #include "../uci.h"
 #include "network.h"
+
 namespace Stockfish::Eval::NNUE {
 
 

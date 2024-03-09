@@ -16,10 +16,8 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-// header used in NNUE evaluation function
-
-#ifndef NNUE_EVALUATE_NNUE_H_INCLUDED
-#define NNUE_EVALUATE_NNUE_H_INCLUDED
+#ifndef NNUE_MISC_H_INCLUDED
+#define NNUE_MISC_H_INCLUDED
 
 #include <cstdint>
 #include <memory>
@@ -29,12 +27,11 @@
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
 
-
 namespace Stockfish {
-class Position;
-}
 
-namespace Stockfish::Eval::NNUE {
+class Position;
+
+namespace Eval::NNUE {
 
 // Deleter for automating release of memory area
 template<typename T>
@@ -45,6 +42,7 @@ struct AlignedDeleter {
     }
 };
 
+
 template<typename T>
 struct LargePageDeleter {
     void operator()(T* ptr) const {
@@ -53,18 +51,41 @@ struct LargePageDeleter {
     }
 };
 
+
 template<typename T>
 using AlignedPtr = std::unique_ptr<T, AlignedDeleter<T>>;
+
 
 template<typename T>
 using LargePagePtr = std::unique_ptr<T, LargePageDeleter<T>>;
 
+
+struct EvalFile {
+    // Default net name, will use one of the macros above
+    std::string defaultName;
+    // Selected net name, either via uci option or default
+    std::string current;
+    // Net description extracted from the net file
+    std::string netDescription;
+};
+
+
+struct NnueEvalTrace {
+    static_assert(LayerStacks == PSQTBuckets);
+
+    Value       psqt[LayerStacks];
+    Value       positional[LayerStacks];
+    std::size_t correctBucket;
+};
+
+
 struct Networks;
+
 
 std::string trace(Position& pos, Networks& networks);
 void        hint_common_parent_position(const Position& pos, Networks& networks);
 
-
 }  // namespace Stockfish::Eval::NNUE
+}  // namespace Stockfish
 
-#endif  // #ifndef NNUE_EVALUATE_NNUE_H_INCLUDED
+#endif  // #ifndef NNUE_MISC_H_INCLUDED

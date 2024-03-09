@@ -26,14 +26,13 @@
 #include <iostream>
 #include <sstream>
 
-#include "nnue/evaluate_nnue.h"
 #include "nnue/network.h"
+#include "nnue/nnue_misc.h"
 #include "position.h"
 #include "types.h"
 #include "uci.h"
 
 namespace Stockfish {
-
 
 // Returns a static, purely materialistic evaluation of the position from
 // the point of view of the given color. It can be divided by PawnValue to get
