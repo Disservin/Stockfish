@@ -27,6 +27,9 @@
 
 namespace Stockfish {
 
+#define EvalFileDefaultNameBig "nn-1ceb1ade0001.nnue"
+#define EvalFileDefaultNameSmall "nn-baff1ede1f90.nnue"
+
 class Position;
 class OptionsMap;
 

@@ -22,25 +22,25 @@
 #include <cassert>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <deque>
 #include <memory>
 #include <optional>
 #include <sstream>
 #include <vector>
-#include <cstdint>
 
 #include "benchmark.h"
 #include "evaluate.h"
 #include "movegen.h"
 #include "nnue/evaluate_nnue.h"
 #include "nnue/nnue_architecture.h"
+#include "perft.h"
 #include "position.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
 #include "types.h"
 #include "ucioption.h"
-#include "perft.h"
 
 namespace Stockfish {
 
@@ -49,6 +49,9 @@ constexpr int  NormalizeToPawnValue = 356;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
 UCI::UCI(int argc, char** argv) :
+    networks(Eval::NNUE::Networks(
+      Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
+      Eval::NNUE::NetworkSmall({"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""}))),
     cli(argc, argv) {
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });

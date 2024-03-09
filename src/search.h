@@ -25,16 +25,16 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "misc.h"
 #include "movepick.h"
+#include "nnue/network.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
-#include "nnue/network.h"
 
 namespace Stockfish {
 
@@ -133,7 +133,9 @@ struct SharedState {
         options(optionsMap),
         threads(threadPool),
         tt(transpositionTable),
-        networks(nets) {}
+        networks(nets) {
+    }
+
 
     const OptionsMap&     options;
     ThreadPool&           threads;

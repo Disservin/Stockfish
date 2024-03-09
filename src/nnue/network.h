@@ -38,16 +38,10 @@
 #include "../position.h"
 #include "../types.h"
 // #include "../uci.h"
-#include "nnue_architecture.h"
-#include "nnue_accumulator.h"
-#include "nnue_common.h"
 #include "evaluate_nnue.h"
-
-
-namespace Stockfish::Eval {
-#define EvalFileDefaultNameBig "nn-1ceb1ade0001.nnue"
-#define EvalFileDefaultNameSmall "nn-baff1ede1f90.nnue"
-}
+#include "nnue_accumulator.h"
+#include "nnue_architecture.h"
+#include "nnue_common.h"
 
 
 namespace Stockfish::Eval::NNUE {
@@ -128,11 +122,11 @@ using NetworkSmall =
 
 struct Networks {
     Networks(NetworkBig&& nB, NetworkSmall&& nS) :
-        networkBig(nB),
-        networkSmall(nS) {}
+        networkBig(std::move(nB)),
+        networkSmall(std::move(nS)) {}
 
-    NetworkBig&   networkBig;
-    NetworkSmall& networkSmall;
+    NetworkBig   networkBig;
+    NetworkSmall networkSmall;
 };
 
 

@@ -24,12 +24,12 @@
 
 #include "evaluate.h"
 #include "misc.h"
+#include "nnue/network.h"
 #include "position.h"
+#include "search.h"
 #include "thread.h"
 #include "tt.h"
 #include "ucioption.h"
-#include "search.h"
-#include "nnue/network.h"
 
 namespace Stockfish {
 
@@ -56,9 +56,11 @@ class UCI {
 
     OptionsMap options;
 
-    Eval::NNUE::Networks networks = {
-      Eval::NNUE::NetworkBig({"EvalFile", EvalFileDefaultNameBig, "None", ""}),
-      Eval::NNUE::NetworkSmall({"EvalFileSmall", EvalFileDefaultNameSmall, "None", ""})};
+    Eval::NNUE::Networks networks;
+
+    // Eval::NNUE::NetworkBig   networkBig;
+    // Eval::NNUE::NetworkSmall networkSmall;
+
 
    private:
     TranspositionTable tt;
