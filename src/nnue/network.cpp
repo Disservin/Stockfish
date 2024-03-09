@@ -9,6 +9,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "../evaluate.h"
 #include "../incbin/incbin.h"
 #include "../misc.h"
 #include "../position.h"
