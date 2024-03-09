@@ -81,7 +81,7 @@ UCI::UCI(int argc, char** argv) :
         networks.big.load(cli.binaryDirectory, o);
     });
     options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option& o) {
-        networks.big.load(cli.binaryDirectory, o);
+        networks.small.load(cli.binaryDirectory, o);
     });
 
     networks.big.load(cli.binaryDirectory, options["EvalFile"]);
