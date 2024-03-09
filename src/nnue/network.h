@@ -96,15 +96,18 @@ class Network {
     EvalFile evalFile;
 };
 
-using NetworkBig =
-  Network<NetSize::Big,
-          NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>,
-          FeatureTransformer<TransformedFeatureDimensionsBig, &StateInfo::accumulatorBig>>;
+using SmallFeatureTransformer =
+  FeatureTransformer<TransformedFeatureDimensionsSmall, &StateInfo::accumulatorSmall>;
+using SmallNetworkArchitecture =
+  NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>;
 
-using NetworkSmall =
-  Network<NetSize::Small,
-          NetworkArchitecture<TransformedFeatureDimensionsSmall, L2Small, L3Small>,
-          FeatureTransformer<TransformedFeatureDimensionsSmall, &StateInfo::accumulatorSmall>>;
+using BigFeatureTransformer =
+  FeatureTransformer<TransformedFeatureDimensionsBig, &StateInfo::accumulatorBig>;
+using BigNetworkArchitecture = NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>;
+
+using NetworkBig = Network<NetSize::Big, BigNetworkArchitecture, BigFeatureTransformer>;
+
+using NetworkSmall = Network<NetSize::Small, SmallNetworkArchitecture, SmallFeatureTransformer>;
 
 
 struct Networks {

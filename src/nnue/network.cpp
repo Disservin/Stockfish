@@ -44,6 +44,10 @@ const unsigned int         gEmbeddedNNUESmallSize    = 1;
 
 namespace Stockfish::Eval::NNUE {
 
+// Hash value of evaluation function structure
+constexpr std::uint32_t HashValueMap[2] = {
+  BigFeatureTransformer::get_hash_value() ^ BigNetworkArchitecture::get_hash_value(),
+  SmallFeatureTransformer::get_hash_value() ^ SmallNetworkArchitecture::get_hash_value()};
 
 namespace Detail {
 
@@ -369,7 +373,7 @@ bool Network<NetSize, Arch, Transformer>::read_parameters(std::istream& stream,
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return false;
-    if (hashValue != Transformer::get_hash_value())
+    if (hashValue != HashValueMap[static_cast<std::size_t>(NetSize)])
         return false;
     if (!Detail::read_parameters(stream, *featureTransformer))
         return false;
@@ -385,7 +389,7 @@ bool Network<NetSize, Arch, Transformer>::read_parameters(std::istream& stream,
 template<NetSize NetSize, typename Arch, typename Transformer>
 bool Network<NetSize, Arch, Transformer>::write_parameters(std::ostream&      stream,
                                                            const std::string& netDescription) {
-    if (!write_header(stream, Transformer::get_hash_value(), netDescription))
+    if (!write_header(stream, HashValueMap[static_cast<std::size_t>(NetSize)], netDescription))
         return false;
     if (!Detail::write_parameters(stream, *featureTransformer))
         return false;
