@@ -19,13 +19,13 @@
 #ifndef NNUE_MISC_H_INCLUDED
 #define NNUE_MISC_H_INCLUDED
 
-#include <cstdint>
+#include <cstddef>
 #include <memory>
 #include <string>
 
 #include "../misc.h"
+#include "../types.h"
 #include "nnue_architecture.h"
-#include "nnue_feature_transformer.h"
 
 namespace Stockfish {
 

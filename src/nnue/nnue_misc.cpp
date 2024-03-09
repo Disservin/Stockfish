@@ -34,6 +34,7 @@
 #include "../types.h"
 #include "../uci.h"
 #include "network.h"
+#include "nnue_accumulator.h"
 
 namespace Stockfish::Eval::NNUE {
 

@@ -20,7 +20,6 @@
 #define NETWORK_H_INCLUDED
 
 #include <cstdint>
-#include <cstdlib>
 #include <iostream>
 #include <optional>
 #include <string>
