@@ -39,7 +39,10 @@
 namespace Stockfish::Eval::NNUE {
 
 
-void hint_common_parent_position(const Position& pos, Networks& networks) {
+constexpr std::string_view PieceToChar(" PNBRQK  pnbrqk");
+
+
+void hint_common_parent_position(const Position& pos, const Networks& networks) {
 
     int simpleEvalAbs = std::abs(simple_eval(pos, pos.side_to_move()));
     if (simpleEvalAbs > 1050)
@@ -47,9 +50,6 @@ void hint_common_parent_position(const Position& pos, Networks& networks) {
     else
         networks.networkBig.hint_common_access(pos, false);
 }
-
-
-constexpr std::string_view PieceToChar(" PNBRQK  pnbrqk");
 
 
 // Converts a Value into (centi)pawns and writes it in a buffer.
@@ -103,7 +103,7 @@ static void format_cp_aligned_dot(Value v, std::stringstream& stream) {
 
 // Returns a string with the value of each piece on a board,
 // and a table for (PSQT, Layers) values bucket by bucket.
-std::string trace(Position& pos, Eval::NNUE::Networks& networks) {
+std::string trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     std::stringstream ss;
 

@@ -45,7 +45,7 @@ int Eval::simple_eval(const Position& pos, Color c) {
 
 // Evaluate is the evaluator for the outer world. It returns a static evaluation
 // of the position from the point of view of the side to move.
-Value Eval::evaluate(Eval::NNUE::Networks& networks, const Position& pos, int optimism) {
+Value Eval::evaluate(const Eval::NNUE::Networks& networks, const Position& pos, int optimism) {
 
     assert(!pos.checkers());
 
@@ -79,7 +79,7 @@ Value Eval::evaluate(Eval::NNUE::Networks& networks, const Position& pos, int op
 // a string (suitable for outputting to stdout) that contains the detailed
 // descriptions and values of each evaluation term. Useful for debugging.
 // Trace scores are from white's point of view
-std::string Eval::trace(Position& pos, Eval::NNUE::Networks& networks) {
+std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     if (pos.checkers())
         return "Final evaluation: none (in check)";

@@ -39,33 +39,35 @@ class Network {
     Network(EvalFile file) :
         evalFile(file) {}
 
-    void load(const std::string& rootDirectory, std::string user_eval_file_path);
-
-    void loadUserNet(const std::string& dir, const std::string& user_eval_file_path);
-    void loadInternal();
-    bool save_eval(const std::optional<std::string>& filename);
+    void load(const std::string& rootDirectory, std::string evalfilePath);
+    bool save(const std::optional<std::string>& filename) const;
 
 
     Value evaluate(const Position& pos,
                    bool            adjusted   = false,
                    int*            complexity = nullptr,
-                   bool            psqtOnly   = false);
-    void  verify(std::string user_eval_file);
+                   bool            psqtOnly   = false) const;
 
-    void          hint_common_access(const Position& pos, bool psqtOnl);
-    NnueEvalTrace trace_evaluate(const Position& pos);
+
+    void hint_common_access(const Position& pos, bool psqtOnl) const;
+
+    void          verify(std::string evalfilePath) const;
+    NnueEvalTrace trace_evaluate(const Position& pos) const;
 
    private:
+    void loadUserNet(const std::string&, const std::string&);
+    void loadInternal();
+
     void initialize();
 
-    bool save(std::ostream& stream, const std::string& name, const std::string& netDescription);
-    std::optional<std::string> load(std::istream& stream);
+    bool                       save(std::ostream&, const std::string&, const std::string&) const;
+    std::optional<std::string> load(std::istream&);
 
-    bool read_header(std::istream& stream, std::uint32_t* hashValue, std::string* desc);
-    bool write_header(std::ostream& stream, std::uint32_t hashValue, const std::string& desc);
+    bool read_header(std::istream&, std::uint32_t*, std::string*) const;
+    bool write_header(std::ostream&, std::uint32_t, const std::string&) const;
 
-    bool read_parameters(std::istream& stream, std::string& netDescription);
-    bool write_parameters(std::ostream& stream, const std::string& netDescription);
+    bool read_parameters(std::istream&, std::string&) const;
+    bool write_parameters(std::ostream&, const std::string&) const;
 
     // Input feature converter
     LargePagePtr<Transformer> featureTransformer;
