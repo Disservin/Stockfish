@@ -363,7 +363,7 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return false;
-    if (hashValue != hash)
+    if (hashValue != Network::hash)
         return false;
     if (!Detail::read_parameters(stream, *featureTransformer))
         return false;
@@ -379,7 +379,7 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
 template<typename Arch, typename Transformer>
 bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
                                                   const std::string& netDescription) const {
-    if (!write_header(stream, hash, netDescription))
+    if (!write_header(stream, Network::hash, netDescription))
         return false;
     if (!Detail::write_parameters(stream, *featureTransformer))
         return false;
