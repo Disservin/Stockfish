@@ -72,9 +72,6 @@ class Network {
     NnueEvalTrace trace_evaluate(const Position& pos) const;
 
    private:
-    // Hash value of evaluation function structure
-    std::uint32_t hash_value() const;
-
     void load_user_net(const std::string&, const std::string&);
     void load_internal();
 
@@ -95,9 +92,11 @@ class Network {
     // Evaluation function
     AlignedPtr<Arch> network[LayerStacks];
 
-    EvalFile evalFile;
-
+    EvalFile     evalFile;
     EmbeddedNNUE embedded;
+
+    // Hash value of evaluation function structure
+    static constexpr std::uint32_t hash = Transformer::get_hash_value() ^ Arch::get_hash_value();
 };
 
 using SmallFeatureTransformer =

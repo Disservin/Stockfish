@@ -22,7 +22,6 @@
 #include <cstddef>
 #include <string>
 
-#include "../misc.h"
 #include "../types.h"
 #include "nnue_architecture.h"
 

@@ -34,6 +34,7 @@
 #include "evaluate.h"
 #include "movegen.h"
 #include "nnue/network.h"
+#include "nnue/nnue_common.h"
 #include "perft.h"
 #include "position.h"
 #include "search.h"

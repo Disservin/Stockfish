@@ -258,11 +258,6 @@ NnueEvalTrace Network<Arch, Transformer>::trace_evaluate(const Position& pos) co
     return t;
 }
 
-template<typename Arch, typename Transformer>
-std::uint32_t Network<Arch, Transformer>::hash_value() const {
-    return Transformer::get_hash_value() ^ Arch::get_hash_value();
-}
-
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load_user_net(const std::string& dir,
@@ -368,7 +363,7 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return false;
-    if (hashValue != hash_value())
+    if (hashValue != hash)
         return false;
     if (!Detail::read_parameters(stream, *featureTransformer))
         return false;
@@ -384,7 +379,7 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
 template<typename Arch, typename Transformer>
 bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
                                                   const std::string& netDescription) const {
-    if (!write_header(stream, hash_value(), netDescription))
+    if (!write_header(stream, hash, netDescription))
         return false;
     if (!Detail::write_parameters(stream, *featureTransformer))
         return false;
