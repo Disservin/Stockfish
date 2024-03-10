@@ -33,6 +33,7 @@
 #include "benchmark.h"
 #include "evaluate.h"
 #include "movegen.h"
+#include "nnue/network.h"
 #include "perft.h"
 #include "position.h"
 #include "search.h"
@@ -46,10 +47,14 @@ constexpr auto StartFEN             = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKB
 constexpr int  NormalizeToPawnValue = 356;
 constexpr int  MaxHashMB            = Is64Bit ? 33554432 : 2048;
 
+
+namespace NN = Eval::NNUE;
+
+
 UCI::UCI(int argc, char** argv) :
-    networks(
-      Eval::NNUE::Networks(Eval::NNUE::NetworkBig({EvalFileDefaultNameBig, "None", ""}),
-                           Eval::NNUE::NetworkSmall({EvalFileDefaultNameSmall, "None", ""}))),
+    networks(NN::Networks(
+      NN::NetworkBig({EvalFileDefaultNameBig, "None", ""}, NN::embeddedNNUEBig),
+      NN::NetworkSmall({EvalFileDefaultNameSmall, "None", ""}, NN::embeddedNNUESmall))),
     cli(argc, argv) {
 
     options["Debug Log File"] << Option("", [](const Option& o) { start_logger(o); });

@@ -584,7 +584,7 @@ endif
 ifeq ($(debug),no)
 	CXXFLAGS += -DNDEBUG
 else
-	CXXFLAGS += -g3
+	CXXFLAGS += -g
 endif
 
 ### 3.2.2 Debugging with undefined behavior sanitizers

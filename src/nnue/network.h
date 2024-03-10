@@ -25,6 +25,7 @@
 #include <string>
 #include <utility>
 
+#include "../misc.h"
 #include "../position.h"
 #include "../types.h"
 #include "nnue_architecture.h"
@@ -33,11 +34,27 @@
 
 namespace Stockfish::Eval::NNUE {
 
-template<NetSize NetSize, typename Arch, typename Transformer>
+struct EmbeddedNNUE {
+    EmbeddedNNUE(const unsigned char* embeddedData,
+                 const unsigned char* embeddedEnd,
+                 const unsigned int   embeddedSize) :
+        data(embeddedData),
+        end(embeddedEnd),
+        size(embeddedSize) {}
+    const unsigned char* data;
+    const unsigned char* end;
+    const unsigned int   size;
+};
+
+extern const EmbeddedNNUE embeddedNNUEBig;
+extern const EmbeddedNNUE embeddedNNUESmall;
+
+template<typename Arch, typename Transformer>
 class Network {
    public:
-    Network(EvalFile file) :
-        evalFile(file) {}
+    Network(EvalFile file, EmbeddedNNUE embeddedEval) :
+        evalFile(file),
+        embedded(embeddedEval) {}
 
     void load(const std::string& rootDirectory, std::string evalfilePath);
     bool save(const std::optional<std::string>& filename) const;
@@ -55,8 +72,11 @@ class Network {
     NnueEvalTrace trace_evaluate(const Position& pos) const;
 
    private:
-    void loadUserNet(const std::string&, const std::string&);
-    void loadInternal();
+    // Hash value of evaluation function structure
+    std::uint32_t hash_value() const;
+
+    void load_user_net(const std::string&, const std::string&);
+    void load_internal();
 
     void initialize();
 
@@ -76,6 +96,8 @@ class Network {
     AlignedPtr<Arch> network[LayerStacks];
 
     EvalFile evalFile;
+
+    EmbeddedNNUE embedded;
 };
 
 using SmallFeatureTransformer =
@@ -87,9 +109,9 @@ using BigFeatureTransformer =
   FeatureTransformer<TransformedFeatureDimensionsBig, &StateInfo::accumulatorBig>;
 using BigNetworkArchitecture = NetworkArchitecture<TransformedFeatureDimensionsBig, L2Big, L3Big>;
 
-using NetworkBig = Network<NetSize::Big, BigNetworkArchitecture, BigFeatureTransformer>;
+using NetworkBig = Network<BigNetworkArchitecture, BigFeatureTransformer>;
 
-using NetworkSmall = Network<NetSize::Small, SmallNetworkArchitecture, SmallFeatureTransformer>;
+using NetworkSmall = Network<SmallNetworkArchitecture, SmallFeatureTransformer>;
 
 
 struct Networks {
@@ -100,6 +122,7 @@ struct Networks {
     NetworkBig   big;
     NetworkSmall small;
 };
+
 
 }  // namespace Stockfish
 

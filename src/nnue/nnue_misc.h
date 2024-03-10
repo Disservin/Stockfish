@@ -20,7 +20,6 @@
 #define NNUE_MISC_H_INCLUDED
 
 #include <cstddef>
-#include <memory>
 #include <string>
 
 #include "../misc.h"
@@ -32,33 +31,6 @@ namespace Stockfish {
 class Position;
 
 namespace Eval::NNUE {
-
-// Deleter for automating release of memory area
-template<typename T>
-struct AlignedDeleter {
-    void operator()(T* ptr) const {
-        ptr->~T();
-        std_aligned_free(ptr);
-    }
-};
-
-
-template<typename T>
-struct LargePageDeleter {
-    void operator()(T* ptr) const {
-        ptr->~T();
-        aligned_large_pages_free(ptr);
-    }
-};
-
-
-template<typename T>
-using AlignedPtr = std::unique_ptr<T, AlignedDeleter<T>>;
-
-
-template<typename T>
-using LargePagePtr = std::unique_ptr<T, LargePageDeleter<T>>;
-
 
 struct EvalFile {
     // Default net name, will use one of the macros above
