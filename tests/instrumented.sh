@@ -8,6 +8,9 @@ error()
 }
 trap 'error ${LINENO}' ERR
 
+sudo sysctl -w vm.mmap_rnd_bits=28
+
+
 # define suitable post and prefixes for testing options
 case $1 in
   --valgrind)
