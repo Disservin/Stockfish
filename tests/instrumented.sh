@@ -97,6 +97,8 @@ do
 
 done
 
+ls -la
+
 ./stockfish uci
 
 # verify the generated net equals the base net
