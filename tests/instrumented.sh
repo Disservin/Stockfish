@@ -101,7 +101,7 @@ ls -la
 
 uname -r
 
-gdb -batch -ex "run" -ex "bt" --args ./stockfish bench 2>&1 | grep -v ^"No stack."$
+gdb -batch -ex "run" -ex "bt" --args ./stockfish uci 2>&1 | grep -v ^"No stack."$
 
 ./stockfish uci
 
