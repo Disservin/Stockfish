@@ -99,6 +99,17 @@ done
 
 ls -la
 
+gdb -q --batch \
+-ex "set logging on" \           
+-ex "file ./stockfish" \         
+-ex "run" \                       # Start the execution of stockfish
+-ex "set logging off" \           # Optional: Turn off logging if you're done
+-ex "quit" \                      # Exit gdb
+--args ./stockfish <<EOF
+uci
+quit
+EOF
+
 ./stockfish uci
 
 # verify the generated net equals the base net
