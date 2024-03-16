@@ -326,7 +326,7 @@ top:
         [[fallthrough]];
 
     case BAD_CAPTURE :
-        if (Move m = select<Next>([]() { return true; }))
+        if (auto m = select<Next>([]() { return true; }))
             return m;
 
         // Prepare the pointers to loop over the bad quiets
@@ -359,7 +359,7 @@ top:
         return select<Next>([&]() { return pos.see_ge(*cur, threshold); });
 
     case QCAPTURE :
-        if (Move m = select<Next>([]() { return true; }))
+        if (auto m = select<Next>([]() { return true; }))
             return m;
 
         // If we did not find any move and we do not try checks, we have finished
