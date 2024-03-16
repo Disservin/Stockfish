@@ -295,12 +295,13 @@ class AffineTransform {
 #endif
     }
 
-   private:
-    using BiasType   = OutputType;
-    using WeightType = std::int8_t;
 
     alignas(CacheLineSize) BiasType biases[OutputDimensions];
     alignas(CacheLineSize) WeightType weights[OutputDimensions * PaddedInputDimensions];
+
+   private:
+    using BiasType   = OutputType;
+    using WeightType = std::int8_t;
 };
 
 }  // namespace Stockfish::Eval::NNUE::Layers

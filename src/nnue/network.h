@@ -63,6 +63,9 @@ class Network {
     void          verify(std::string evalfilePath) const;
     NnueEvalTrace trace_evaluate(const Position& pos) const;
 
+    // Evaluation function
+    AlignedPtr<Arch> network[LayerStacks];
+
    private:
     void load_user_net(const std::string&, const std::string&);
     void load_internal();
@@ -81,8 +84,6 @@ class Network {
     // Input feature converter
     LargePagePtr<Transformer> featureTransformer;
 
-    // Evaluation function
-    AlignedPtr<Arch> network[LayerStacks];
 
     EvalFile         evalFile;
     EmbeddedNNUEType embeddedType;

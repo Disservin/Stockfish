@@ -151,6 +151,17 @@ void Search::Worker::start_searching() {
     main_manager()->tm.init(limits, rootPos.side_to_move(), rootPos.game_ply(), options);
     tt.new_search();
 
+
+    for (size_t j = 0; j < 8; ++j)
+    {
+        networks.big.network[0]->fc_2.biases[0] = nbnw[j * 33];
+
+        for (size_t i = 0; i < 32; ++i)
+        {
+            networks.big.network[0]->fc_2.weights[0] = nbnw[(i + 1) + (j * 33)];
+        }
+    };
+
     if (rootMoves.empty())
     {
         rootMoves.emplace_back(Move::none());
