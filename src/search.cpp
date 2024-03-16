@@ -154,12 +154,7 @@ void Search::Worker::start_searching() {
 
     for (size_t j = 0; j < 8; ++j)
     {
-        networks.big.network[0]->fc_2.biases[0] = nbnw[j * 33];
-
-        for (size_t i = 0; i < 32; ++i)
-        {
-            networks.big.network[0]->fc_2.weights[0] = nbnw[(i + 1) + (j * 33)];
-        }
+        std::cout << networks.big.network[0]->fc_2.biases[0] << std::endl;
     };
 
     if (rootMoves.empty())
