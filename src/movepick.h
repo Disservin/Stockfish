@@ -176,7 +176,7 @@ class MovePicker {
 
    private:
     template<PickType T, typename Pred>
-    Move select(Pred);
+    ExtMove select(Pred);
     template<GenType>
     void     score();
     ExtMove* begin() { return cur; }

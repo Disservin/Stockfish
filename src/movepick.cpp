@@ -221,7 +221,7 @@ void MovePicker::score() {
 // Returns the next move satisfying a predicate function.
 // It never returns the TT move.
 template<MovePicker::PickType T, typename Pred>
-Move MovePicker::select(Pred filter) {
+ExtMove MovePicker::select(Pred filter) {
 
     while (cur < endMoves)
     {
@@ -233,7 +233,8 @@ Move MovePicker::select(Pred filter) {
 
         cur++;
     }
-    return Move::none();
+
+    return ExtMove{Move::none(), 0};
 }
 
 // Most important method of the MovePicker class. It
@@ -266,12 +267,11 @@ top:
         goto top;
 
     case GOOD_CAPTURE :
-        if (select<Next>([&]() {
+        if (auto m = select<Next>([&]() {
                 // Move losing capture to endBadCaptures to be tried later
-                return pos.see_ge(*cur, -cur->value / 18) ? true
-                                                          : (*endBadCaptures++ = *cur, false);
+                return pos.see_ge(*cur, -cur->value / 18) || (*endBadCaptures++ = *cur, false);
             }))
-            return *(cur - 1);
+            return m;
 
         // Prepare the pointers to loop over the refutations array
         cur      = std::begin(refutations);
@@ -285,10 +285,10 @@ top:
         [[fallthrough]];
 
     case REFUTATION :
-        if (select<Next>([&]() {
+        if (auto m = select<Next>([&]() {
                 return *cur != Move::none() && !pos.capture_stage(*cur) && pos.pseudo_legal(*cur);
             }))
-            return *(cur - 1);
+            return m;
         ++stage;
         [[fallthrough]];
 
@@ -306,12 +306,13 @@ top:
         [[fallthrough]];
 
     case GOOD_QUIET :
-        if (!skipQuiets && select<Next>([&]() {
-                return *cur != refutations[0] && *cur != refutations[1] && *cur != refutations[2];
-            }))
+        if (ExtMove m; !skipQuiets && (m = select<Next>([&]() {
+                                           return *cur != refutations[0] && *cur != refutations[1]
+                                               && *cur != refutations[2];
+                                       })))
         {
-            if ((cur - 1)->value > -8000 || (cur - 1)->value <= quiet_threshold(depth))
-                return *(cur - 1);
+            if (m.value > -8000 || m.value <= quiet_threshold(depth))
+                return m;
 
             // Remaining quiets are bad
             beginBadQuiets = cur - 1;
@@ -325,8 +326,8 @@ top:
         [[fallthrough]];
 
     case BAD_CAPTURE :
-        if (select<Next>([]() { return true; }))
-            return *(cur - 1);
+        if (Move m = select<Next>([]() { return true; }))
+            return m;
 
         // Prepare the pointers to loop over the bad quiets
         cur      = beginBadQuiets;
@@ -358,8 +359,8 @@ top:
         return select<Next>([&]() { return pos.see_ge(*cur, threshold); });
 
     case QCAPTURE :
-        if (select<Next>([]() { return true; }))
-            return *(cur - 1);
+        if (Move m = select<Next>([]() { return true; }))
+            return m;
 
         // If we did not find any move and we do not try checks, we have finished
         if (depth != DEPTH_QS_CHECKS)
