@@ -22,6 +22,7 @@
 #include <iostream>
 #include <string>
 
+#include "engine.h"
 #include "misc.h"
 #include "nnue/network.h"
 #include "position.h"
@@ -47,25 +48,19 @@ class UCI {
     static std::string square(Square s);
     static std::string move(Move m, bool chess960);
     static std::string wdl(Value v, const Position& pos);
-    static Move        to_move(const Position& pos, std::string& str);
+    static Move        to_move(const Position& pos, std::string str);
 
     static Search::LimitsType parse_limits(const Position& pos, std::istream& is);
 
-    const std::string& working_directory() const { return cli.workingDirectory; }
-
-    OptionsMap           options;
-    Eval::NNUE::Networks networks;
+    auto& engine_options() { return engine.get_options(); }
 
    private:
-    TranspositionTable tt;
-    ThreadPool         threads;
-    CommandLine        cli;
+    Engine      engine;
+    CommandLine cli;
 
-    void go(Position& pos, std::istringstream& is, StateListPtr& states);
-    void bench(Position& pos, std::istream& args, StateListPtr& states);
-    void position(Position& pos, std::istringstream& is, StateListPtr& states);
-    void trace_eval(Position& pos);
-    void search_clear();
+    void go(Position& pos, std::istringstream& is);
+    void bench(Position& pos, std::istream& args);
+    void position(std::istringstream& is);
     void setoption(std::istringstream& is);
 };
 

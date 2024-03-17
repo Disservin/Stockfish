@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 
     UCI uci(argc, argv);
 
-    Tune::init(uci.options);
+    Tune::init(uci.engine_options());
 
     uci.loop();
 
