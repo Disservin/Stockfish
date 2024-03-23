@@ -37,6 +37,10 @@ namespace Stockfish {
 
 class Engine {
    public:
+    using InfoShort = Search::InfoShort;
+    using InfoFull  = Search::InfoFull;
+    using InfoIter  = Search::InfoIteration;
+
     Engine(std::string path = "");
     ~Engine() { wait_for_search_finished(); }
 
@@ -58,9 +62,14 @@ class Engine {
     // clears the search
     void search_clear();
 
+    void set_on_update_short(std::function<void(const InfoShort&)>);
+    void set_on_update_full(std::function<void(const InfoFull&)>);
+    void set_on_iter(std::function<void(const InfoIter&)>);
+    void set_on_bestmove(std::function<void(const std::string&, const std::string&)>);
+
     // network related
 
-    void verify_networks();
+    void verify_networks() const;
     void load_networks();
     void load_big_network(const std::string& file);
     void load_small_network(const std::string& file);
@@ -68,9 +77,7 @@ class Engine {
 
     // utility functions
 
-    void trace_eval();
-    // nodes since last search clear
-    uint64_t    nodes_searched() const;
+    void        trace_eval() const;
     OptionsMap& get_options();
 
    private:
@@ -83,6 +90,8 @@ class Engine {
     ThreadPool           threads;
     TranspositionTable   tt;
     Eval::NNUE::Networks networks;
+
+    Search::SearchManager::UpdateContext updateContext;
 };
 
 }  // namespace Stockfish

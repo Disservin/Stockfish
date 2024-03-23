@@ -35,9 +35,6 @@
 #include "engine.h"
 #include "evaluate.h"
 #include "movegen.h"
-#include "nnue/network.h"
-#include "nnue/nnue_common.h"
-#include "perft.h"
 #include "position.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
@@ -225,6 +222,13 @@ void UCI::go(Position& pos, std::istringstream& is) {
 void UCI::bench(Position& pos, std::istream& args) {
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
+    uint64_t    nodesSearched = 0;
+    const auto& options       = engine.get_options();
+
+    engine.set_on_update_full([&](const auto& i) {
+        nodesSearched = i.nodes;
+        on_update_full(i, options["UCI_ShowWDL"]);
+    });
 
     std::vector<std::string> list = setup_bench(pos, args);
 
@@ -246,7 +250,8 @@ void UCI::bench(Position& pos, std::istream& args) {
             {
                 go(pos, is);
                 engine.wait_for_search_finished();
-                nodes += engine.nodes_searched();
+                nodes += nodesSearched;
+                nodesSearched = 0;
             }
             else
                 engine.trace_eval();
