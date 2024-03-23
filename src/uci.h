@@ -24,15 +24,11 @@
 
 #include "engine.h"
 #include "misc.h"
-#include "nnue/network.h"
-#include "position.h"
 #include "search.h"
-#include "thread.h"
-#include "tt.h"
-#include "ucioption.h"
 
 namespace Stockfish {
 
+class Position;
 class Move;
 enum Square : int;
 using Value = int;
@@ -60,6 +56,11 @@ class UCI {
     void bench(Position& pos, std::istream& args);
     void position(std::istringstream& is);
     void setoption(std::istringstream& is);
+
+    static void on_update_short(const Engine::InfoShort& info);
+    static void on_update_full(const Engine::InfoFull& info, bool showWDL);
+    static void on_iter(const Engine::InfoIter& info);
+    static void on_bestmove(const std::string& bestmove, const std::string& ponder);
 };
 
 }  // namespace Stockfish
