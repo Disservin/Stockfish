@@ -60,6 +60,11 @@ class UCI {
     void bench(Position& pos, std::istream& args);
     void position(std::istringstream& is);
     void setoption(std::istringstream& is);
+
+    void on_update_short(const Engine::InfoShort& info);
+    void on_update_full(const Engine::InfoFull& info, bool showWDL);
+    void on_iter(const Engine::InfoIter& info);
+    void on_bestmove(const std::string& bestmove, const std::string& ponder);
 };
 
 }  // namespace Stockfish

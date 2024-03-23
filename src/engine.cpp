@@ -81,6 +81,22 @@ void Engine::search_clear() {
     Tablebases::init(options["SyzygyPath"]);  // Free mapped files
 }
 
+void Engine::set_on_update_short(std::function<void(const Engine::InfoShort&)> f) {
+    updateContext.onUpdateShort = std::move(f);
+}
+
+void Engine::set_on_update_full(std::function<void(const Engine::InfoFull&)> f) {
+    updateContext.onUpdateFull = std::move(f);
+}
+
+void Engine::set_on_iter(std::function<void(const Engine::InfoIter&)> f) {
+    updateContext.onIter = std::move(f);
+}
+
+void Engine::set_on_bestmove(std::function<void(const std::string&, const std::string&)> f) {
+    updateContext.onBestmove = std::move(f);
+}
+
 void Engine::wait_for_search_finished() { threads.main_thread()->wait_for_search_finished(); }
 
 void Engine::set_position(const std::string& fen, const std::vector<std::string>& moves) {
@@ -101,7 +117,7 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
 
 // modifiers
 
-void Engine::resize_threads() { threads.set({options, threads, tt, networks}); }
+void Engine::resize_threads() { threads.set({options, threads, tt, networks}, updateContext); }
 
 void Engine::set_tt_size(size_t mb) {
     wait_for_search_finished();
