@@ -35,9 +35,6 @@
 #include "engine.h"
 #include "evaluate.h"
 #include "movegen.h"
-#include "nnue/network.h"
-#include "nnue/nnue_common.h"
-#include "perft.h"
 #include "position.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
@@ -80,6 +77,12 @@ UCIEngine::UCIEngine(int argc, char** argv) :
                                   [this](const Option& o) { engine.load_big_network(o); });
     options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall,
                                        [this](const Option& o) { engine.load_small_network(o); });
+
+
+    engine.set_on_iter([](const auto& i) { on_iter(i); });
+    engine.set_on_update_short([](const auto& i) { on_update_short(i); });
+    engine.set_on_update_full([&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
+    engine.set_on_bestmove([](const auto& bm, const auto& p) { on_bestmove(bm, p); });
 
     engine.load_networks();
     engine.resize_threads();
@@ -221,6 +224,13 @@ void UCIEngine::go(Position& pos, std::istringstream& is) {
 void UCIEngine::bench(Position& pos, std::istream& args) {
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
+    uint64_t    nodesSearched = 0;
+    const auto& options       = engine.get_options();
+
+    engine.set_on_update_full([&](const auto& i) {
+        nodesSearched = i.nodes;
+        on_update_full(i, options["UCI_ShowWDL"]);
+    });
 
     std::vector<std::string> list = setup_bench(pos, args);
 
@@ -242,7 +252,8 @@ void UCIEngine::bench(Position& pos, std::istream& args) {
             {
                 go(pos, is);
                 engine.wait_for_search_finished();
-                nodes += engine.nodes_searched();
+                nodes += nodesSearched;
+                nodesSearched = 0;
             }
             else
                 engine.trace_eval();
@@ -265,6 +276,9 @@ void UCIEngine::bench(Position& pos, std::istream& args) {
     std::cerr << "\n==========================="
               << "\nTotal time (ms) : " << elapsed << "\nNodes searched  : " << nodes
               << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
+
+    // reset callback, to not capture a dangling reference to nodesSearched
+    engine.set_on_update_full([&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
 }
 
 
@@ -412,6 +426,51 @@ Move UCIEngine::to_move(const Position& pos, std::string str) {
             return m;
 
     return Move::none();
+}
+
+void UCIEngine::on_update_short(const Engine::InfoShort& info) {
+    sync_cout << "info depth" << info.depth << " score " << info.score << sync_endl;
+}
+
+void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
+    std::stringstream ss;
+
+    ss << "info";
+    ss << " depth " << info.depth        //
+       << " seldepth " << info.selDepth  //
+       << " multipv " << info.multiPV    //
+       << " score " << info.score;       //
+
+    if (showWDL)
+        ss << " wdl " << info.wdl;
+
+    ss << info.bound                     //
+       << " nodes " << info.nodes        //
+       << " nps " << info.nps            //
+       << " hashfull " << info.hashfull  //
+       << " tbhits " << info.tbHits      //
+       << " time " << info.timeMs        //
+       << " pv " << info.pv;             //
+
+    sync_cout << ss.str() << sync_endl;
+}
+
+void UCIEngine::on_iter(const Engine::InfoIter& info) {
+    std::stringstream ss;
+
+    ss << "info";
+    ss << " depth " << info.depth                     //
+       << " currmove " << info.currmove               //
+       << " currmovenumber " << info.currmovenumber;  //
+
+    sync_cout << ss.str() << sync_endl;
+}
+
+void UCIEngine::on_bestmove(const std::string& bestmove, const std::string& ponder) {
+    sync_cout << "bestmove " << bestmove;
+    if (!ponder.empty())
+        std::cout << " ponder " << ponder;
+    std::cout << sync_endl;
 }
 
 }  // namespace Stockfish
