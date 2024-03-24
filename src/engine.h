@@ -16,14 +16,15 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STOCKFISH_H_INCLUDED
-#define STOCKFISH_H_INCLUDED
+#ifndef ENGINE_H_INCLUDED
+#define ENGINE_H_INCLUDED
 
 #include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
+#include <optional>
+#include <utility>
 
 #include "nnue/network.h"
 #include "position.h"
@@ -96,4 +97,4 @@ class Engine {
 }  // namespace Stockfish
 
 
-#endif  // #ifndef STOCKFISH_H_INCLUDED
+#endif  // #ifndef ENGINE_H_INCLUDED

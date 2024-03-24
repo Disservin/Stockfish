@@ -438,7 +438,7 @@ void UCI::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     ss << "info";
     ss << " depth " << info.depth        //
        << " seldepth " << info.selDepth  //
-       << " multiPV " << info.multiPV    //
+       << " multipv " << info.multiPV    //
        << " score " << info.score;       //
 
     if (showWDL)

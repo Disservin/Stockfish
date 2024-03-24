@@ -48,6 +48,8 @@ class UCI {
 
     static Search::LimitsType parse_limits(const Position& pos, std::istream& is);
 
+    auto& engine_options() { return engine.get_options(); }
+
    private:
     Engine      engine;
     CommandLine cli;
