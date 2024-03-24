@@ -156,7 +156,7 @@ void Search::Worker::start_searching() {
     {
         rootMoves.emplace_back(Move::none());
         main_manager()->updates.onUpdateShort(
-          {0, UCIEngine::to_score(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos)});
+          {0, {rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos}});
     }
     else
     {
@@ -1909,15 +1909,15 @@ void SearchManager::pv(const Search::Worker&     worker,
         info.depth    = d;
         info.selDepth = rootMoves[i].selDepth;
         info.multiPV  = i + 1;
-        info.score    = UCIEngine::to_score(v, pos);
+        info.score    = {v, pos};
 
         if (worker.options["UCI_ShowWDL"])
             info.wdl = UCIEngine::wdl(v, pos);
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
             info.bound = rootMoves[i].scoreLowerbound
-                         ? " lowerbound"
-                         : (rootMoves[i].scoreUpperbound ? " upperbound" : "");
+                         ? "lowerbound"
+                         : (rootMoves[i].scoreUpperbound ? "upperbound" : "");
 
         info.timeMs   = time;
         info.nodes    = nodes;

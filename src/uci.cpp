@@ -19,11 +19,9 @@
 #include "uci.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
 #include <memory>
 #include <optional>
@@ -37,6 +35,7 @@
 #include "movegen.h"
 #include "position.h"
 #include "search.h"
+#include "score.h"
 #include "syzygy/tbprobe.h"
 #include "types.h"
 #include "ucioption.h"
@@ -46,6 +45,13 @@ namespace Stockfish {
 constexpr auto StartFEN  = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 constexpr int  MaxHashMB = Is64Bit ? 33554432 : 2048;
 
+template<typename... Ts>
+struct overload: Ts... {
+    using Ts::operator()...;
+};
+
+template<typename... Ts>
+overload(Ts...) -> overload<Ts...>;
 
 UCIEngine::UCIEngine(int argc, char** argv) :
     engine(argv[0]),
@@ -349,22 +355,22 @@ int win_rate_model(Value v, const Position& pos) {
 }
 }
 
-std::string UCIEngine::to_score(Value v, const Position& pos) {
-    assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
+std::string UCIEngine::format_score(const Score& s) {
+    constexpr int  TB_CP = 20000;
+    constexpr auto format =
+      overload{[](Score::Mate mate) -> std::string {
+                   auto m = (mate.plies > 0 ? (mate.plies + 1) : -mate.plies) / 2;
+                   return std::string("mate ") + std::to_string(m);
+               },
+               [](Score::TBWin tb) -> std::string {
+                   return std::string("cp ")
+                        + std::to_string((tb.plies > 0 ? TB_CP - tb.plies : -TB_CP + tb.plies));
+               },
+               [](Score::InternalUnits units) -> std::string {
+                   return std::string("cp ") + std::to_string(units.value);
+               }};
 
-    std::stringstream ss;
-
-    if (std::abs(v) < VALUE_TB_WIN_IN_MAX_PLY)
-        ss << "cp " << to_cp(v, pos);
-    else if (std::abs(v) <= VALUE_TB)
-    {
-        const int ply = VALUE_TB - std::abs(v);  // recompute ss->ply
-        ss << "cp " << (v > 0 ? 20000 - ply : -20000 + ply);
-    }
-    else
-        ss << "mate " << (v > 0 ? VALUE_MATE - v + 1 : -VALUE_MATE - v) / 2;
-
-    return ss.str();
+    return s.visit(format);
 }
 
 // Turns a Value to an integer centipawn number,
@@ -429,28 +435,28 @@ Move UCIEngine::to_move(const Position& pos, std::string str) {
 }
 
 void UCIEngine::on_update_short(const Engine::InfoShort& info) {
-    sync_cout << "info depth" << info.depth << " score " << info.score << sync_endl;
+    sync_cout << "info depth" << info.depth << " score " << format_score(info.score) << sync_endl;
 }
 
 void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     std::stringstream ss;
 
     ss << "info";
-    ss << " depth " << info.depth        //
-       << " seldepth " << info.selDepth  //
-       << " multipv " << info.multiPV    //
-       << " score " << info.score;       //
+    ss << " depth " << info.depth                 //
+       << " seldepth " << info.selDepth           //
+       << " multipv " << info.multiPV             //
+       << " score " << format_score(info.score);  //
 
     if (showWDL)
         ss << " wdl " << info.wdl;
 
-    ss << info.bound                     //
-       << " nodes " << info.nodes        //
-       << " nps " << info.nps            //
-       << " hashfull " << info.hashfull  //
-       << " tbhits " << info.tbHits      //
-       << " time " << info.timeMs        //
-       << " pv " << info.pv;             //
+    ss << (!info.bound.empty() ? " " + info.bound : "")  //
+       << " nodes " << info.nodes                        //
+       << " nps " << info.nps                            //
+       << " hashfull " << info.hashfull                  //
+       << " tbhits " << info.tbHits                      //
+       << " time " << info.timeMs                        //
+       << " pv " << info.pv;                             //
 
     sync_cout << ss.str() << sync_endl;
 }
