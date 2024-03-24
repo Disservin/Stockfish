@@ -34,6 +34,9 @@ int main(int argc, char* argv[]) {
     Position::init();
 
     UCI uci(argc, argv);
+
+    Tune::init(uci.engine_options());
+
     uci.loop();
 
     return 0;

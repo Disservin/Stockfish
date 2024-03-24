@@ -18,7 +18,6 @@
 
 #include "engine.h"
 
-#include <cstdint>
 #include <deque>
 #include <memory>
 #include <ostream>
@@ -50,7 +49,6 @@ Engine::Engine(std::string path) :
     networks(NN::Networks(
       NN::NetworkBig({EvalFileDefaultNameBig, "None", ""}, NN::EmbeddedNNUEType::BIG),
       NN::NetworkSmall({EvalFileDefaultNameSmall, "None", ""}, NN::EmbeddedNNUEType::SMALL))) {
-    Tune::init(options);
     pos.set(StartFEN, false, &states->back());
 }
 
