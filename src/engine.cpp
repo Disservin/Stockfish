@@ -32,7 +32,6 @@
 #include "position.h"
 #include "search.h"
 #include "syzygy/tbprobe.h"
-#include "tune.h"
 #include "types.h"
 #include "uci.h"
 #include "ucioption.h"
