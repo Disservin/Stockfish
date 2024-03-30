@@ -23,6 +23,8 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include <optional>
+#include <utility>
 
 #include "nnue/network.h"
 #include "position.h"

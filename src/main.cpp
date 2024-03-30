@@ -23,6 +23,7 @@
 #include "position.h"
 #include "types.h"
 #include "uci.h"
+#include "tune.h"
 
 using namespace Stockfish;
 
