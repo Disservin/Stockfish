@@ -74,19 +74,19 @@ void Engine::search_clear() {
     Tablebases::init(options["SyzygyPath"]);  // Free mapped files
 }
 
-void Engine::set_on_update_short(std::function<void(const Engine::InfoShort&)> f) {
+void Engine::set_on_update_short(std::function<void(const Engine::InfoShort&)>&& f) {
     updateContext.onUpdateShort = std::move(f);
 }
 
-void Engine::set_on_update_full(std::function<void(const Engine::InfoFull&)> f) {
+void Engine::set_on_update_full(std::function<void(const Engine::InfoFull&)>&& f) {
     updateContext.onUpdateFull = std::move(f);
 }
 
-void Engine::set_on_iter(std::function<void(const Engine::InfoIter&)> f) {
+void Engine::set_on_iter(std::function<void(const Engine::InfoIter&)>&& f) {
     updateContext.onIter = std::move(f);
 }
 
-void Engine::set_on_bestmove(std::function<void(const std::string&, const std::string&)> f) {
+void Engine::set_on_bestmove(std::function<void(const std::string&, const std::string&)>&& f) {
     updateContext.onBestmove = std::move(f);
 }
 
