@@ -47,7 +47,7 @@ constexpr auto StartFEN  = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -
 constexpr int  MaxHashMB = Is64Bit ? 33554432 : 2048;
 
 
-UCI::UCI(int argc, char** argv) :
+UCIEngine::UCIEngine(int argc, char** argv) :
     engine(argv[0]),
     cli(argc, argv) {
 
@@ -89,7 +89,7 @@ UCI::UCI(int argc, char** argv) :
     engine.search_clear();  // After threads are up
 }
 
-void UCI::loop() {
+void UCIEngine::loop() {
 
     Position     pos;
     std::string  token, cmd;
@@ -176,7 +176,7 @@ void UCI::loop() {
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
-Search::LimitsType UCI::parse_limits(const Position& pos, std::istream& is) {
+Search::LimitsType UCIEngine::parse_limits(const Position& pos, std::istream& is) {
     Search::LimitsType limits;
     std::string        token;
 
@@ -215,13 +215,13 @@ Search::LimitsType UCI::parse_limits(const Position& pos, std::istream& is) {
     return limits;
 }
 
-void UCI::go(Position& pos, std::istringstream& is) {
+void UCIEngine::go(Position& pos, std::istringstream& is) {
 
     Search::LimitsType limits = parse_limits(pos, is);
     engine.go(limits);
 }
 
-void UCI::bench(Position& pos, std::istream& args) {
+void UCIEngine::bench(Position& pos, std::istream& args) {
     std::string token;
     uint64_t    num, nodes = 0, cnt = 1;
     uint64_t    nodesSearched = 0;
@@ -282,12 +282,12 @@ void UCI::bench(Position& pos, std::istream& args) {
 }
 
 
-void UCI::setoption(std::istringstream& is) {
+void UCIEngine::setoption(std::istringstream& is) {
     engine.wait_for_search_finished();
     engine.get_options().setoption(is);
 }
 
-void UCI::position(std::istringstream& is) {
+void UCIEngine::position(std::istringstream& is) {
     std::string token, fen;
 
     is >> token;
@@ -349,7 +349,7 @@ int win_rate_model(Value v, const Position& pos) {
 }
 }
 
-std::string UCI::to_score(Value v, const Position& pos) {
+std::string UCIEngine::to_score(Value v, const Position& pos) {
     assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
 
     std::stringstream ss;
@@ -369,7 +369,7 @@ std::string UCI::to_score(Value v, const Position& pos) {
 
 // Turns a Value to an integer centipawn number,
 // without treatment of mate and similar special scores.
-int UCI::to_cp(Value v, const Position& pos) {
+int UCIEngine::to_cp(Value v, const Position& pos) {
 
     // In general, the score can be defined via the the WDL as
     // (log(1/L - 1) - log(1/W - 1)) / ((log(1/L - 1) + log(1/W - 1))
@@ -380,7 +380,7 @@ int UCI::to_cp(Value v, const Position& pos) {
     return std::round(100 * int(v) / a);
 }
 
-std::string UCI::wdl(Value v, const Position& pos) {
+std::string UCIEngine::wdl(Value v, const Position& pos) {
     std::stringstream ss;
 
     int wdl_w = win_rate_model(v, pos);
@@ -391,11 +391,11 @@ std::string UCI::wdl(Value v, const Position& pos) {
     return ss.str();
 }
 
-std::string UCI::square(Square s) {
+std::string UCIEngine::square(Square s) {
     return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
 }
 
-std::string UCI::move(Move m, bool chess960) {
+std::string UCIEngine::move(Move m, bool chess960) {
     if (m == Move::none())
         return "(none)";
 
@@ -417,7 +417,7 @@ std::string UCI::move(Move m, bool chess960) {
 }
 
 
-Move UCI::to_move(const Position& pos, std::string str) {
+Move UCIEngine::to_move(const Position& pos, std::string str) {
     if (str.length() == 5)
         str[4] = char(tolower(str[4]));  // The promotion piece character must be lowercased
 
@@ -428,11 +428,11 @@ Move UCI::to_move(const Position& pos, std::string str) {
     return Move::none();
 }
 
-void UCI::on_update_short(const Engine::InfoShort& info) {
+void UCIEngine::on_update_short(const Engine::InfoShort& info) {
     sync_cout << "info depth" << info.depth << " score " << info.score << sync_endl;
 }
 
-void UCI::on_update_full(const Engine::InfoFull& info, bool showWDL) {
+void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     std::stringstream ss;
 
     ss << "info";
@@ -455,7 +455,7 @@ void UCI::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     sync_cout << ss.str() << sync_endl;
 }
 
-void UCI::on_iter(const Engine::InfoIter& info) {
+void UCIEngine::on_iter(const Engine::InfoIter& info) {
     std::stringstream ss;
 
     ss << "info";
@@ -466,7 +466,7 @@ void UCI::on_iter(const Engine::InfoIter& info) {
     sync_cout << ss.str() << sync_endl;
 }
 
-void UCI::on_bestmove(const std::string& bestmove, const std::string& ponder) {
+void UCIEngine::on_bestmove(const std::string& bestmove, const std::string& ponder) {
     sync_cout << "bestmove " << bestmove;
     if (!ponder.empty())
         std::cout << " ponder " << ponder;

@@ -156,7 +156,7 @@ void Search::Worker::start_searching() {
     {
         rootMoves.emplace_back(Move::none());
         main_manager()->updates.onUpdateShort(
-          {0, UCI::to_score(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos)});
+          {0, UCIEngine::to_score(rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos)});
     }
     else
     {
@@ -204,9 +204,9 @@ void Search::Worker::start_searching() {
 
     if (bestThread->rootMoves[0].pv.size() > 1
         || bestThread->rootMoves[0].extract_ponder_from_tt(tt, rootPos))
-        ponder = UCI::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
+        ponder = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
 
-    auto bestmove = UCI::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
+    auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
     main_manager()->updates.onBestmove(bestmove, ponder);
 }
 
@@ -931,7 +931,7 @@ moves_loop:  // When in check, search starts here
             && main_manager()->tm.elapsed(threads.nodes_searched()) > 3000)
         {
             main_manager()->updates.onIter(
-              {depth, UCI::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
+              {depth, UCIEngine::move(move, pos.is_chess960()), moveCount + thisThread->pvIdx});
         }
         if (PvNode)
             (ss + 1)->pv = nullptr;
@@ -1898,7 +1898,7 @@ void SearchManager::pv(const Search::Worker&     worker,
 
         std::string pv;
         for (Move m : rootMoves[i].pv)
-            pv += UCI::move(m, pos.is_chess960()) + " ";
+            pv += UCIEngine::move(m, pos.is_chess960()) + " ";
 
         // remove last whitespace
         if (!pv.empty())
@@ -1909,10 +1909,10 @@ void SearchManager::pv(const Search::Worker&     worker,
         info.depth    = d;
         info.selDepth = rootMoves[i].selDepth;
         info.multiPV  = i + 1;
-        info.score    = UCI::to_score(v, pos);
+        info.score    = UCIEngine::to_score(v, pos);
 
         if (worker.options["UCI_ShowWDL"])
-            info.wdl = UCI::wdl(v, pos);
+            info.wdl = UCIEngine::wdl(v, pos);
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
             info.bound = rootMoves[i].scoreLowerbound

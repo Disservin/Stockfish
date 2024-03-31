@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
     Bitboards::init();
     Position::init();
 
-    UCI uci(argc, argv);
+    UCIEngine uci(argc, argv);
 
     Tune::init(uci.engine_options());
 

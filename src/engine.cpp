@@ -99,7 +99,7 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
 
     for (const auto& move : moves)
     {
-        auto m = UCI::to_move(pos, move);
+        auto m = UCIEngine::to_move(pos, move);
 
         if (m == Move::none())
             break;

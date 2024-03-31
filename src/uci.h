@@ -33,9 +33,9 @@ class Move;
 enum Square : int;
 using Value = int;
 
-class UCI {
+class UCIEngine {
    public:
-    UCI(int argc, char** argv);
+    UCIEngine(int argc, char** argv);
 
     void loop();
 
