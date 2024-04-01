@@ -19,11 +19,9 @@
 #include "uci.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cctype>
 #include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <deque>
 #include <memory>
 #include <optional>

@@ -25,12 +25,12 @@
 #include "engine.h"
 #include "misc.h"
 #include "search.h"
-#include "score.h"
 
 namespace Stockfish {
 
 class Position;
 class Move;
+class Score;
 enum Square : int;
 using Value = int;
 
