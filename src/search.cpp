@@ -1916,8 +1916,8 @@ void SearchManager::pv(const Search::Worker&     worker,
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
             info.bound = rootMoves[i].scoreLowerbound
-                         ? " lowerbound"
-                         : (rootMoves[i].scoreUpperbound ? " upperbound" : "");
+                         ? "lowerbound"
+                         : (rootMoves[i].scoreUpperbound ? "upperbound" : "");
 
         info.timeMs   = time;
         info.nodes    = nodes;

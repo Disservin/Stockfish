@@ -452,13 +452,13 @@ void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     if (showWDL)
         ss << " wdl " << info.wdl;
 
-    ss << info.bound                     //
-       << " nodes " << info.nodes        //
-       << " nps " << info.nps            //
-       << " hashfull " << info.hashfull  //
-       << " tbhits " << info.tbHits      //
-       << " time " << info.timeMs        //
-       << " pv " << info.pv;             //
+    ss << (!info.bound.empty() ? " " + info.bound : "")  //
+       << " nodes " << info.nodes                        //
+       << " nps " << info.nps                            //
+       << " hashfull " << info.hashfull                  //
+       << " tbhits " << info.tbHits                      //
+       << " time " << info.timeMs                        //
+       << " pv " << info.pv;                             //
 
     sync_cout << ss.str() << sync_endl;
 }
