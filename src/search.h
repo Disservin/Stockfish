@@ -35,6 +35,7 @@
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
+#include "score.h"
 
 namespace Stockfish {
 
@@ -157,8 +158,8 @@ class ISearchManager {
 };
 
 struct InfoShort {
-    int         depth;
-    std::string score;
+    int   depth;
+    Score score;
 };
 
 struct InfoFull: InfoShort {
