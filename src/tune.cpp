@@ -23,6 +23,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <fstream>
 
 #include "ucioption.h"
 
@@ -33,6 +34,7 @@ namespace Stockfish {
 bool          Tune::update_on_last;
 const Option* LastOption = nullptr;
 OptionsMap*   Tune::options;
+bool          Tune::enabled = false;
 
 
 namespace {
@@ -101,6 +103,28 @@ void Tune::Entry<Tune::PostUpdate>::init_option() {}
 template<>
 void Tune::Entry<Tune::PostUpdate>::read_option() {
     value();
+}
+
+// Try to read tune values from a file.
+// The file format is option_name, value, option_name, value, ...
+void Tune::read_file(const std::string& filename) {
+    std::ifstream file(filename);
+
+    if (!file)
+        return;
+
+    std::string option;
+    std::string value;
+
+    while (std::getline(file, option, ',') && std::getline(file, value, ','))
+    {
+        auto v = value;
+
+        if (TuneResults.count(option))
+            v = std::to_string(TuneResults[option]);
+
+        options->setoption(option, v);
+    }
 }
 
 }  // namespace Stockfish

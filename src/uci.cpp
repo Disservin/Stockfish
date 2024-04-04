@@ -99,6 +99,9 @@ UCI::UCI(int argc, char** argv) :
 }
 
 void UCI::loop() {
+    // delayed addition of options
+    if (Tune::enabled)
+        options["TuneFile"] << Option("<empty>", [this](const Option& o) { Tune::read_file(o); });
 
     Position     pos;
     std::string  token, cmd;

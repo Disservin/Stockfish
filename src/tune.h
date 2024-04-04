@@ -155,6 +155,8 @@ class Tune {
     }
     static void init(OptionsMap& o) {
         options = &o;
+        enabled = !instance().list.empty();
+
         for (auto& e : instance().list)
             e->init_option();
         read_options();
@@ -164,6 +166,9 @@ class Tune {
             e->read_option();
     }
 
+    static void read_file(const std::string& filename);
+
+    static bool        enabled;
     static bool        update_on_last;
     static OptionsMap* options;
 };
