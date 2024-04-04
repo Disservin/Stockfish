@@ -26,16 +26,16 @@
 #include <cstdint>
 #include <functional>
 #include <memory>
-#include <string>
+#include <string_view>
 #include <vector>
 
 #include "misc.h"
 #include "movepick.h"
 #include "position.h"
+#include "score.h"
 #include "syzygy/tbprobe.h"
 #include "timeman.h"
 #include "types.h"
-#include "score.h"
 
 namespace Stockfish {
 
@@ -163,22 +163,22 @@ struct InfoShort {
 };
 
 struct InfoFull: InfoShort {
-    int         selDepth;
-    size_t      multiPV;
-    std::string wdl;
-    std::string bound;
-    size_t      timeMs;
-    size_t      nodes;
-    size_t      nps;
-    size_t      tbHits;
-    std::string pv;
-    int         hashfull;
+    int              selDepth;
+    size_t           multiPV;
+    std::string_view wdl;
+    std::string_view bound;
+    size_t           timeMs;
+    size_t           nodes;
+    size_t           nps;
+    size_t           tbHits;
+    std::string_view pv;
+    int              hashfull;
 };
 
 struct InfoIteration {
-    int         depth;
-    std::string currmove;
-    size_t      currmovenumber;
+    int              depth;
+    std::string_view currmove;
+    size_t           currmovenumber;
 };
 
 // SearchManager manages the search from the main thread. It is responsible for
@@ -188,7 +188,7 @@ class SearchManager: public ISearchManager {
     using UpdateShort    = std::function<void(const InfoShort&)>;
     using UpdateFull     = std::function<void(const InfoFull&)>;
     using UpdateIter     = std::function<void(const InfoIteration&)>;
-    using UpdateBestmove = std::function<void(const std::string&, const std::string&)>;
+    using UpdateBestmove = std::function<void(std::string_view, std::string_view)>;
 
     struct UpdateContext {
         UpdateShort    onUpdateNoMoves;

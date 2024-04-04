@@ -21,6 +21,7 @@
 #include <deque>
 #include <memory>
 #include <ostream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -86,7 +87,7 @@ void Engine::set_on_iter(std::function<void(const Engine::InfoIter&)>&& f) {
     updateContext.onIter = std::move(f);
 }
 
-void Engine::set_on_bestmove(std::function<void(const std::string&, const std::string&)>&& f) {
+void Engine::set_on_bestmove(std::function<void(std::string_view, std::string_view)>&& f) {
     updateContext.onBestmove = std::move(f);
 }
 

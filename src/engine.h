@@ -21,10 +21,11 @@
 
 #include <cstddef>
 #include <functional>
-#include <string>
-#include <vector>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <utility>
+#include <vector>
 
 #include "nnue/network.h"
 #include "position.h"
@@ -64,7 +65,7 @@ class Engine {
     void set_on_update_no_moves(std::function<void(const InfoShort&)>&&);
     void set_on_update_full(std::function<void(const InfoFull&)>&&);
     void set_on_iter(std::function<void(const InfoIter&)>&&);
-    void set_on_bestmove(std::function<void(const std::string&, const std::string&)>&&);
+    void set_on_bestmove(std::function<void(std::string_view, std::string_view)>&&);
 
     // network related
 

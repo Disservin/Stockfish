@@ -26,6 +26,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -34,8 +35,8 @@
 #include "evaluate.h"
 #include "movegen.h"
 #include "position.h"
-#include "search.h"
 #include "score.h"
+#include "search.h"
 #include "syzygy/tbprobe.h"
 #include "types.h"
 #include "ucioption.h"
@@ -450,13 +451,15 @@ void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     if (showWDL)
         ss << " wdl " << info.wdl;
 
-    ss << (!info.bound.empty() ? " " + info.bound : "")  //
-       << " nodes " << info.nodes                        //
-       << " nps " << info.nps                            //
-       << " hashfull " << info.hashfull                  //
-       << " tbhits " << info.tbHits                      //
-       << " time " << info.timeMs                        //
-       << " pv " << info.pv;                             //
+    if (!info.bound.empty())
+        ss << " " << info.bound;
+
+    ss << " nodes " << info.nodes        //
+       << " nps " << info.nps            //
+       << " hashfull " << info.hashfull  //
+       << " tbhits " << info.tbHits      //
+       << " time " << info.timeMs        //
+       << " pv " << info.pv;             //
 
     sync_cout << ss.str() << sync_endl;
 }
@@ -472,7 +475,7 @@ void UCIEngine::on_iter(const Engine::InfoIter& info) {
     sync_cout << ss.str() << sync_endl;
 }
 
-void UCIEngine::on_bestmove(const std::string& bestmove, const std::string& ponder) {
+void UCIEngine::on_bestmove(std::string_view bestmove, std::string_view ponder) {
     sync_cout << "bestmove " << bestmove;
     if (!ponder.empty())
         std::cout << " ponder " << ponder;

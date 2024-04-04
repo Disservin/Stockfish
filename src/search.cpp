@@ -26,6 +26,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <initializer_list>
+#include <string>
 #include <utility>
 
 #include "evaluate.h"
@@ -1904,20 +1905,21 @@ void SearchManager::pv(const Search::Worker&     worker,
         if (!pv.empty())
             pv.pop_back();
 
+        auto wdl   = worker.options["UCI_ShowWDL"] ? UCIEngine::wdl(v, pos) : "";
+        auto bound = rootMoves[i].scoreLowerbound
+                     ? "lowerbound"
+                     : (rootMoves[i].scoreUpperbound ? "upperbound" : "");
+
         InfoFull info;
 
         info.depth    = d;
         info.selDepth = rootMoves[i].selDepth;
         info.multiPV  = i + 1;
         info.score    = {v, pos};
-
-        if (worker.options["UCI_ShowWDL"])
-            info.wdl = UCIEngine::wdl(v, pos);
+        info.wdl      = wdl;
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact
-            info.bound = rootMoves[i].scoreLowerbound
-                         ? "lowerbound"
-                         : (rootMoves[i].scoreUpperbound ? "upperbound" : "");
+            info.bound = bound;
 
         info.timeMs   = time;
         info.nodes    = nodes;

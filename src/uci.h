@@ -21,6 +21,7 @@
 
 #include <iostream>
 #include <string>
+#include <string_view>
 
 #include "engine.h"
 #include "misc.h"
@@ -63,7 +64,7 @@ class UCIEngine {
     static void on_update_no_moves(const Engine::InfoShort& info);
     static void on_update_full(const Engine::InfoFull& info, bool showWDL);
     static void on_iter(const Engine::InfoIter& info);
-    static void on_bestmove(const std::string& bestmove, const std::string& ponder);
+    static void on_bestmove(std::string_view bestmove, std::string_view ponder);
 };
 
 }  // namespace Stockfish
