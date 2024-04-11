@@ -22,16 +22,16 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "uci.h"
+#include "normalization.h"
 
 namespace Stockfish {
 
-Score::Score(Value v, const Position& pos) {
+Score::Score(Value v, int material) {
     assert(-VALUE_INFINITE < v && v < VALUE_INFINITE);
 
     if (std::abs(v) < VALUE_TB_WIN_IN_MAX_PLY)
     {
-        score = InternalUnits{UCIEngine::to_cp(v, pos)};
+        score = InternalUnits{Normalization::to_cp(v, material)};
     }
     else if (std::abs(v) <= VALUE_TB)
     {

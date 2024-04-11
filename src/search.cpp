@@ -35,6 +35,7 @@
 #include "movepick.h"
 #include "nnue/nnue_common.h"
 #include "nnue/nnue_misc.h"
+#include "normalization.h"
 #include "position.h"
 #include "syzygy/tbprobe.h"
 #include "thread.h"
@@ -157,7 +158,7 @@ void Search::Worker::start_searching() {
     {
         rootMoves.emplace_back(Move::none());
         main_manager()->updates.onUpdateNoMoves(
-          {0, {rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos}});
+          {0, {rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos.trad_material()}});
     }
     else
     {
@@ -1905,7 +1906,7 @@ void SearchManager::pv(const Search::Worker&     worker,
         if (!pv.empty())
             pv.pop_back();
 
-        auto wdl   = worker.options["UCI_ShowWDL"] ? UCIEngine::wdl(v, pos) : "";
+        auto wdl = worker.options["UCI_ShowWDL"] ? Normalization::wdl(v, pos.trad_material()) : "";
         auto bound = rootMoves[i].scoreLowerbound
                      ? "lowerbound"
                      : (rootMoves[i].scoreUpperbound ? "upperbound" : "");
@@ -1915,7 +1916,7 @@ void SearchManager::pv(const Search::Worker&     worker,
         info.depth    = d;
         info.selDepth = rootMoves[i].selDepth;
         info.multiPV  = i + 1;
-        info.score    = {v, pos};
+        info.score    = {v, pos.trad_material()};
         info.wdl      = wdl;
 
         if (i == pvIdx && !tb && updated)  // tablebase- and previous-scores are exact

@@ -16,52 +16,18 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef SCORE_H_INCLUDED
-#define SCORE_H_INCLUDED
+#ifndef NORMALIZATION_H_INCLUDED
+#define NORMALIZATION_H_INCLUDED
 
-#include <utility>
-#include <variant>
+#include <string>
 
 #include "types.h"
 
-namespace Stockfish {
+namespace Stockfish::Normalization {
 
-class Score {
-   public:
-    struct Mate {
-        int plies;
-    };
-
-    struct TBWin {
-        int plies;
-    };
-
-    struct InternalUnits {
-        int value;
-    };
-
-    Score() = default;
-    Score(Value v, int material);
-
-    template<typename T>
-    bool is() const {
-        return std::holds_alternative<T>(score);
-    }
-
-    template<typename T>
-    T get() const {
-        return std::get<T>(score);
-    }
-
-    template<typename F>
-    decltype(auto) visit(F&& f) const {
-        return std::visit(std::forward<F>(f), score);
-    }
-
-   private:
-    std::variant<Mate, TBWin, InternalUnits> score;
-};
+std::string wdl(Value v, int material);
+int         to_cp(Value v, int material);
 
 }
 
-#endif  // #ifndef SCORE_H_INCLUDED
+#endif  // NORMALIZATION_H_INCLUDED

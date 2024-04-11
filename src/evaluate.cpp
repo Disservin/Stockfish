@@ -28,9 +28,9 @@
 
 #include "nnue/network.h"
 #include "nnue/nnue_misc.h"
+#include "normalization.h"
 #include "position.h"
 #include "types.h"
-#include "uci.h"
 
 namespace Stockfish {
 
@@ -105,11 +105,13 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
 
     Value v = networks.big.evaluate(pos, false);
     v       = pos.side_to_move() == WHITE ? v : -v;
-    ss << "NNUE evaluation        " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)\n";
+    ss << "NNUE evaluation        " << 0.01 * Normalization::to_cp(v, pos.trad_material())
+       << " (white side)\n";
 
     v = evaluate(networks, pos, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
-    ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
+    ss << "Final evaluation       " << 0.01 * Normalization::to_cp(v, pos.trad_material())
+       << " (white side)";
     ss << " [with scaled NNUE, ...]";
     ss << "\n";
 

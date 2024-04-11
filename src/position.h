@@ -161,6 +161,7 @@ class Position {
     int   rule50_count() const;
     Value non_pawn_material(Color c) const;
     Value non_pawn_material() const;
+    int   trad_material() const;
 
     // Position consistency check, for debugging
     bool pos_is_ok() const;
@@ -301,6 +302,12 @@ inline Value Position::non_pawn_material(Color c) const { return st->nonPawnMate
 
 inline Value Position::non_pawn_material() const {
     return non_pawn_material(WHITE) + non_pawn_material(BLACK);
+}
+
+// Do not tinker with the values of the pieces, as this is used for our eval normalization.
+inline int Position::trad_material() const {
+    return count<PAWN>() + 3 * count<KNIGHT>() + 3 * count<BISHOP>() + 5 * count<ROOK>()
+         + 9 * count<QUEEN>();
 }
 
 inline int Position::game_ply() const { return gamePly; }

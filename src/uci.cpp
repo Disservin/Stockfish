@@ -314,41 +314,6 @@ void UCIEngine::position(std::istringstream& is) {
     engine.set_position(fen, moves);
 }
 
-namespace {
-
-struct WinRateParams {
-    double a;
-    double b;
-};
-
-WinRateParams win_rate_params(const Position& pos) {
-
-    int material = pos.count<PAWN>() + 3 * pos.count<KNIGHT>() + 3 * pos.count<BISHOP>()
-                 + 5 * pos.count<ROOK>() + 9 * pos.count<QUEEN>();
-
-    // The fitted model only uses data for material counts in [10, 78], and is anchored at count 58.
-    double m = std::clamp(material, 10, 78) / 58.0;
-
-    // Return a = p_a(material) and b = p_b(material), see github.com/official-stockfish/WDL_model
-    constexpr double as[] = {-185.71965483, 504.85014385, -438.58295743, 474.04604627};
-    constexpr double bs[] = {89.23542728, -137.02141296, 73.28669021, 47.53376190};
-
-    double a = (((as[0] * m + as[1]) * m + as[2]) * m) + as[3];
-    double b = (((bs[0] * m + bs[1]) * m + bs[2]) * m) + bs[3];
-
-    return {a, b};
-}
-
-// The win rate model is 1 / (1 + exp((a - eval) / b)), where a = p_a(material) and b = p_b(material).
-// It fits the LTC fishtest statistics rather accurately.
-int win_rate_model(Value v, const Position& pos) {
-
-    auto [a, b] = win_rate_params(pos);
-
-    // Return the win rate in per mille units, rounded to the nearest integer.
-    return int(0.5 + 1000 / (1 + std::exp((a - double(v)) / b)));
-}
-}
 
 std::string UCIEngine::format_score(const Score& s) {
     constexpr int TB_CP = 20000;
@@ -366,30 +331,6 @@ std::string UCIEngine::format_score(const Score& s) {
                }};
 
     return s.visit(format);
-}
-
-// Turns a Value to an integer centipawn number,
-// without treatment of mate and similar special scores.
-int UCIEngine::to_cp(Value v, const Position& pos) {
-
-    // In general, the score can be defined via the the WDL as
-    // (log(1/L - 1) - log(1/W - 1)) / ((log(1/L - 1) + log(1/W - 1))
-    // Based on our win_rate_model, this simply yields v / a.
-
-    auto [a, b] = win_rate_params(pos);
-
-    return std::round(100 * int(v) / a);
-}
-
-std::string UCIEngine::wdl(Value v, const Position& pos) {
-    std::stringstream ss;
-
-    int wdl_w = win_rate_model(v, pos);
-    int wdl_l = win_rate_model(-v, pos);
-    int wdl_d = 1000 - wdl_w - wdl_l;
-    ss << wdl_w << " " << wdl_d << " " << wdl_l;
-
-    return ss.str();
 }
 
 std::string UCIEngine::square(Square s) {
