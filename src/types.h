@@ -351,9 +351,9 @@ enum MoveType {
 // bit 14-15: special move flag: promotion (1), en passant (2), castling (3)
 // NOTE: en passant bit is set only when a pawn can be captured
 //
-// Special cases are Move::none() and Move::null(). We can sneak these in because in
+// Special cases are MOVE_NONE and MOVE_NULL. We can sneak these in because in
 // any normal move destination square is always different from origin square
-// while Move::none() and Move::null() have the same origin and destination square.
+// while MOVE_NONE and MOVE_NULL have the same origin and destination square.
 class Move {
    public:
     Move() = default;
@@ -386,9 +386,6 @@ class Move {
 
     constexpr bool is_ok() const { return none().data != data && null().data != data; }
 
-    static constexpr Move null() { return Move(65); }
-    static constexpr Move none() { return Move(0); }
-
     constexpr bool operator==(const Move& m) const { return data == m.data; }
     constexpr bool operator!=(const Move& m) const { return data != m.data; }
 
@@ -401,8 +398,15 @@ class Move {
     };
 
    protected:
+    static constexpr Move null() { return Move(65); }
+    static constexpr Move none() { return Move(0); }
+
+
     std::uint16_t data;
 };
+
+static constexpr Move MOVE_NULL = Move(65);
+static constexpr Move MOVE_NONE = Move(0);
 
 }  // namespace Stockfish
 

@@ -107,7 +107,7 @@ struct Skill {
     Move pick_best(const RootMoves&, size_t multiPV);
 
     double level;
-    Move   best = Move::none();
+    Move   best = MOVE_NONE;
 };
 
 Value value_to_tt(Value v, int ply);
@@ -159,7 +159,7 @@ void Search::Worker::start_searching() {
 
     if (rootMoves.empty())
     {
-        rootMoves.emplace_back(Move::none());
+        rootMoves.emplace_back(MOVE_NONE);
         main_manager()->updates.onUpdateNoMoves(
           {0, {rootPos.checkers() ? -VALUE_MATE : VALUE_DRAW, rootPos}});
     }
@@ -195,7 +195,7 @@ void Search::Worker::start_searching() {
       Skill(options["Skill Level"], options["UCI_LimitStrength"] ? int(options["UCI_Elo"]) : 0);
 
     if (int(options["MultiPV"]) == 1 && !limits.depth && !limits.mate && !skill.enabled()
-        && rootMoves[0].pv[0] != Move::none())
+        && rootMoves[0].pv[0] != MOVE_NONE)
         bestThread = threads.get_best_thread()->worker.get();
 
     main_manager()->bestPreviousScore        = bestThread->rootMoves[0].score;
@@ -226,7 +226,7 @@ void Search::Worker::iterative_deepening() {
 
     Depth lastBestMoveDepth = 0;
     Value lastBestScore     = -VALUE_INFINITE;
-    auto  lastBestPV        = std::vector{Move::none()};
+    auto  lastBestPV        = std::vector{MOVE_NONE};
 
     Value  alpha, beta;
     Value  bestValue     = -VALUE_INFINITE;
@@ -489,7 +489,7 @@ void Search::Worker::iterative_deepening() {
 }
 
 void Search::Worker::clear() {
-    counterMoves.fill(Move::none());
+    counterMoves.fill(MOVE_NONE);
     mainHistory.fill(0);
     captureHistory.fill(0);
     pawnHistory.fill(0);
@@ -590,8 +590,8 @@ Value Search::Worker::search(
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
-    bestMove             = Move::none();
-    (ss + 2)->killers[0] = (ss + 2)->killers[1] = Move::none();
+    bestMove             = MOVE_NONE;
+    (ss + 2)->killers[0] = (ss + 2)->killers[1] = MOVE_NONE;
     (ss + 2)->cutoffCnt                         = 0;
     ss->multipleExtensions                      = (ss - 1)->multipleExtensions;
     Square prevSq = ((ss - 1)->currentMove).is_ok() ? ((ss - 1)->currentMove).to_sq() : SQ_NONE;
@@ -604,7 +604,7 @@ Value Search::Worker::search(
     ttValue   = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove    = rootNode  ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
               : ss->ttHit ? tte->move()
-                          : Move::none();
+                          : MOVE_NONE;
     ttCapture = ttMove && pos.capture_stage(ttMove);
 
     // At this point, if excluded, skip straight to step 6, static eval. However,
@@ -675,7 +675,7 @@ Value Search::Worker::search(
                 if (b == BOUND_EXACT || (b == BOUND_LOWER ? value >= beta : value <= alpha))
                 {
                     tte->save(posKey, value_to_tt(value, ss->ply), ss->ttPv, b,
-                              std::min(MAX_PLY - 1, depth + 6), Move::none(), VALUE_NONE,
+                              std::min(MAX_PLY - 1, depth + 6), MOVE_NONE, VALUE_NONE,
                               tt.generation());
 
                     return value;
@@ -729,7 +729,7 @@ Value Search::Worker::search(
         ss->staticEval = eval = to_corrected_static_eval(unadjustedStaticEval, *thisThread, pos);
 
         // Static evaluation is saved as it was before adjustment by correction history
-        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, Move::none(),
+        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE,
                   unadjustedStaticEval, tt.generation());
     }
 
@@ -776,17 +776,16 @@ Value Search::Worker::search(
         return beta > VALUE_TB_LOSS_IN_MAX_PLY ? (eval + beta) / 2 : eval;
 
     // Step 9. Null move search with verification search (~35 Elo)
-    if (!PvNode && (ss - 1)->currentMove != Move::null() && (ss - 1)->statScore < 18001
-        && eval >= beta && ss->staticEval >= beta - 21 * depth + 312 && !excludedMove
-        && pos.non_pawn_material(us) && ss->ply >= thisThread->nmpMinPly
-        && beta > VALUE_TB_LOSS_IN_MAX_PLY)
+    if (!PvNode && (ss - 1)->currentMove != MOVE_NULL && (ss - 1)->statScore < 18001 && eval >= beta
+        && ss->staticEval >= beta - 21 * depth + 312 && !excludedMove && pos.non_pawn_material(us)
+        && ss->ply >= thisThread->nmpMinPly && beta > VALUE_TB_LOSS_IN_MAX_PLY)
     {
         assert(eval - beta >= 0);
 
         // Null move dynamic reduction based on depth and eval
         Depth R = std::min(int(eval - beta) / 152, 6) + depth / 3 + 4;
 
-        ss->currentMove         = Move::null();
+        ss->currentMove         = MOVE_NULL;
         ss->continuationHistory = &thisThread->continuationHistory[0][0][NO_PIECE][0];
 
         pos.do_null_move(st, tt);
@@ -846,7 +845,7 @@ Value Search::Worker::search(
 
         MovePicker mp(pos, ttMove, probCutBeta - ss->staticEval, &thisThread->captureHistory);
 
-        while ((move = mp.next_move()) != Move::none())
+        while ((move = mp.next_move()) != MOVE_NONE)
             if (move != excludedMove && pos.legal(move))
             {
                 assert(pos.capture_stage(move));
@@ -902,7 +901,7 @@ moves_loop:  // When in check, search starts here
                                         (ss - 6)->continuationHistory};
 
     Move countermove =
-      prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : Move::none();
+      prevSq != SQ_NONE ? thisThread->counterMoves[pos.piece_on(prevSq)][prevSq] : MOVE_NONE;
 
     MovePicker mp(pos, ttMove, depth, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory, countermove, ss->killers);
@@ -912,7 +911,7 @@ moves_loop:  // When in check, search starts here
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move(moveCountPruning)) != Move::none())
+    while ((move = mp.next_move(moveCountPruning)) != MOVE_NONE)
     {
         assert(move.is_ok());
 
@@ -1045,7 +1044,7 @@ moves_loop:  // When in check, search starts here
                 ss->excludedMove = move;
                 value =
                   search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
-                ss->excludedMove = Move::none();
+                ss->excludedMove = MOVE_NONE;
 
                 if (value < singularBeta)
                 {
@@ -1206,7 +1205,7 @@ moves_loop:  // When in check, search starts here
         if (PvNode && (moveCount == 1 || value > alpha))
         {
             (ss + 1)->pv    = pv;
-            (ss + 1)->pv[0] = Move::none();
+            (ss + 1)->pv[0] = MOVE_NONE;
 
             value = -search<PV>(pos, ss + 1, -beta, -alpha, newDepth, false);
         }
@@ -1255,7 +1254,7 @@ moves_loop:  // When in check, search starts here
 
                 assert((ss + 1)->pv);
 
-                for (Move* m = (ss + 1)->pv; *m != Move::none(); ++m)
+                for (Move* m = (ss + 1)->pv; *m != MOVE_NONE; ++m)
                     rm.pv.push_back(*m);
 
                 // We record how often the best move has been changed in each iteration.
@@ -1415,11 +1414,11 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
     if (PvNode)
     {
         (ss + 1)->pv = pv;
-        ss->pv[0]    = Move::none();
+        ss->pv[0]    = MOVE_NONE;
     }
 
     Worker* thisThread = this;
-    bestMove           = Move::none();
+    bestMove           = MOVE_NONE;
     ss->inCheck        = pos.checkers();
     moveCount          = 0;
 
@@ -1442,7 +1441,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
     posKey  = pos.key();
     tte     = tt.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
-    ttMove  = ss->ttHit ? tte->move() : Move::none();
+    ttMove  = ss->ttHit ? tte->move() : MOVE_NONE;
     pvHit   = ss->ttHit && tte->is_pv();
 
     // At non-PV nodes we check for an early TT cutoff
@@ -1475,7 +1474,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         else
         {
             // In case of null move search, use previous static eval with a different sign
-            unadjustedStaticEval = (ss - 1)->currentMove != Move::null()
+            unadjustedStaticEval = (ss - 1)->currentMove != MOVE_NULL
                                    ? evaluate(networks, pos, refreshTable, thisThread->optimism[us])
                                    : -(ss - 1)->staticEval;
             ss->staticEval       = bestValue =
@@ -1487,7 +1486,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
         {
             if (!ss->ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER, DEPTH_NONE,
-                          Move::none(), unadjustedStaticEval, tt.generation());
+                          MOVE_NONE, unadjustedStaticEval, tt.generation());
 
             return bestValue;
         }
@@ -1513,7 +1512,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta,
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    while ((move = mp.next_move()) != MOVE_NONE)
     {
         assert(move.is_ok());
 
@@ -1707,9 +1706,9 @@ Value value_from_tt(Value v, int ply, int r50c) {
 // Adds current move and appends child pv[]
 void update_pv(Move* pv, Move move, const Move* childPv) {
 
-    for (*pv++ = move; childPv && *childPv != Move::none();)
+    for (*pv++ = move; childPv && *childPv != MOVE_NONE;)
         *pv++ = *childPv++;
-    *pv = Move::none();
+    *pv = MOVE_NONE;
 }
 
 
@@ -1964,7 +1963,7 @@ bool RootMove::extract_ponder_from_tt(const TranspositionTable& tt, Position& po
     bool ttHit;
 
     assert(pv.size() == 1);
-    if (pv[0] == Move::none())
+    if (pv[0] == MOVE_NONE)
         return false;
 
     pos.do_move(pv[0], st);
