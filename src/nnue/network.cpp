@@ -36,6 +36,9 @@
 #include "nnue_common.h"
 #include "nnue_misc.h"
 
+#include <sched.h>
+#include <sys/sysinfo.h>
+
 namespace {
 // Macro to embed the default efficiently updatable neural network (NNUE) file
 // data in the engine binary (using incbin.h, by Dale Weiler).
@@ -209,9 +212,13 @@ Value Network<Arch, Transformer>::evaluate(const Position&                      
 
     ASSERT_ALIGNED(transformedFeatures, alignment);
 
-    const int  bucket     = (pos.count<ALL_PIECES>() - 1) / 4;
-    const auto psqt       = featureTransformer->transform(pos, cache, transformedFeatures, bucket);
-    const auto positional = network[bucket]->propagate(transformedFeatures);
+    //getcpu(nullptr, &node);
+    int node = sched_getcpu() & 1;
+
+    const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    const auto psqt =
+      numalocal_featureTransformer[node]->transform(pos, cache, transformedFeatures, bucket);
+    const auto positional = numalocal_network[node][bucket]->propagate(transformedFeatures);
 
     if (complexity)
         *complexity = std::abs(psqt - positional) / OutputScale;
@@ -366,7 +373,11 @@ std::optional<std::string> Network<Arch, Transformer>::load(std::istream& stream
     initialize();
     std::string description;
 
-    return read_parameters(stream, description) ? std::make_optional(description) : std::nullopt;
+    auto readparams = read_parameters(stream, description);
+
+    setup_numalocal_networks();
+
+    return readparams ? std::make_optional(description) : std::nullopt;
 }
 
 
@@ -416,7 +427,54 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
         if (!Detail::read_parameters(stream, *(network[i])))
             return false;
     }
+
     return stream && stream.peek() == std::ios::traits_type::eof();
+}
+
+template<typename Arch, typename Transformer>
+void Network<Arch, Transformer>::setup_numalocal_networks() {
+    numalocal_featureTransformer.clear();
+    numalocal_network.clear();
+
+    int num_threads = get_nprocs();
+
+    numalocal_featureTransformer.resize(2);
+    numalocal_network.resize(2);
+
+    for (int j = 0; j < 2; ++j)
+    {
+        cpu_set_t mask;
+        CPU_ZERO(&mask);
+        CPU_SET(j, &mask);
+        /*int result =*/sched_setaffinity(0, sizeof(mask), &mask);
+
+        //getcpu(nullptr, &node);
+        int node = sched_getcpu() & 1;
+
+        {
+            auto& w = numalocal_featureTransformer[node];
+            Detail::initialize(w);
+            *w = *featureTransformer;
+        }
+
+        {
+            auto& w = numalocal_network[node];
+            for (std::size_t i = 0; i < LayerStacks; ++i)
+            {
+                Detail::initialize(w[i]);
+                *(w[i]) = *(network[i]);
+            }
+        }
+    }
+
+    cpu_set_t mask;
+    CPU_ZERO(&mask);
+    for (int j = 0; j < num_threads; ++j)
+    {
+        CPU_SET(j, &mask);
+    }
+
+    /*int result =*/sched_setaffinity(0, sizeof(mask), &mask);
 }
 
 

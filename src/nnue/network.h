@@ -19,19 +19,21 @@
 #ifndef NETWORK_H_INCLUDED
 #define NETWORK_H_INCLUDED
 
+#include <array>
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
+#include "nnue_accumulator.h"
 #include "nnue_architecture.h"
 #include "nnue_feature_transformer.h"
 #include "nnue_misc.h"
-#include "nnue_accumulator.h"
 
 namespace Stockfish::Eval::NNUE {
 
@@ -81,11 +83,19 @@ class Network {
     bool read_parameters(std::istream&, std::string&) const;
     bool write_parameters(std::ostream&, const std::string&) const;
 
+    void setup_numalocal_networks();
+
     // Input feature converter
     LargePagePtr<Transformer> featureTransformer;
 
     // Evaluation function
     AlignedPtr<Arch> network[LayerStacks];
+
+    // Input feature converter
+    std::vector<LargePagePtr<Transformer>> numalocal_featureTransformer;
+
+    // Evaluation function
+    std::vector<std::array<AlignedPtr<Arch>, LayerStacks>> numalocal_network;
 
     EvalFile         evalFile;
     EmbeddedNNUEType embeddedType;
