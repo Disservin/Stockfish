@@ -243,7 +243,49 @@ class AffineTransformSparseInput {
         for (IndexType k = 0; k < NumRegs; ++k)
             acc[k] = biasvec[k];
 
-        for (IndexType j = 0; j < count; ++j)
+        // for (IndexType j = 0; j < count; ++j)
+        // {
+        //     const auto    i  = nnz[j];
+        //     const invec_t in = vec_set_32(input32[i]);
+        //     const auto    col =
+        //       reinterpret_cast<const invec_t*>(&weights[i * OutputDimensions * ChunkSize]);
+        //     for (IndexType k = 0; k < NumRegs; ++k)
+        //         vec_add_dpbusd_32(acc[k], in, col[k]);
+        // }
+
+        IndexType j = 0;
+        for (; j <= count - 4; j += 4)
+        {
+            const auto i0 = nnz[j];
+            const auto i1 = nnz[j + 1];
+            const auto i2 = nnz[j + 2];
+            const auto i3 = nnz[j + 3];
+
+            const invec_t in0 = vec_set_32(input32[i0]);
+            const invec_t in1 = vec_set_32(input32[i1]);
+            const invec_t in2 = vec_set_32(input32[i2]);
+            const invec_t in3 = vec_set_32(input32[i3]);
+
+            const auto col0 =
+              reinterpret_cast<const invec_t*>(&weights[i0 * OutputDimensions * ChunkSize]);
+            const auto col1 =
+              reinterpret_cast<const invec_t*>(&weights[i1 * OutputDimensions * ChunkSize]);
+            const auto col2 =
+              reinterpret_cast<const invec_t*>(&weights[i2 * OutputDimensions * ChunkSize]);
+            const auto col3 =
+              reinterpret_cast<const invec_t*>(&weights[i3 * OutputDimensions * ChunkSize]);
+
+            for (IndexType k = 0; k < NumRegs; ++k)
+            {
+                vec_add_dpbusd_32(acc[k], in0, col0[k]);
+                vec_add_dpbusd_32(acc[k], in1, col1[k]);
+                vec_add_dpbusd_32(acc[k], in2, col2[k]);
+                vec_add_dpbusd_32(acc[k], in3, col3[k]);
+            }
+        }
+
+        // Handle remaining iterations
+        for (; j < count; ++j)
         {
             const auto    i  = nnz[j];
             const invec_t in = vec_set_32(input32[i]);
