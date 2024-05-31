@@ -27,9 +27,9 @@
 #include <cstdio>
 #include <iosfwd>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
 
 #define stringify2(x) #x
 #define stringify(x) stringify2(x)
@@ -61,29 +61,30 @@ struct AlignedLargeAllocator {
     template<typename U>
     AlignedLargeAllocator(const AlignedLargeAllocator<U>&) {}
 
-   static T* allocate() {
+    static T* allocate() {
         if (auto p = static_cast<T*>(aligned_large_pages_alloc(sizeof(T))))
             return p;
         std::exit(1);
         // throw std::bad_alloc();
     }
 
-   static void deallocate(T* p) noexcept {
-        aligned_large_pages_free(p);
-    }
+    static void deallocate(T* p) noexcept { aligned_large_pages_free(p); }
 };
 
 template<typename T, typename... Args>
-std::unique_ptr<T, void(*)(T*)> make_custom_unique(Args&&... args) {
-    AlignedLargeAllocator<T> allocator;
-    T* ptr = allocator.allocate();
+std::unique_ptr<T, void (*)(T*)> make_custom_unique(Args&&... args) {
+    T* obj = AlignedLargeAllocator<T>::allocate();
+
     // place object at ptr address
-    new(ptr) T(std::forward<Args>(args)...);
-    return {ptr, [](T* ptr) {
-        ptr->~T();
-        AlignedLargeAllocator<T> allocator;
-        allocator.deallocate(ptr);
-    }};
+    new (obj) T(std::forward<Args>(args)...);
+
+    const auto deleter =
+      [](T* ptr) {
+          ptr->~T();
+          AlignedLargeAllocator<T>::deallocate(ptr);
+      }
+
+    return {obj, deleter};
 }
 
 size_t str_to_size_t(const std::string& s);
