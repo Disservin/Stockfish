@@ -33,6 +33,8 @@
 #include <utility>
 #include <vector>
 
+#include "misc.h"
+
 // We support linux very well, but we explicitly do NOT support Android, because there's
 // no affected systems, not worth maintaining.
 #if defined(__linux__) && !defined(__ANDROID__)
@@ -914,7 +916,7 @@ class NumaReplicated: public NumaReplicatedBase {
     }
 
    private:
-    std::vector<std::unique_ptr<T>> instances;
+    std::vector<std::unique_ptr<T, void (*)(T*)>> instances;
 
     void replicate_from(T&& source) {
         instances.clear();
@@ -925,7 +927,7 @@ class NumaReplicated: public NumaReplicatedBase {
             for (NumaIndex n = 0; n < cfg.num_numa_nodes(); ++n)
             {
                 cfg.execute_on_numa_node(
-                  n, [this, &source]() { instances.emplace_back(std::make_unique<T>(source)); });
+                  n, [this, &source]() { instances.emplace_back(make_custom_unique<T>(source)); });
             }
         }
         else
@@ -933,7 +935,7 @@ class NumaReplicated: public NumaReplicatedBase {
             assert(cfg.num_numa_nodes() == 1);
             // We take advantage of the fact that replication is not required
             // and reuse the source value, avoiding one copy operation.
-            instances.emplace_back(std::make_unique<T>(std::move(source)));
+            instances.emplace_back(make_custom_unique<T>(std::move(source)));
         }
     }
 };
