@@ -91,7 +91,7 @@ class Thread {
     void   wait_for_search_finished();
     size_t id() const { return idx; }
 
-    std::unique_ptr<Search::Worker> worker;
+    std::unique_ptr<Search::Worker, void(*)(Search::Worker*)> worker;
     std::function<void()>           jobFunc;
 
    private:

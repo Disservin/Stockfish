@@ -42,9 +42,11 @@ Thread::Thread(Search::SharedState&                    sharedState,
                std::unique_ptr<Search::ISearchManager> sm,
                size_t                                  n,
                OptionalThreadToNumaNodeBinder          binder) :
+    worker(nullptr,  AlignedLargeAllocator<Search::Worker>::deallocate) ,
     idx(n),
     nthreads(sharedState.options["Threads"]),
-    stdThread(&Thread::idle_loop, this) {
+    stdThread(&Thread::idle_loop, this)
+{
 
     wait_for_search_finished();
 
@@ -54,7 +56,7 @@ Thread::Thread(Search::SharedState&                    sharedState,
         // Ideally we would also allocate the SearchManager here, but that's minor.
         this->numaAccessToken = binder();
         this->worker =
-          std::make_unique<Search::Worker>(sharedState, std::move(sm), n, this->numaAccessToken);
+          make_custom_unique<Search::Worker>(sharedState, std::move(sm), n, this->numaAccessToken);
     });
 
     wait_for_search_finished();

@@ -52,6 +52,40 @@ void* aligned_large_pages_alloc(size_t size);
 // nop if mem == nullptr
 void aligned_large_pages_free(void* mem);
 
+template<typename T>
+struct AlignedLargeAllocator {
+    using value_type = T;
+
+    AlignedLargeAllocator() = default;
+
+    template<typename U>
+    AlignedLargeAllocator(const AlignedLargeAllocator<U>&) {}
+
+   static T* allocate() {
+        if (auto p = static_cast<T*>(aligned_large_pages_alloc(sizeof(T))))
+            return p;
+        std::exit(1);
+        // throw std::bad_alloc();
+    }
+
+   static void deallocate(T* p) noexcept {
+        aligned_large_pages_free(p);
+    }
+};
+
+template<typename T, typename... Args>
+std::unique_ptr<T, void(*)(T*)> make_custom_unique(Args&&... args) {
+    AlignedLargeAllocator<T> allocator;
+    T* ptr = allocator.allocate();
+    // place object at ptr address
+    new(ptr) T(std::forward<Args>(args)...);
+    return {ptr, [](T* ptr) {
+        ptr->~T();
+        AlignedLargeAllocator<T> allocator;
+        allocator.deallocate(ptr);
+    }};
+}
+
 size_t str_to_size_t(const std::string& s);
 
 // Deleter for automating release of memory area
