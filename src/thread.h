@@ -23,15 +23,16 @@
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <vector>
-#include <functional>
 
+#include "memory_alloc.h"
+#include "numa.h"
 #include "position.h"
 #include "search.h"
 #include "thread_win32_osx.h"
-#include "numa.h"
 
 namespace Stockfish {
 
@@ -91,8 +92,8 @@ class Thread {
     void   wait_for_search_finished();
     size_t id() const { return idx; }
 
-    std::unique_ptr<Search::Worker> worker;
-    std::function<void()>           jobFunc;
+    AlignedLargePageUniquePtr<Search::Worker> worker;
+    std::function<void()>                     jobFunc;
 
    private:
     std::mutex                mutex;
