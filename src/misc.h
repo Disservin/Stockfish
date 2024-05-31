@@ -78,11 +78,10 @@ std::unique_ptr<T, void (*)(T*)> make_custom_unique(Args&&... args) {
     // place object at ptr address
     new (obj) T(std::forward<Args>(args)...);
 
-    const auto deleter =
-      [](T* ptr) {
-          ptr->~T();
-          AlignedLargeAllocator<T>::deallocate(ptr);
-      }
+    const auto deleter = [](T* ptr) {
+        ptr->~T();
+        AlignedLargeAllocator<T>::deallocate(ptr);
+    };
 
     return {obj, deleter};
 }
