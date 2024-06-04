@@ -75,11 +75,9 @@ uint8_t TTEntry::relative_age(const uint8_t generation8) const {
 // measured in megabytes. Transposition table consists
 // of clusters and each cluster consists of ClusterSize number of TTEntry.
 void TranspositionTable::resize(size_t mbSize, ThreadPool& threads) {
-    aligned_large_pages_free(table);
-
     clusterCount = mbSize * 1024 * 1024 / sizeof(Cluster);
 
-    table = static_cast<Cluster*>(aligned_large_pages_alloc(clusterCount * sizeof(Cluster)));
+    table = AlignedAllocator::make_unique_for_overwrite<Cluster[]>(clusterCount);
 
     if (!table)
     {
