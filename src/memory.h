@@ -60,7 +60,6 @@ void memory_deleter_array(T* ptr, FREE_FUNC free_func) {
     if (!ptr)
         return;
 
-
     // Move back on the pointer to where the size is allocated.
     const size_t array_offset = std::max(sizeof(size_t), alignof(T));
     char*        raw_memory   = reinterpret_cast<char*>(ptr) - array_offset;
@@ -78,16 +77,27 @@ void memory_deleter_array(T* ptr, FREE_FUNC free_func) {
 }
 
 // Allocates memory for a single object and places it there with placement new.
-template<typename T, typename ALLOC_FUNC, typename... Args>
+template<typename T, bool ZERO = true, typename ALLOC_FUNC, typename... Args>
 inline std::enable_if_t<!std::is_array_v<T>, T*> memory_allocator(ALLOC_FUNC alloc_func,
                                                                   Args&&... args) {
     void* raw_memory = alloc_func(sizeof(T));
     ASSERT_ALIGNED(raw_memory, alignof(T));
+
+
+    if constexpr (!ZERO)
+    {
+        static_assert(sizeof...(args) == 0,
+                      "Cannot pass arguments when default initialization is requested.");
+
+        // default initialization
+        return new (raw_memory) T;
+    }
+
     return new (raw_memory) T(std::forward<Args>(args)...);
 }
 
 // Allocates memory for an array of unknown bound and places it there with placement new.
-template<typename T, typename ALLOC_FUNC>
+template<typename T, bool ZERO = true, typename ALLOC_FUNC>
 inline std::enable_if_t<std::is_array_v<T>, std::remove_extent_t<T>*>
 memory_allocator(ALLOC_FUNC alloc_func, size_t num) {
     using ElementType = std::remove_extent_t<T>;
@@ -102,7 +112,13 @@ memory_allocator(ALLOC_FUNC alloc_func, size_t num) {
     new (raw_memory) size_t(num);
 
     for (size_t i = 0; i < num; ++i)
-        new (raw_memory + array_offset + i * sizeof(ElementType)) ElementType();
+    {
+        if constexpr (ZERO)
+            new (raw_memory + array_offset + i * sizeof(ElementType)) ElementType();
+
+        // default initialization
+        new (raw_memory + array_offset + i * sizeof(ElementType)) ElementType;
+    }
 
     // Need to return the pointer at the start of the array so that the indexing in unique_ptr<T[]> works
     return reinterpret_cast<ElementType*>(raw_memory + array_offset);
@@ -130,29 +146,42 @@ using LargePagePtr =
                      std::unique_ptr<T, LargePageArrayDeleter<std::remove_extent_t<T>>>,
                      std::unique_ptr<T, LargePageDeleter<T>>>;
 
-// make_unique_large_page for single objects
-template<typename T, typename... Args>
-std::enable_if_t<!std::is_array_v<T>, LargePagePtr<T>> make_unique_large_page(Args&&... args) {
-    static_assert(alignof(T) <= 4096,
-                  "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
 
-    T* obj = memory_allocator<T>(aligned_large_pages_alloc, std::forward<Args>(args)...);
+class LargePageAllocator {
+   public:
+    template<typename T, typename... Args>
+    static LargePagePtr<T> make_unique(Args&&... args) {
+        return make_unique_large_page_impl<T, true>(std::forward<Args>(args)...);
+    }
 
-    return LargePagePtr<T>(obj);
-}
+    template<typename T, typename... Args>
+    static LargePagePtr<T> make_unique_for_overwrite(Args&&... args) {
+        return make_unique_large_page_impl<T, false>(std::forward<Args>(args)...);
+    }
 
-// make_unique_large_page for arrays of unknown bound
-template<typename T>
-std::enable_if_t<std::is_array_v<T>, LargePagePtr<T>> make_unique_large_page(size_t num) {
-    using ElementType = std::remove_extent_t<T>;
+   private:
+    template<typename T, bool ZERO = true, typename... Args>
+    static LargePagePtr<T> make_unique_large_page_impl(Args&&... args) {
+        using ElementType = std::remove_extent_t<T>;
 
-    static_assert(alignof(ElementType) <= 4096,
-                  "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
+        static_assert(
+          alignof(ElementType) <= 4096,
+          "aligned_large_pages_alloc() may fail for such a big alignment requirement of T");
 
-    ElementType* memory = memory_allocator<T>(aligned_large_pages_alloc, num);
+        if constexpr (!std::is_array_v<T>)
+        {
+            T* memory =
+              memory_allocator<T, ZERO>(aligned_large_pages_alloc, std::forward<Args>(args)...);
 
-    return LargePagePtr<T>(memory);
-}
+            return LargePagePtr<T>(memory);
+        }
+
+        ElementType* memory =
+          memory_allocator<T, ZERO>(aligned_large_pages_alloc, std::forward<Args>(args)...);
+
+        return LargePagePtr<T>(memory);
+    }
+};
 
 //
 //
@@ -176,25 +205,37 @@ using AlignedPtr =
                      std::unique_ptr<T, AlignedArrayDeleter<std::remove_extent_t<T>>>,
                      std::unique_ptr<T, AlignedDeleter<T>>>;
 
-// make_unique_aligned for single objects
-template<typename T, typename... Args>
-std::enable_if_t<!std::is_array_v<T>, AlignedPtr<T>> make_unique_aligned(Args&&... args) {
-    const auto func = [](size_t size) { return std_aligned_alloc(alignof(T), size); };
-    T*         obj  = memory_allocator<T>(func, std::forward<Args>(args)...);
+class AlignedAllocator {
+   public:
+    template<typename T, typename... Args>
+    static AlignedPtr<T> make_unique(Args&&... args) {
+        return AlignedAllocator::make_unique_impl<T, true>(std::forward<Args>(args)...);
+    }
 
-    return AlignedPtr<T>(obj);
-}
+    template<typename T, typename... Args>
+    static AlignedPtr<T> make_unique_for_overwrite(Args&&... args) {
+        return AlignedAllocator::make_unique_impl<T, false>(std::forward<Args>(args)...);
+    }
 
-// make_unique_aligned for arrays of unknown bound
-template<typename T>
-std::enable_if_t<std::is_array_v<T>, AlignedPtr<T>> make_unique_aligned(size_t num) {
-    using ElementType = std::remove_extent_t<T>;
+   private:
+    template<typename T, bool ZERO = true, typename... Args>
+    static AlignedPtr<T> make_unique_impl(Args&&... args) {
+        using ElementType = std::remove_extent_t<T>;
 
-    const auto   func   = [](size_t size) { return std_aligned_alloc(alignof(ElementType), size); };
-    ElementType* memory = memory_allocator<T>(func, num);
+        if constexpr (!std::is_array_v<T>)
+        {
+            const auto func   = [](size_t size) { return std_aligned_alloc(alignof(T), size); };
+            T*         memory = memory_allocator<T, ZERO>(func, std::forward<Args>(args)...);
 
-    return AlignedPtr<T>(memory);
-}
+            return AlignedPtr<T>(memory);
+        }
+
+        const auto func = [](size_t size) { return std_aligned_alloc(alignof(ElementType), size); };
+        ElementType* memory = memory_allocator<T, ZERO>(func, std::forward<Args>(args)...);
+
+        return AlignedPtr<T>(memory);
+    }
+};
 
 
 // Get the first aligned element of an array.

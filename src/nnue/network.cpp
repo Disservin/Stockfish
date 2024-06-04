@@ -112,9 +112,10 @@ Network<Arch, Transformer>::Network(const Network<Arch, Transformer>& other) :
     embeddedType(other.embeddedType) {
 
     if (other.featureTransformer)
-        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+        featureTransformer =
+          LargePageAllocator::make_unique<Transformer>(*other.featureTransformer);
 
-    network = make_unique_aligned<Arch[]>(LayerStacks);
+    network = AlignedAllocator::make_unique<Arch[]>(LayerStacks);
 
     if (!other.network)
         return;
@@ -130,9 +131,10 @@ Network<Arch, Transformer>::operator=(const Network<Arch, Transformer>& other) {
     embeddedType = other.embeddedType;
 
     if (other.featureTransformer)
-        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+        featureTransformer =
+          LargePageAllocator::make_unique<Transformer>(*other.featureTransformer);
 
-    network = make_unique_aligned<Arch[]>(LayerStacks);
+    network = AlignedAllocator::make_unique<Arch[]>(LayerStacks);
 
     if (!other.network)
         return *this;
@@ -352,8 +354,8 @@ void Network<Arch, Transformer>::load_internal() {
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::initialize() {
-    featureTransformer = make_unique_large_page<Transformer>();
-    network            = make_unique_aligned<Arch[]>(LayerStacks);
+    featureTransformer = LargePageAllocator::make_unique<Transformer>();
+    network            = AlignedAllocator::make_unique<Arch[]>(LayerStacks);
 }
 
 
