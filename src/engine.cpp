@@ -58,7 +58,7 @@ Engine::Engine(std::string path) :
         NN::NetworkBig({EvalFileDefaultNameBig, "None", ""}, NN::EmbeddedNNUEType::BIG),
         NN::NetworkSmall({EvalFileDefaultNameSmall, "None", ""}, NN::EmbeddedNNUEType::SMALL))) {
     pos.set(StartFEN, false, &states->back());
-    capSq = SQ_NONE;
+    sharedState.capSq = SQ_NONE;
 
     options["Debug Log File"] << Option("", [](const Option& o) {
         start_logger(o);
@@ -119,10 +119,9 @@ std::uint64_t Engine::perft(const std::string& fen, Depth depth, bool isChess960
     return Benchmark::perft(fen, depth, isChess960);
 }
 
-void Engine::go(Search::LimitsType& limits) {
+void Engine::go(SearchLimits& limits) {
     assert(limits.perft == 0);
     verify_networks();
-    limits.capSq = capSq;
 
     threads.start_thinking(options, pos, states, limits);
 }
@@ -161,7 +160,7 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
     states = StateListPtr(new std::deque<StateInfo>(1));
     pos.set(fen, options["UCI_Chess960"], &states->back());
 
-    capSq = SQ_NONE;
+    sharedState.capSq = SQ_NONE;
     for (const auto& move : moves)
     {
         auto m = UCIEngine::to_move(pos, move);
@@ -172,10 +171,10 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
         states->emplace_back();
         pos.do_move(m, states->back());
 
-        capSq          = SQ_NONE;
-        DirtyPiece& dp = states->back().dirtyPiece;
+        sharedState.capSq = SQ_NONE;
+        DirtyPiece& dp    = states->back().dirtyPiece;
         if (dp.dirty_num > 1 && dp.to[1] == SQ_NONE)
-            capSq = m.to_sq();
+            sharedState.capSq = m.to_sq();
     }
 }
 
@@ -206,7 +205,7 @@ void Engine::set_numa_config_from_option(const std::string& o) {
 
 void Engine::resize_threads() {
     threads.wait_for_search_finished();
-    threads.set(numaContext.get_numa_config(), {options, threads, tt, networks}, updateContext);
+    threads.set(numaContext.get_numa_config(), sharedState, updateContext);
 
     // Reallocate the hash with the new threadpool size
     set_tt_size(options["Hash"]);
