@@ -39,8 +39,6 @@
 
 namespace Stockfish {
 
-enum Square : int;
-
 class Engine {
    public:
     struct SearchLimits: public Search::LimitsType {};
