@@ -137,7 +137,7 @@ uint64_t ThreadPool::tb_hits() const { return accumulate(&Search::Worker::tbHits
 // Created and launched threads will immediately go to sleep in idle_loop.
 // Upon resizing, threads are recreated to allow for binding if necessary.
 void ThreadPool::set(const NumaConfig&                           numaConfig,
-                     Search::SharedState                         sharedState,
+                     Search::SharedState&                        sharedState,
                      const Search::SearchManager::UpdateContext& updateContext) {
 
     if (threads.size() > 0)  // destroy any existing thread(s)

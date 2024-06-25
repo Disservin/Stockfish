@@ -50,7 +50,7 @@ class UCIEngine {
     static std::string to_lower(std::string str);
     static Move        to_move(const Position& pos, std::string str);
 
-    static Search::LimitsType parse_limits(std::istream& is);
+    static Engine::SearchLimits parse_limits(std::istream& is);
 
     auto& engine_options() { return engine.get_options(); }
 
@@ -64,7 +64,7 @@ class UCIEngine {
     void          bench(std::istream& args);
     void          position(std::istringstream& is);
     void          setoption(std::istringstream& is);
-    std::uint64_t perft(const Search::LimitsType&);
+    std::uint64_t perft(const Engine::SearchLimits&);
 
     static void on_update_no_moves(const Engine::InfoShort& info);
     static void on_update_full(const Engine::InfoFull& info, bool showWDL);

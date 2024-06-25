@@ -135,7 +135,7 @@ class ThreadPool {
     size_t num_threads() const;
     void   clear();
     void   set(const NumaConfig& numaConfig,
-               Search::SharedState,
+               Search::SharedState&,
                const Search::SearchManager::UpdateContext&);
 
     Search::SearchManager* main_manager();
