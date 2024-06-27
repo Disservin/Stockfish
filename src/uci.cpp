@@ -33,7 +33,6 @@
 #include "movegen.h"
 #include "position.h"
 #include "score.h"
-#include "search.h"
 #include "types.h"
 #include "ucioption.h"
 
@@ -165,9 +164,9 @@ void UCIEngine::loop() {
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
 
-Search::LimitsType UCIEngine::parse_limits(std::istream& is) {
-    Search::LimitsType limits;
-    std::string        token;
+Engine::SearchLimits UCIEngine::parse_limits(std::istream& is) {
+    Engine::SearchLimits limits;
+    std::string          token;
 
     limits.startTime = now();  // The search starts as early as possible
 
@@ -206,7 +205,7 @@ Search::LimitsType UCIEngine::parse_limits(std::istream& is) {
 
 void UCIEngine::go(std::istringstream& is) {
 
-    Search::LimitsType limits = parse_limits(is);
+    auto limits = parse_limits(is);
 
     if (limits.perft)
         perft(limits);
@@ -243,7 +242,7 @@ void UCIEngine::bench(std::istream& args) {
                       << std::endl;
             if (token == "go")
             {
-                Search::LimitsType limits = parse_limits(is);
+                auto limits = parse_limits(is);
 
                 if (limits.perft)
                     nodesSearched = perft(limits);
@@ -289,7 +288,7 @@ void UCIEngine::setoption(std::istringstream& is) {
     engine.get_options().setoption(is);
 }
 
-std::uint64_t UCIEngine::perft(const Search::LimitsType& limits) {
+std::uint64_t UCIEngine::perft(const Engine::SearchLimits& limits) {
     auto nodes = engine.perft(engine.fen(), limits.perft, engine.get_options()["UCI_Chess960"]);
     sync_cout << "\nNodes searched: " << nodes << "\n" << sync_endl;
     return nodes;

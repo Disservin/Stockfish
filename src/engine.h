@@ -39,10 +39,10 @@
 
 namespace Stockfish {
 
-enum Square : int;
-
 class Engine {
    public:
+    struct SearchLimits: public Search::LimitsType {};
+
     using InfoShort = Search::InfoShort;
     using InfoFull  = Search::InfoFull;
     using InfoIter  = Search::InfoIteration;
@@ -60,7 +60,7 @@ class Engine {
     std::uint64_t perft(const std::string& fen, Depth depth, bool isChess960);
 
     // non blocking call to start searching
-    void go(Search::LimitsType&);
+    void go(SearchLimits&);
     // non blocking call to stop searching
     void stop();
 
@@ -112,7 +112,6 @@ class Engine {
 
     Position     pos;
     StateListPtr states;
-    Square       capSq;
 
     OptionsMap                           options;
     ThreadPool                           threads;
@@ -120,6 +119,8 @@ class Engine {
     NumaReplicated<Eval::NNUE::Networks> networks;
 
     Search::SearchManager::UpdateContext updateContext;
+
+    Search::SharedState sharedState = {options, threads, tt, networks};
 };
 
 }  // namespace Stockfish
