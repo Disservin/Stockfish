@@ -60,7 +60,7 @@ namespace Stockfish {
 
 // Number of bytes we're using for storing
 // the aligned pointer offset
-using offset_t = int32_t;
+using offset_t = uintptr_t;
 
 void* std_aligned_alloc(size_t align, size_t size) {
     assert((align & (align - 1)) == 0);
