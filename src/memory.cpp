@@ -69,7 +69,9 @@ void* std_aligned_alloc(size_t align, size_t size) {
     if (!ptr)
         return nullptr;
 
-    void** aligned_ptr = (void**) ((size_t) (ptr + offset) & ~(align - 1));
+    char* aligned      = (char*) ptr + offset;
+    aligned            = (char*) ((size_t) aligned & ~(align - 1));
+    void** aligned_ptr = (void**) aligned;
     *(aligned_ptr - 1) = ptr;  // Store the original pointer just before the aligned address
 
     return aligned_ptr;
