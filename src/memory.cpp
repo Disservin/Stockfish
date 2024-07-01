@@ -64,7 +64,7 @@ using offset_t = int32_t;
 
 void* std_aligned_alloc(size_t align, size_t size) {
     assert((align & (align - 1)) == 0);
-    assert(align < std::numeric_limits<offset_t>::max());
+    assert(align < size_t(std::numeric_limits<offset_t>::max()));
 
     uint32_t hdrSize = sizeof(int32_t) + (align - 1);
     void*    p       = malloc(size + hdrSize);
