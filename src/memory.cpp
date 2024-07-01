@@ -19,6 +19,7 @@
 #include "memory.h"
 
 #include <cstdlib>
+#include <limits>
 
 #if __has_include("features.h")
     #include <features.h>
@@ -74,7 +75,7 @@ typedef size_t offset_t;
 #endif
 
 void* std_aligned_alloc(size_t align, size_t size) {
-    assert(align < PTR_OFFSET_SZ);
+    assert(align < std::numeric_limits<offset_t>::max());
     void* ptr = NULL;
 
     // We want it to be a power of two since
