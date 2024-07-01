@@ -409,7 +409,7 @@ class Move {
     std::uint16_t data;
 };
 
-inline void* std_aligned_alloc(size_t align, size_t size) {
+inline void* std_aligned_alloc(std::size_t align, std::size_t size) {
     if (align == 0 || (align & (align - 1)) != 0)
     {
         // Alignment must be a power of two and non-zero
@@ -417,8 +417,8 @@ inline void* std_aligned_alloc(size_t align, size_t size) {
     }
 
     // Allocate extra memory to adjust alignment and store the original pointer
-    size_t extra    = align - 1 + sizeof(void*);
-    void*  original = std::malloc(size + extra);
+    std::size_t extra    = align - 1 + sizeof(void*);
+    void*       original = std::malloc(size + extra);
     if (original == nullptr)
     {
         return nullptr;
