@@ -84,11 +84,10 @@ void* std_aligned_alloc(size_t align, size_t size) {
 }
 
 void std_aligned_free(void* ptr) {
-    if (ptr != nullptr)
+    if (ptr)
     {
-        // Retrieve the original pointer and free it
-        void* original = reinterpret_cast<void**>(ptr)[-1];
-        std::free(original);
+        void* original_ptr = *((void**) ptr - 1);
+        free(original_ptr);
     }
 }
 
