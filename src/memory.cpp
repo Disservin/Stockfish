@@ -59,29 +59,36 @@ using AdjustTokenPrivileges_t =
 namespace Stockfish {
 
 void* std_aligned_alloc(size_t align, size_t size) {
-    if (align % sizeof(void*) != 0 || (align & (align - 1)) != 0)
+    if (align == 0 || (align & (align - 1)) != 0)
     {
-        return nullptr;  // alignment must be a power of 2 and a multiple of sizeof(void *)
+        // Alignment must be a power of two and non-zero
+        return nullptr;
     }
 
-    size_t offset = align - 1 + sizeof(void*);
-    void*  ptr    = malloc(size + offset);
-    if (!ptr)
+    // Allocate extra memory to adjust alignment and store the original pointer
+    size_t extra    = align - 1 + sizeof(void*);
+    void*  original = std::malloc(size + extra);
+    if (original == nullptr)
+    {
         return nullptr;
+    }
 
-    char* aligned      = (char*) ptr + offset;
-    aligned            = (char*) ((size_t) aligned & ~(align - 1));
-    void** aligned_ptr = (void**) aligned;
-    *(aligned_ptr - 1) = ptr;  // Store the original pointer just before the aligned address
+    // Align the allocated memory
+    uintptr_t aligned =
+      (reinterpret_cast<uintptr_t>(original) + sizeof(void*) + align - 1) & ~(align - 1);
 
-    return aligned_ptr;
+    // Store the original pointer just before the aligned memory
+    reinterpret_cast<void**>(aligned)[-1] = original;
+
+    return reinterpret_cast<void*>(aligned);
 }
 
 void std_aligned_free(void* ptr) {
-    if (ptr)
+    if (ptr != nullptr)
     {
-        void* original_ptr = *((void**) ptr - 1);
-        free(original_ptr);
+        // Retrieve the original pointer and free it
+        void* original = reinterpret_cast<void**>(ptr)[-1];
+        std::free(original);
     }
 }
 
