@@ -31,7 +31,7 @@
 
 namespace Stockfish {
 
-void* std_aligned_alloc(size_t align, size_t size) {
+inline void* std_aligned_alloc(size_t align, size_t size) {
     if (align == 0 || (align & (align - 1)) != 0)
     {
         // Alignment must be a power of two and non-zero
@@ -56,7 +56,7 @@ void* std_aligned_alloc(size_t align, size_t size) {
     return reinterpret_cast<void*>(aligned);
 }
 
-void std_aligned_free(void* ptr) {
+inline void std_aligned_free(void* ptr) {
     if (ptr)
     {
         void* original_ptr = *((void**) ptr - 1);
