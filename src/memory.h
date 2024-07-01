@@ -27,6 +27,7 @@
 #include <type_traits>
 #include <utility>
 
+#include "misc.h"
 #include "types.h"
 
 namespace Stockfish {
