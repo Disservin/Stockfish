@@ -59,34 +59,28 @@ using AdjustTokenPrivileges_t =
 namespace Stockfish {
 
 void* std_aligned_alloc(size_t align, size_t size) {
-    assert((align & (align - 1)) == 0);  // Ensure alignment is a power of two
-    assert(align > 0);
-    assert(size > 0);
+    if (align % sizeof(void*) != 0 || (align & (align - 1)) != 0)
+    {
+        return nullptr;  // alignment must be a power of 2 and a multiple of sizeof(void *)
+    }
 
-    size_t offset   = align - 1;
-    size_t hdr_size = sizeof(void*) + offset;
-
-    void* p = std::malloc(size + hdr_size);
-
-    if (!p)
+    size_t offset = align - 1 + sizeof(void*);
+    void*  ptr    = malloc(size + offset);
+    if (!ptr)
         return nullptr;
 
-    // align the pointer
-    void* aligned_ptr = (void*) (((uintptr_t) p + sizeof(void*) + offset) & ~offset);
-
-    // store the original pointer behind our aligned pointer
-    ((void**) aligned_ptr)[-1] = p;
+    void** aligned_ptr = (void**) ((size_t) (ptr + offset) & ~(align - 1));
+    *(aligned_ptr - 1) = ptr;  // Store the original pointer just before the aligned address
 
     return aligned_ptr;
 }
 
 void std_aligned_free(void* ptr) {
-    if (!ptr)
-        return;
-
-    // retrieve the original pointer and free it
-    void* p = ((void**) ptr)[-1];
-    std::free(p);
+    if (ptr)
+    {
+        void* original_ptr = *((void**) ptr - 1);
+        free(original_ptr);
+    }
 }
 
 // aligned_large_pages_alloc() will return suitably aligned memory, if possible using large pages.
