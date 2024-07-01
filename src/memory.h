@@ -31,39 +31,6 @@
 
 namespace Stockfish {
 
-inline void* std_aligned_alloc(size_t align, size_t size) {
-    if (align == 0 || (align & (align - 1)) != 0)
-    {
-        // Alignment must be a power of two and non-zero
-        return nullptr;
-    }
-
-    // Allocate extra memory to adjust alignment and store the original pointer
-    size_t extra    = align - 1 + sizeof(void*);
-    void*  original = std::malloc(size + extra);
-    if (original == nullptr)
-    {
-        return nullptr;
-    }
-
-    // Align the allocated memory
-    uintptr_t aligned =
-      (reinterpret_cast<uintptr_t>(original) + sizeof(void*) + align - 1) & ~(align - 1);
-
-    // Store the original pointer just before the aligned memory
-    reinterpret_cast<void**>(aligned)[-1] = original;
-
-    return reinterpret_cast<void*>(aligned);
-}
-
-inline void std_aligned_free(void* ptr) {
-    if (ptr)
-    {
-        void* original_ptr = *((void**) ptr - 1);
-        free(original_ptr);
-    }
-}
-
 // memory aligned by page size, min alignment: 4096 bytes
 void* aligned_large_pages_alloc(size_t size);
 // nop if mem == nullptr
