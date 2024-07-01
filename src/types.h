@@ -38,6 +38,7 @@
 
     #include <cassert>
     #include <cstdint>
+    #include <cstdlib>
 
     #if defined(_MSC_VER)
         // Disable some silly and noisy warnings from MSVC compiler
@@ -438,7 +439,7 @@ inline void std_aligned_free(void* ptr) {
     if (ptr)
     {
         void* original_ptr = *((void**) ptr - 1);
-        free(original_ptr);
+        std::free(original_ptr);
     }
 }
 
