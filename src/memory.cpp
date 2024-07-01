@@ -29,13 +29,6 @@
     #include <sys/mman.h>
 #endif
 
-#if defined(__APPLE__) || defined(__ANDROID__) || defined(__OpenBSD__) \
-  || (defined(__GLIBCXX__) && !defined(_GLIBCXX_HAVE_ALIGNED_ALLOC) && !defined(_WIN32)) \
-  || defined(__e2k__)
-    #define POSIXALIGNEDALLOC
-    #include <stdlib.h>
-#endif
-
 #ifdef _WIN32
     #if _WIN32_WINNT < 0x0601
         #undef _WIN32_WINNT
@@ -67,65 +60,35 @@ namespace Stockfish {
 
 // Number of bytes we're using for storing
 // the aligned pointer offset
-typedef size_t offset_t;
-#define PTR_OFFSET_SZ sizeof(offset_t)
-
-#ifndef align_up
-    #define align_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
-#endif
+using offset_t = int32_t;
 
 void* std_aligned_alloc(size_t align, size_t size) {
-    assert(align < std::numeric_limits<offset_t>::max());
-    void* ptr = NULL;
-
-    // We want it to be a power of two since
-    // align_up operates on powers of two
     assert((align & (align - 1)) == 0);
+    assert(align < std::numeric_limits<offset_t>::max());
 
-    if (align && size)
-    {
-        /*
-         * We know we have to fit an offset value
-         * We also allocate extra bytes to ensure we 
-         * can meet the alignment
-         */
-        uint32_t hdr_size = PTR_OFFSET_SZ + (align - 1);
-        void*    p        = malloc(size + hdr_size);
+    uint32_t hdrSize = sizeof(int32_t) + (align - 1);
+    void*    p       = malloc(size + hdrSize);
 
-        if (p)
-        {
-            /*
-             * Add the offset size to malloc's pointer 
-             * (we will always store that)
-             * Then align the resulting value to the 
-             * target alignment
-             */
-            ptr = (void*) align_up(((uintptr_t) p + PTR_OFFSET_SZ), align);
+    if (!p)
+        return nullptr;
 
-            // Calculate the offset and store it
-            // behind our aligned pointer
-            *((offset_t*) ptr - 1) = (offset_t) ((uintptr_t) ptr - (uintptr_t) p);
+    // align the ptr
+    void* ptr = (void*) (((uintptr_t) p + sizeof(offset_t) + align - 1) & ~(align - 1));
 
-        }  // else NULL, could not malloc
-    }  //else NULL, invalid arguments
+    // store the offset behind our aligned pointer
+    *((offset_t*) ptr - 1) = (offset_t) ((uintptr_t) ptr - (uintptr_t) p);
 
     return ptr;
 }
 
 void std_aligned_free(void* ptr) {
-    assert(ptr);
+    if (!ptr)
+        return;
 
-    /*
-    * Walk backwards from the passed-in pointer 
-    * to get the pointer offset. We convert to an offset_t 
-    * pointer and rely on pointer math to get the data
-    */
+    // retrieve the offset from the original pointer
     offset_t offset = *((offset_t*) ptr - 1);
 
-    /*
-    * Once we have the offset, we can get our 
-    * original pointer and call free
-    */
+    // get the original pointer and free it
     void* p = (void*) ((uint8_t*) ptr - offset);
     free(p);
 }
