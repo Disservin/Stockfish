@@ -64,36 +64,32 @@ using AdjustTokenPrivileges_t =
 
 namespace Stockfish {
 
-// Wrapper for systems where the c++17 implementation
-// does not guarantee the availability of aligned_alloc(). Memory allocated with
-// std_aligned_alloc() must be freed with std_aligned_free().
 void* std_aligned_alloc(size_t alignment, size_t size) {
-    // Apple requires 10.15, which is enforced in the makefile
-#if defined(_ISOC11_SOURCE) || defined(__APPLE__)
-    return aligned_alloc(alignment, size);
-#elif defined(POSIXALIGNEDALLOC)
-    void* mem;
-    return posix_memalign(&mem, alignment, size) ? nullptr : mem;
-#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
-    return _mm_malloc(size, alignment);
-#elif defined(_WIN32)
-    return _aligned_malloc(size, alignment);
-#else
-    return std::aligned_alloc(alignment, size);
-#endif
+    assert(alignment >= sizeof(void*) && (alignment & (alignment - 1)) == 0);
+
+    // allocate extra memory to ensure we can align properly and store the adjustment
+    uint32_t hdrSize = sizeof(size_t) + (alignment - 1);
+    void*    p1      = malloc(size + hdrSize);
+    if (!p1)
+        return nullptr;
+
+    // align the pointer
+    void* p2 = (void*) (((uintptr_t) p1 + hdrSize) & ~(alignment - 1));
+
+    // store the adjustment right before the aligned memory
+    *((size_t*) p2 - 1) = (size_t) ((uintptr_t) p2 - (uintptr_t) p1);
+
+    return p2;
 }
 
 void std_aligned_free(void* ptr) {
+    if (!ptr)
+        return;
 
-#if defined(POSIXALIGNEDALLOC)
-    free(ptr);
-#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
-    _mm_free(ptr);
-#elif defined(_WIN32)
-    _aligned_free(ptr);
-#else
-    free(ptr);
-#endif
+    // retrieve adjustment
+    size_t adjustment = *((size_t*) ptr - 1);
+    void*  p1         = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) - adjustment);
+    free(p1);
 }
 
 // aligned_large_pages_alloc() will return suitably aligned memory, if possible using large pages.
