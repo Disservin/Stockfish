@@ -238,14 +238,14 @@ jobs:
           export CXXFLAGS="-Werror -D_GLIBCXX_DEBUG"
           make clean
           make -j4 ARCH=x86-64-bmi2 optimize=no debug=yes build
-          ../tests/signature.sh $benchref
+          ./stockfish bench
 
       - name: Test x86-64-bmi2 build
         if: matrix.config.run_64bit_tests
         run: |
           make clean
           make -j4 ARCH=x86-64-bmi2 build
-          ../tests/signature.sh $benchref
+          ./stockfish bench
 
       - name: Test x86-64-avx2 build
         if: matrix.config.run_64bit_tests
