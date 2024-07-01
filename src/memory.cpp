@@ -64,32 +64,69 @@ using AdjustTokenPrivileges_t =
 
 namespace Stockfish {
 
-void* std_aligned_alloc(size_t alignment, size_t size) {
-    assert(alignment >= sizeof(void*) && (alignment & (alignment - 1)) == 0);
+// Number of bytes we're using for storing
+// the aligned pointer offset
+typedef size_t offset_t;
+#define PTR_OFFSET_SZ sizeof(offset_t)
 
-    // allocate extra memory to ensure we can align properly and store the adjustment
-    uint32_t hdrSize = sizeof(size_t) + (alignment - 1);
-    void*    p1      = malloc(size + hdrSize);
-    if (!p1)
-        return nullptr;
+#ifndef align_up
+    #define align_up(num, align) (((num) + ((align) - 1)) & ~((align) - 1))
+#endif
 
-    // align the pointer
-    void* p2 = (void*) (((uintptr_t) p1 + hdrSize) & ~(alignment - 1));
+void* std_aligned_alloc(size_t align, size_t size) {
+    assert(align < PTR_OFFSET_SZ);
+    void* ptr = NULL;
 
-    // store the adjustment right before the aligned memory
-    *((size_t*) p2 - 1) = (size_t) ((uintptr_t) p2 - (uintptr_t) p1);
+    // We want it to be a power of two since
+    // align_up operates on powers of two
+    assert((align & (align - 1)) == 0);
 
-    return p2;
+    if (align && size)
+    {
+        /*
+         * We know we have to fit an offset value
+         * We also allocate extra bytes to ensure we 
+         * can meet the alignment
+         */
+        uint32_t hdr_size = PTR_OFFSET_SZ + (align - 1);
+        void*    p        = malloc(size + hdr_size);
+
+        if (p)
+        {
+            /*
+             * Add the offset size to malloc's pointer 
+             * (we will always store that)
+             * Then align the resulting value to the 
+             * target alignment
+             */
+            ptr = (void*) align_up(((uintptr_t) p + PTR_OFFSET_SZ), align);
+
+            // Calculate the offset and store it
+            // behind our aligned pointer
+            *((offset_t*) ptr - 1) = (offset_t) ((uintptr_t) ptr - (uintptr_t) p);
+
+        }  // else NULL, could not malloc
+    }  //else NULL, invalid arguments
+
+    return ptr;
 }
 
 void std_aligned_free(void* ptr) {
-    if (!ptr)
-        return;
+    assert(ptr);
 
-    // retrieve adjustment
-    size_t adjustment = *((size_t*) ptr - 1);
-    void*  p1         = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(ptr) - adjustment);
-    free(p1);
+    /*
+    * Walk backwards from the passed-in pointer 
+    * to get the pointer offset. We convert to an offset_t 
+    * pointer and rely on pointer math to get the data
+    */
+    offset_t offset = *((offset_t*) ptr - 1);
+
+    /*
+    * Once we have the offset, we can get our 
+    * original pointer and call free
+    */
+    void* p = (void*) ((uint8_t*) ptr - offset);
+    free(p);
 }
 
 // aligned_large_pages_alloc() will return suitably aligned memory, if possible using large pages.
