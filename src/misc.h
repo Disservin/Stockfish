@@ -35,6 +35,9 @@
 
 namespace Stockfish {
 
+void* std_aligned_alloc(std::size_t align, std::size_t size);
+void  std_aligned_free(void* ptr);
+
 std::string engine_info(bool to_uci = false);
 std::string compiler_info();
 

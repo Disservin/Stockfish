@@ -19,6 +19,7 @@
 #include "memory.h"
 
 #include <cstdlib>
+#include <limits>
 
 #if __has_include("features.h")
     #include <features.h>
@@ -26,13 +27,6 @@
 
 #if defined(__linux__) && !defined(__ANDROID__)
     #include <sys/mman.h>
-#endif
-
-#if defined(__APPLE__) || defined(__ANDROID__) || defined(__OpenBSD__) \
-  || (defined(__GLIBCXX__) && !defined(_GLIBCXX_HAVE_ALIGNED_ALLOC) && !defined(_WIN32)) \
-  || defined(__e2k__)
-    #define POSIXALIGNEDALLOC
-    #include <stdlib.h>
 #endif
 
 #ifdef _WIN32
@@ -63,38 +57,6 @@ using AdjustTokenPrivileges_t =
 
 
 namespace Stockfish {
-
-// Wrapper for systems where the c++17 implementation
-// does not guarantee the availability of aligned_alloc(). Memory allocated with
-// std_aligned_alloc() must be freed with std_aligned_free().
-void* std_aligned_alloc(size_t alignment, size_t size) {
-    // Apple requires 10.15, which is enforced in the makefile
-#if defined(_ISOC11_SOURCE) || defined(__APPLE__)
-    return aligned_alloc(alignment, size);
-#elif defined(POSIXALIGNEDALLOC)
-    void* mem;
-    return posix_memalign(&mem, alignment, size) ? nullptr : mem;
-#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
-    return _mm_malloc(size, alignment);
-#elif defined(_WIN32)
-    return _aligned_malloc(size, alignment);
-#else
-    return std::aligned_alloc(alignment, size);
-#endif
-}
-
-void std_aligned_free(void* ptr) {
-
-#if defined(POSIXALIGNEDALLOC)
-    free(ptr);
-#elif defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
-    _mm_free(ptr);
-#elif defined(_WIN32)
-    _aligned_free(ptr);
-#else
-    free(ptr);
-#endif
-}
 
 // aligned_large_pages_alloc() will return suitably aligned memory, if possible using large pages.
 

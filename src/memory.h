@@ -27,12 +27,11 @@
 #include <type_traits>
 #include <utility>
 
+#include "misc.h"
 #include "types.h"
 
 namespace Stockfish {
 
-void* std_aligned_alloc(size_t alignment, size_t size);
-void  std_aligned_free(void* ptr);
 // memory aligned by page size, min alignment: 4096 bytes
 void* aligned_large_pages_alloc(size_t size);
 // nop if mem == nullptr
