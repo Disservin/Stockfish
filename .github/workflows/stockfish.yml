@@ -105,8 +105,12 @@ jobs:
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
   ARM_Binaries:
     needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
