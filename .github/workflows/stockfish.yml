@@ -105,6 +105,8 @@ jobs:
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
+    permissions:
+      contents: write # For deleting/creating a (pre)release
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   ARM_Binaries:
@@ -112,5 +114,7 @@ jobs:
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+    permissions:
+      contents: write # For deleting/creating a (pre)release
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
