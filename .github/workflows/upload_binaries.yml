@@ -7,8 +7,6 @@ on:
         required: true
 
 jobs:
-  permissions:
-    contents: write # For deleting/creating a (pre)release
   Artifacts:
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ${{ matrix.config.os }}
@@ -25,6 +23,8 @@ jobs:
     defaults:
       run:
         shell: ${{ matrix.config.shell }}
+    permissions:
+      contents: write # For deleting/creating a (pre)release
     steps:
       - uses: actions/checkout@v4
         with:
