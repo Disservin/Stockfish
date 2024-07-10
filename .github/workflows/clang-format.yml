@@ -49,3 +49,4 @@ jobs:
           create_if_not_exists: false
           comment_tag: execution
           mode: delete
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
