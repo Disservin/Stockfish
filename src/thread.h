@@ -81,7 +81,7 @@ class Thread {
     void idle_loop();
     void start_searching();
     void clear_worker();
-    void run_custom_job(std::function<void()> f);
+        void run_custom_job(std::function<void()> f);
 
     // Thread has been slightly altered to allow running custom jobs, so
     // this name is no longer correct. However, this class (and ThreadPool)
