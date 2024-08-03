@@ -124,7 +124,6 @@ struct LimitsType {
     int                      movestogo, depth, mate, perft, infinite;
     uint64_t                 nodes;
     bool                     ponderMode;
-    Square                   capSq;
 };
 
 
@@ -144,6 +143,8 @@ struct SharedState {
     ThreadPool&                                     threads;
     TranspositionTable&                             tt;
     const LazyNumaReplicated<Eval::NNUE::Networks>& networks;
+
+    Square capSq;
 };
 
 class Worker;
@@ -310,6 +311,7 @@ class Worker {
     size_t                pvIdx, pvLast;
     std::atomic<uint64_t> nodes, tbHits, bestMoveChanges;
     int                   selDepth, nmpMinPly;
+    Square                capSq;
 
     Value optimism[COLOR_NB];
 
