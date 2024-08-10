@@ -43,6 +43,27 @@ struct AccumulatorCaches;
 
 std::string trace(Position& pos, const Eval::NNUE::Networks& networks);
 
+/// A private type used to get a nice syntax for SEE comparisons. Never use this
+/// type directly or store a value into a variable of this type, instead use the
+/// syntax "if (pos.see(move) >= threshold) ..." and similar for other comparisons.
+class SeeComparator {
+   public:
+    SeeComparator(const Position& p, Move m) :
+        pos(p),
+        move(m) {}
+
+    bool operator>=(Value threshold) const;
+    bool operator>(Value threshold) const;
+    bool operator<(Value threshold) const;
+    bool operator<=(Value threshold) const;
+
+   private:
+    const Position& pos;
+    Move            move;
+};
+
+SeeComparator see(const Position& p, Move m);
+
 int   simple_eval(const Position& pos, Color c);
 bool  use_smallnet(const Position& pos);
 Value evaluate(const NNUE::Networks&          networks,

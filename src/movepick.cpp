@@ -23,6 +23,7 @@
 #include <utility>
 
 #include "bitboard.h"
+#include "evaluate.h"
 #include "position.h"
 
 namespace Stockfish {
@@ -110,7 +111,8 @@ MovePicker::MovePicker(const Position& p, Move ttm, int th, const CapturePieceTo
     assert(!pos.checkers());
 
     stage = PROBCUT_TT
-          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm) && pos.see(ttm) >= threshold);
+          + !(ttm && pos.capture_stage(ttm) && pos.pseudo_legal(ttm)
+              && Eval::see(pos, ttm) >= threshold);
 }
 
 // Assigns a numerical value to each move in a list, used for sorting.
@@ -238,8 +240,9 @@ top:
     case GOOD_CAPTURE :
         if (select<Next>([&]() {
                 // Move losing capture to endBadCaptures to be tried later
-                return pos.see(*cur) >= (-cur->value / 18) ? true
-                                                          : (*endBadCaptures++ = *cur, false);
+                return Eval::see(pos, *cur) >= (-cur->value / 18)
+                       ? true
+                       : (*endBadCaptures++ = *cur, false);
             }))
             return *(cur - 1);
 
@@ -305,7 +308,7 @@ top:
         return select<Best>([]() { return true; });
 
     case PROBCUT :
-        return select<Next>([&]() { return pos.see(*cur) >= threshold; });
+        return select<Next>([&]() { return Eval::see(pos, *cur) >= threshold; });
 
     case QCAPTURE :
         return select<Next>([]() { return true; });

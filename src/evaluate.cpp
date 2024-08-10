@@ -29,13 +29,131 @@
 #include <tuple>
 
 #include "nnue/network.h"
+#include "nnue/nnue_accumulator.h"
 #include "nnue/nnue_misc.h"
 #include "position.h"
 #include "types.h"
 #include "uci.h"
-#include "nnue/nnue_accumulator.h"
 
 namespace Stockfish {
+
+namespace {
+// Tests if the SEE (Static Exchange Evaluation) value of a move is
+// greater or equal to the given threshold. We will use an algorithm
+// similar to alpha-beta pruning with a null window.
+bool see_ge(const Position& p, Move m, int threshold) {
+
+    assert(m.is_ok());
+
+    // Only deal with normal moves, assume others pass a simple SEE
+    if (m.type_of() != NORMAL)
+        return VALUE_ZERO >= threshold;
+
+    Square from = m.from_sq(), to = m.to_sq();
+
+    int swap = PieceValue[p.piece_on(to)] - threshold;
+    if (swap < 0)
+        return false;
+
+    swap = PieceValue[p.piece_on(from)] - swap;
+    if (swap <= 0)
+        return true;
+
+    assert(color_of(p.piece_on(from)) == p.side_to_move());
+    Bitboard occupied  = p.pieces() ^ from ^ to;  // xoring to is important for pinned piece logic
+    Color    stm       = p.side_to_move();
+    Bitboard attackers = p.attackers_to(to, occupied);
+    Bitboard stmAttackers, bb;
+    int      res = 1;
+
+    while (true)
+    {
+        stm = ~stm;
+        attackers &= occupied;
+
+        // If stm has no more attackers then give up: stm loses
+        if (!(stmAttackers = attackers & p.pieces(stm)))
+            break;
+
+        // Don't allow pinned pieces to attack as long as there are
+        // pinners on their original square.
+        if (p.pinners(~stm) & occupied)
+        {
+            stmAttackers &= ~p.blockers_for_king(stm);
+
+            if (!stmAttackers)
+                break;
+        }
+
+        res ^= 1;
+
+        // Locate and remove the next least valuable attacker, and add to
+        // the bitboard 'attackers' any X-ray attackers behind it.
+        if ((bb = stmAttackers & p.pieces(PAWN)))
+        {
+            if ((swap = PawnValue - swap) < res)
+                break;
+            occupied ^= least_significant_square_bb(bb);
+
+            attackers |= attacks_bb<BISHOP>(to, occupied) & p.pieces(BISHOP, QUEEN);
+        }
+
+        else if ((bb = stmAttackers & p.pieces(KNIGHT)))
+        {
+            if ((swap = KnightValue - swap) < res)
+                break;
+            occupied ^= least_significant_square_bb(bb);
+        }
+
+        else if ((bb = stmAttackers & p.pieces(BISHOP)))
+        {
+            if ((swap = BishopValue - swap) < res)
+                break;
+            occupied ^= least_significant_square_bb(bb);
+
+            attackers |= attacks_bb<BISHOP>(to, occupied) & p.pieces(BISHOP, QUEEN);
+        }
+
+        else if ((bb = stmAttackers & p.pieces(ROOK)))
+        {
+            if ((swap = RookValue - swap) < res)
+                break;
+            occupied ^= least_significant_square_bb(bb);
+
+            attackers |= attacks_bb<ROOK>(to, occupied) & p.pieces(ROOK, QUEEN);
+        }
+
+        else if ((bb = stmAttackers & p.pieces(QUEEN)))
+        {
+            if ((swap = QueenValue - swap) < res)
+                break;
+            occupied ^= least_significant_square_bb(bb);
+
+            attackers |= (attacks_bb<BISHOP>(to, occupied) & p.pieces(BISHOP, QUEEN))
+                       | (attacks_bb<ROOK>(to, occupied) & p.pieces(ROOK, QUEEN));
+        }
+
+        else  // KING
+              // If we "capture" with the king but the opponent still has attackers,
+              // reverse the result.
+            return (attackers & ~p.pieces(stm)) ? res ^ 1 : res;
+    }
+
+    return bool(res);
+}
+}  // namespace
+
+
+Eval::SeeComparator Eval::see(const Position& p, Move m) { return Eval::SeeComparator(p, m); }
+
+bool Eval::SeeComparator::operator>=(Value threshold) const { return see_ge(pos, move, threshold); }
+bool Eval::SeeComparator::operator>(Value threshold) const { return !see_ge(pos, move, threshold); }
+bool Eval::SeeComparator::operator<(Value threshold) const {
+    return see_ge(pos, move, threshold - 1);
+}
+bool Eval::SeeComparator::operator<=(Value threshold) const {
+    return !see_ge(pos, move, threshold - 1);
+}
 
 // Returns a static, purely materialistic evaluation of the position from
 // the point of view of the given color. It can be divided by PawnValue to get
