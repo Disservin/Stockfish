@@ -148,7 +148,7 @@ jobs:
 
       - name: Download required macOS packages
         if: runner.os == 'macOS'
-        run: brew install coreutils g++-11
+        run: brew install coreutils gcc@1
 
       - name: Setup msys and install required packages
         if: runner.os == 'Windows'
