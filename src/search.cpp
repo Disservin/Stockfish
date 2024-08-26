@@ -839,6 +839,8 @@ Value Search::Worker::search(
         MovePicker mp(pos, ttData.move, probCutBeta - ss->staticEval, &thisThread->captureHistory);
         Piece      captured;
 
+        mp.moveMap = &thisThread->moveMap;
+
         while ((move = mp.next_move()) != Move::none())
         {
             assert(move.is_ok());
@@ -910,6 +912,7 @@ moves_loop:  // When in check, search starts here
 
     MovePicker mp(pos, ttData.move, depth, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory);
+    mp.moveMap = &thisThread->moveMap;
 
     value = bestValue;
 
@@ -1531,6 +1534,7 @@ Value Search::Worker::qsearch(Position& pos, Stack* ss, Value alpha, Value beta)
     // captures, or evasions only when in check.
     MovePicker mp(pos, ttData.move, DEPTH_QS, &thisThread->mainHistory, &thisThread->captureHistory,
                   contHist, &thisThread->pawnHistory);
+    mp.moveMap = &thisThread->moveMap;
 
     // Step 5. Loop through all pseudo-legal moves until no moves remain or a beta
     // cutoff occurs.

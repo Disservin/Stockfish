@@ -139,6 +139,7 @@ void MovePicker::score() {
     }
 
     for (auto& m : *this)
+    {
         if constexpr (Type == CAPTURES)
             m.value =
               7 * int(PieceValue[pos.piece_on(m.to_sq())])
@@ -186,6 +187,9 @@ void MovePicker::score() {
                         + (*continuationHistory[0])[pos.moved_piece(m)][m.to_sq()]
                         + (*pawnHistory)[pawn_structure_index(pos)][pos.moved_piece(m)][m.to_sq()];
         }
+
+        m.value += 14900 * moveMap->find(m);
+    }
 }
 
 // Returns the next move satisfying a predicate function.

@@ -319,6 +319,8 @@ class Worker {
     Depth     rootDepth, completedDepth;
     Value     rootDelta;
 
+    MoveMap moveMap;
+
     size_t                    threadIdx;
     NumaReplicatedAccessToken numaAccessToken;
 

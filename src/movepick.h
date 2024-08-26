@@ -54,6 +54,28 @@ inline int pawn_structure_index(const Position& pos) {
     return pos.pawn_key() & ((T == Normal ? PAWN_HISTORY_SIZE : CORRECTION_HISTORY_SIZE) - 1);
 }
 
+
+struct MoveMap {
+
+    bool find(Move m) {
+        int index = make_key(m.raw()) & (map.size() - 1);
+        return map[index] != 0;
+    }
+
+    void set(Move m) {
+        int index  = make_key(m.raw()) & (map.size() - 1);
+        map[index] = 1;
+    }
+
+    void clear() { std::fill(map.begin(), map.end(), 0); }
+
+
+    static_assert((MAX_MOVES & (MAX_MOVES - 1)) == 0, "MAX_MOVES must be a power of 2");
+
+
+    std::array<int, MAX_MOVES> map = {0};
+};
+
 // StatsEntry stores the stat table value. It is usually a number but could
 // be a move or even a nested history. We use a class instead of a naked value
 // to directly call history update operator<<() on the entry so to use stats
@@ -162,6 +184,8 @@ class MovePicker {
                const PawnHistory*);
     MovePicker(const Position&, Move, int, const CapturePieceToHistory*);
     Move next_move(bool skipQuiets = false);
+
+    MoveMap* moveMap;
 
    private:
     template<PickType T, typename Pred>

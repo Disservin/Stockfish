@@ -250,6 +250,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     increaseDepth = true;
 
     Search::RootMoves rootMoves;
+    MoveMap           movemap;
     const auto        legalmoves = MoveList<LEGAL>(pos);
 
     for (const auto& uciMove : limits.searchmoves)
@@ -257,12 +258,18 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
         auto move = UCIEngine::to_move(pos, uciMove);
 
         if (std::find(legalmoves.begin(), legalmoves.end(), move) != legalmoves.end())
+        {
             rootMoves.emplace_back(move);
+            movemap.set(move);
+        }
     }
 
     if (rootMoves.empty())
         for (const auto& m : legalmoves)
+        {
             rootMoves.emplace_back(m);
+            movemap.set(m);
+        }
 
     Tablebases::Config tbConfig = Tablebases::rank_root_moves(options, pos, rootMoves);
 
@@ -289,6 +296,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
             th->worker->rootPos.set(pos.fen(), pos.is_chess960(), &th->worker->rootState);
             th->worker->rootState = setupStates->back();
             th->worker->tbConfig  = tbConfig;
+            th->worker->moveMap   = movemap;
         });
     }
 
