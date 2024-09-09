@@ -1,6 +1,7 @@
 import argparse
 import re
 import sys
+import subprocess
 
 from testing import (
     EPD,
@@ -184,7 +185,9 @@ class TestCLI(metaclass=OrderedClassMembers):
                 network = line.split(" ")[-1]
                 break
 
-        assert network == "nn-1111cefa1111.nnue"
+        diff = subprocess.run(["diff", network, "verify.nnue"])
+
+        assert diff.returncode == 0
 
 
 class TestInteractive(metaclass=OrderedClassMembers):
