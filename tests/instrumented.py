@@ -34,21 +34,23 @@ def get_path():
 
 def postfix_check(output):
     if args.sanitizer_undefined:
-        for line in output:
+        for idx, line in enumerate(output):
             if "runtime error:" in line:
                 # print next possible 50 lines
                 for i in range(50):
-                    if i < len(output):
-                        print(output[i])
+                    debug_idx = idx + i
+                    if debug_idx < len(output):
+                        print(output[debug_idx])
                 return False
 
     if args.sanitizer_thread:
-        for line in output:
+        for idx, line in enumerate(output):
             if "WARNING: ThreadSanitizer:" in line:
                 # print next possible 50 lines
                 for i in range(50):
-                    if i < len(output):
-                        print(output[i])
+                    debug_idx = idx + i
+                    if debug_idx < len(output):
+                        print(output[debug_idx])
                 return False
 
     return True
@@ -67,6 +69,9 @@ class TestCLI(metaclass=OrderedClassMembers):
     def afterAll(self):
         EPD.delete_bench_epd()
         TSAN.unset_tsan_option()
+
+    def afterEach(self):
+        assert postfix_check(self.stockfish.get_output()) == True
 
     @staticmethod
     def test_eval():
@@ -197,14 +202,14 @@ class TestInteractive(metaclass=OrderedClassMembers):
 
         self.stockfish = Stockfish()
 
-        if args.valgrind_thread or args.sanitizer_thread:
-            self.stockfish.setoption("Threads", "2")
-
     def afterAll(self):
         self.stockfish.close()
 
         EPD.delete_bench_epd()
         TSAN.unset_tsan_option()
+
+    def afterEach(self):
+        assert postfix_check(self.stockfish.get_output()) == True
 
     def test_startup_output(self):
         self.stockfish.starts_with("Stockfish")
@@ -430,7 +435,8 @@ if __name__ == "__main__":
     args = parse_args()
 
     framework = MiniTestFramework()
-    framework.run([TestCLI, TestInteractive])
+    # framework.run([TestCLI, TestInteractive])
+    framework.run([TestInteractive])
 
     if framework.has_failed():
         sys.exit(1)

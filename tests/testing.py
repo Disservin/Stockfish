@@ -10,6 +10,8 @@ import traceback
 import fnmatch
 import signal
 from functools import wraps
+from contextlib import redirect_stdout
+import io
 
 
 class OrderedClassMembers(type):
@@ -105,30 +107,61 @@ class MiniTestFramework:
         for method in methods:
             self.total_tests += 1
             print(f"    Running {method}... ", end="", flush=True)
+            buffer = io.StringIO()
+
             try:
                 t0 = time.time()
-                getattr(test_instance, method)()
+
+                # Redirect stdout to buffer for capturing test output
+                with redirect_stdout(buffer):
+                    getattr(test_instance, method)()
+
+                    if hasattr(test_instance, "afterEach"):
+                        test_instance.afterEach()
+
                 duration = time.time() - t0
+
                 print(
                     f"\033[32m✓\033[0m \033[42m\033[97m PASS \033[0m  ({duration * 1000:.2f}ms)"
                 )
+
                 self.passed_tests += 1
             except TimeoutException as e:
                 print(
                     f"\033[31m✗\033[0m \033[41m\033[97m FAIL \033[0m  hit execution limit of {e.timeout} seconds"
                 )
-                fails += 1
-                self.failed_tests += 1
-            except AssertionError:
-                _, _, tb = sys.exc_info()
-                traceback.print_tb(tb)
 
                 fails += 1
+                self.failed_tests += 1
+
+            except AssertionError:
                 duration = time.time() - t0
                 print(
                     f"\033[31m✗\033[0m \033[41m\033[97m FAIL \033[0m  ({duration * 1000:.2f}ms)"
                 )
+
+                traceback_output = "".join(traceback.format_tb(sys.exc_info()[2]))
+
+                color_code = "\033[36m"
+                reset_code = "\033[0m"
+
+                colored_traceback = "\n".join(
+                    f"  {color_code}{line}{reset_code}"
+                    for line in traceback_output.splitlines()
+                )
+
+                print(colored_traceback)
+
+                fails += 1
                 self.failed_tests += 1
+            finally:
+                val = buffer.getvalue()
+
+                if val:
+                    indented_output = "\n".join(
+                        f"    {line}" for line in val.splitlines()
+                    )
+                    print(f"\033[2m{indented_output}\033[0m")
 
         if "afterAll" in dir(test_instance):
             test_instance.afterAll()
@@ -230,7 +263,7 @@ class Stockfish:
             self.prefix + [self.stockfish_path] + self.args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             universal_newlines=True,
             bufsize=1,
         )
@@ -308,7 +341,6 @@ class Stockfish:
             return None
 
         line = self.process.stdout.readline().strip()
-
         self.output.append(line)
 
         return line
