@@ -1,200 +1,402 @@
-import subprocess
-from typing import List, Optional
 import argparse
-import os
+import re
+import sys
+
+from testing import (
+    EPD,
+    TSAN,
+    Stockfish as Engine,
+    MiniTestFramework,
+    OrderedClassMembers,
+    Valgrind,
+)
 
 
-class Valgrind:
+def get_prefix():
+    if args.valgrind:
+        return Valgrind.get_valgrind_command()
+    if args.valgrind_thread:
+        return Valgrind.get_valgrind_thread_command()
+
+    return []
+
+
+def get_threads():
+    if args.valgrind_thread or args.sanitizer_thread:
+        return 2
+    return 1
+
+
+def get_path():
+    return args.stockfish_path
+
+
+def postfix_check(output):
+    if args.sanitizer_undefined:
+        for line in output:
+            if "runtime error:" in line:
+                # print next possible 50 lines
+                for i in range(50):
+                    if i < len(output):
+                        print(output[i])
+                return False
+
+    if args.sanitizer_thread:
+        for line in output:
+            if "WARNING: ThreadSanitizer:" in line:
+                # print next possible 50 lines
+                for i in range(50):
+                    if i < len(output):
+                        print(output[i])
+                return False
+
+    return True
+
+
+def Stockfish(*args, **kwargs):
+    return Engine(get_prefix(), postfix_check, get_path(), *args, **kwargs)
+
+
+class TestCLI(metaclass=OrderedClassMembers):
+
+    def beforeAll(self):
+        EPD.create_bench_epd()
+        TSAN.set_tsan_option()
+
+    def afterAll(self):
+        EPD.delete_bench_epd()
+        TSAN.unset_tsan_option()
+
     @staticmethod
-    def get_valgrind_command():
-        return [
-            "valgrind",
-            "--error-exitcode=42",
-            "--errors-for-leak-kinds=all",
-            "--leak-check=full",
-        ]
+    def test_eval():
+        stockfish = Stockfish("eval".split(" "), True)
+        assert stockfish.process.returncode == 0
 
     @staticmethod
-    def get_valgrind_thread_command():
-        return ["valgrind", "--error-exitcode=42", "--fair-sched=try"]
+    def test_go_nodes_1000():
+        stockfish = Stockfish("go nodes 1000".split(" "), True)
+        assert stockfish.process.returncode == 0
 
-
-class TSAN:
     @staticmethod
-    def set_tsan_option():
-        with open("tsan.supp", "w") as f:
-            f.write(
-                """
-race:Stockfish::TTEntry::read
-race:Stockfish::TTEntry::save
+    def test_go_depth_10():
+        stockfish = Stockfish("go depth 10".split(" "), True)
+        assert stockfish.process.returncode == 0
 
-race:Stockfish::TranspositionTable::probe
-race:Stockfish::TranspositionTable::hashfull
-"""
-            )
-
-        os.environ["TSAN_OPTIONS"] = "suppressions=./tsan.supp"
-
-
-class EPD:
     @staticmethod
-    def create_bench_epd():
-        with open("bench_tmp.epd", "w") as f:
-            f.write(
-                """
-Rn6/1rbq1bk1/2p2n1p/2Bp1p2/3Pp1pP/1N2P1P1/2Q1NPB1/6K1 w - - 2 26
-rnbqkb1r/ppp1pp2/5n1p/3p2p1/P2PP3/5P2/1PP3PP/RNBQKBNR w KQkq - 0 3
-3qnrk1/4bp1p/1p2p1pP/p2bN3/1P1P1B2/P2BQ3/5PP1/4R1K1 w - - 9 28
-r4rk1/1b2ppbp/pq4pn/2pp1PB1/1p2P3/1P1P1NN1/1PP3PP/R2Q1RK1 w - - 0 13
-"""
-            )
+    def test_go_perft_4():
+        stockfish = Stockfish("go perft 4".split(" "), True)
+        assert stockfish.process.returncode == 0
 
+    @staticmethod
+    def test_go_movetime_1000():
+        stockfish = Stockfish("go movetime 1000".split(" "), True)
+        assert stockfish.process.returncode == 0
 
-class Stockfish:
-    def __init__(self, stockfish_path: str, args: List[str]):
-        self.stockfish_path = stockfish_path
-        self.process = None
-        self.args = args
-        self.output = []
+    @staticmethod
+    def test_go_wtime_8000_btime_8000_winc_500_binc_500():
+        stockfish = Stockfish(
+            "go wtime 8000 btime 8000 winc 500 binc 500".split(" "),
+            True,
+        )
+        assert stockfish.process.returncode == 0
 
-        self.start()
+    @staticmethod
+    def test_go_wtime_1000_btime_1000_winc_0_binc_0():
+        stockfish = Stockfish(
+            "go wtime 1000 btime 1000 winc 0 binc 0".split(" "),
+            True,
+        )
+        assert stockfish.process.returncode == 0
 
-    def __get_prefix(self):
-        if args.valgrind:
-            return Valgrind.get_valgrind_command()
-        if args.valgrind_thread:
-            return Valgrind.get_valgrind_thread_command()
+    @staticmethod
+    def test_go_wtime_1000_btime_1000_winc_0_binc_0_movestogo_5():
+        stockfish = Stockfish(
+            "go wtime 1000 btime 1000 winc 0 binc 0 movestogo 5".split(" "),
+            True,
+        )
+        assert stockfish.process.returncode == 0
 
-        return ""
+    @staticmethod
+    def test_go_movetime_200():
+        stockfish = Stockfish("go movetime 200".split(" "), True)
+        assert stockfish.process.returncode == 0
 
-    def start(self):
-        self.process = subprocess.Popen(
-            self.__get_prefix() + [self.stockfish_path] + self.args,
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,
-            bufsize=1,
+    @staticmethod
+    def test_go_nodes_20000_searchmoves_e2e4_d2d4():
+        stockfish = Stockfish("go nodes 20000 searchmoves e2e4 d2d4".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_bench_128_threads_8_default_depth():
+        stockfish = Stockfish(
+            f"bench 128 {get_threads()} 8 default depth".split(" "),
+            True,
+        )
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_bench_128_threads_3_bench_tmp_epd_depth():
+        stockfish = Stockfish(
+            f"bench 128 {get_threads()} 3 bench_tmp.epd depth".split(" "),
+            True,
+        )
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_export_net_verify_nnue():
+        stockfish = Stockfish("export_net verify.nnue".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_d():
+        stockfish = Stockfish("d".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_compiler():
+        stockfish = Stockfish("compiler".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_license():
+        stockfish = Stockfish("license".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    @staticmethod
+    def test_uci():
+        stockfish = Stockfish("uci".split(" "), True)
+        assert stockfish.process.returncode == 0
+
+    # verify the generated net equals the base net
+
+    @staticmethod
+    def test_network_equals_base():
+        stockfish = Stockfish(
+            ["uci"],
+            True,
         )
 
-    def setoption(self, name: str, value: str):
-        """Set an option in Stockfish."""
-        self.send_command(f"setoption name {name} value {value}")
+        output = stockfish.process.stdout
 
-    def send_command(self, command: str):
-        """Send a command to Stockfish without waiting for output."""
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        self.process.stdin.write(command + "\n")
-        self.process.stdin.flush()
-
-    def expect(self, expected_output: str) -> Optional[str]:
-        """Wait for expected output from Stockfish."""
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        while True:
-            output_line = self.process.stdout.readline().strip()
-
-            if not output_line:
+        # find line
+        for line in output.split("\n"):
+            if "option name EvalFile type string default" in line:
+                network = line.split(" ")[-1]
                 break
 
-            self.output.append(output_line)
-
-            if output_line == expected_output:
-                return True
-
-        return False
-
-    def check_output(self, callback) -> Optional[str]:
-        """Explicitly check for output after commands have been sent."""
-        if not self.process:
-            return None
-
-        if not callback:
-            raise ValueError("Callback function is required")
-
-        while True:
-            output_line = self.process.stdout.readline().strip()
-
-            if not output_line:
-                break
-
-            self.output.append(output_line)
-
-            if callback(output_line) == True:
-                return True
-
-        return None
-
-    def get_output(self) -> List[str]:
-        return self.output
-
-    def close(self):
-        if self.process:
-            # self.process.stdin.close()
-            # self.process.stdout.close()
-            # self.process.stderr.close()
-            # self.process.terminate()
-            return self.process.wait()
-
-        return 0
+        assert network == "nn-1111cefa1111.nnue"
 
 
-class TestStockfishCLI:
+class TestInteractive(metaclass=OrderedClassMembers):
+    def beforeAll(self):
+        EPD.create_bench_epd()
+        TSAN.set_tsan_option()
 
-    @staticmethod
-    def test():
-
-        for args in [
-            "eval",
-            "go nodes 1000",
-            "go depth 10",
-            "go perft 4",
-            "go movetime 1000",
-            "go wtime 8000 btime 8000 winc 500 binc 500",
-            "go wtime 1000 btime 1000 winc 0 binc 0",
-            "go wtime 1000 btime 1000 winc 0 binc 0",
-            "go wtime 1000 btime 1000 winc 0 binc 0 movestogo 5",
-            "go movetime 200",
-            "go nodes 20000 searchmoves e2e4 d2d4",
-            "bench 128 $threads 8 default depth",
-            "bench 128 $threads 3 bench_tmp.epd depth",
-            "export_net verify.nnue",
-            "d",
-            "compiler",
-            "license",
-            "uci",
-        ]:
-            stockfish = Stockfish("../src/stockfish", args.split(" "))
-            stockfish.send_command(args)
-            # stockfish.expect(
-            #     "Final evaluation       +0.09 (white side) [with scaled NNUE, ...]"
-            # )
-
-            print(stockfish.close())
-            assert stockfish.close() == 0
-
-
-class TestStockfish:
-    def setUp(self):
-        # Replace with actual path to Stockfish binary
-        self.stockfish = Stockfish("../src/stockfish")
+        self.stockfish = Stockfish()
 
         if args.valgrind_thread or args.sanitizer_thread:
             self.stockfish.setoption("Threads", "2")
-            TSAN.set_tsan_option()
 
-    def tearDown(self):
+    def afterAll(self):
         self.stockfish.close()
 
-    def test_is_ready(self):
-        self.stockfish.send_command("isready")
+        EPD.delete_bench_epd()
+        TSAN.unset_tsan_option()
 
-        output = self.stockfish.expect("readyok")
+    def test_startup_output(self):
+        self.stockfish.starts_with("Stockfish")
 
-        assert output == True
+    def test_uci_command(self):
+        self.stockfish.send_command("uci")
+        self.stockfish.equals("uciok")
+
+    def test_set_threads_option(self):
+        self.stockfish.send_command(f"setoption name Threads value {get_threads()}")
+
+    def test_ucinewgame_and_startpos_nodes_1000(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go nodes 1000")
+        self.stockfish.starts_with("bestmove")
+
+    def test_ucinewgame_and_startpos_moves(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("position startpos moves e2e4 e7e6")
+        self.stockfish.send_command("go nodes 1000")
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_1(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("position fen 5rk1/1K4p1/8/8/3B4/8/8/8 b - - 0 1")
+        self.stockfish.send_command("go nodes 1000")
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_2_flip(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("position fen 5rk1/1K4p1/8/8/3B4/8/8/8 b - - 0 1")
+        self.stockfish.send_command("flip")
+        self.stockfish.send_command("go nodes 1000")
+        self.stockfish.starts_with("bestmove")
+
+    def test_depth_5_with_callback(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go depth 5")
+
+        def callback(output):
+            regex = "info depth \d+ seldepth \d+ multipv \d+ score cp \d+ nodes \d+ nps \d+ hashfull \d+ tbhits \d+ time \d+ pv"
+            if output.startswith("info depth") and not re.match(regex, output):
+                assert False
+            if output.startswith("bestmove"):
+                return True
+            return False
+
+        self.stockfish.check_output(callback)
+
+    def test_ucinewgame_and_go_depth_9(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command("setoption name UCI_ShowWDL value true")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go depth 9")
+
+        depth = 1
+
+        def callback(output):
+            nonlocal depth
+
+            regex = f"info depth {depth} seldepth \d+ multipv \d+ score cp \d+ wdl \d+ \d+ \d+ nodes \d+ nps \d+ hashfull \d+ tbhits \d+ time \d+ pv"
+
+            # print(output)
+            if output.startswith("info depth"):
+                if not re.match(regex, output):
+                    assert False
+                depth += 1
+
+            if output.startswith("bestmove"):
+                assert depth == 10
+                return True
+
+            return False
+
+        self.stockfish.check_output(callback)
+
+    def test_clear_hash(self):
+        self.stockfish.send_command("setoption name Clear Hash")
+
+    def test_fen_position_mate_1(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 5K2/8/2qk4/2nPp3/3r4/6B1/B7/3R4 w - e6"
+        )
+        self.stockfish.send_command("go depth 18")
+
+        self.stockfish.expect("* score mate 1 * pv d5e6")
+        self.stockfish.equals("bestmove d5e6")
+
+    def test_fen_position_mate_minus_1(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 2brrb2/8/p7/Q7/1p1kpPp1/1P1pN1K1/3P4/8 b - -"
+        )
+        self.stockfish.send_command("go depth 18")
+        self.stockfish.expect("* score mate -1 *")
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_fixed_node(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 5K2/8/2P1P1Pk/6pP/3p2P1/1P6/3P4/8 w - - 0 1"
+        )
+        self.stockfish.send_command("go nodes 500000")
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_with_mate_go_depth(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - -"
+        )
+        self.stockfish.send_command("go depth 18 searchmoves c6d7")
+        self.stockfish.expect("* score mate 2 * pv c6d7 * f7f5")
+
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_with_mate_go_mate(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - -"
+        )
+        self.stockfish.send_command("go mate 2 searchmoves c6d7")
+        self.stockfish.expect("* score mate 2 * pv c6d7 *")
+
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_with_mate_go_nodes(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - -"
+        )
+        self.stockfish.send_command("go nodes 500000 searchmoves c6d7")
+        self.stockfish.expect("* score mate 2 * pv c6d7 * f7f5")
+
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_depth_27(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 1NR2B2/5p2/5p2/1p1kpp2/1P2rp2/2P1pB2/2P1P1K1/8 b - -"
+        )
+        self.stockfish.send_command("go depth 27")
+        self.stockfish.contains("score mate -2")
+
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_with_mate_go_depth_and_promotion(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - - moves c6d7 f2f1q"
+        )
+        self.stockfish.send_command("go depth 18")
+        self.stockfish.expect("* score mate 1 * pv f7f5")
+        self.stockfish.starts_with("bestmove f7f5")
+
+    def test_fen_position_with_mate_go_depth_and_searchmoves(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - -"
+        )
+        self.stockfish.send_command("go depth 18 searchmoves c6d7")
+        self.stockfish.expect("* score mate 2 * pv c6d7 * f7f5")
+
+        self.stockfish.starts_with("bestmove c6d7")
+
+    def test_fen_position_with_moves_with_mate_go_depth_and_searchmoves(self):
+        self.stockfish.send_command("ucinewgame")
+        self.stockfish.send_command(
+            "position fen 8/5R2/2K1P3/4k3/8/b1PPpp1B/5p2/8 w - - moves c6d7"
+        )
+        self.stockfish.send_command("go depth 18 searchmoves e3e2")
+        self.stockfish.expect("* score mate -1 * pv e3e2 f7f5")
+        self.stockfish.starts_with("bestmove e3e2")
+
+    def test_verify_nnue_network(self):
+        self.stockfish.send_command("setoption name EvalFile value verify.nnue")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go depth 5")
+        self.stockfish.starts_with("bestmove")
+
+    def test_multipv_setting(self):
+        self.stockfish.send_command("setoption name MultiPV value 4")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go depth 5")
+        self.stockfish.starts_with("bestmove")
+
+    def test_fen_position_with_skill_level(self):
+        self.stockfish.send_command("setoption name Skill Level value 10")
+        self.stockfish.send_command("position startpos")
+        self.stockfish.send_command("go depth 5")
+        self.stockfish.starts_with("bestmove")
+
+        self.stockfish.send_command("setoption name Skill Level value 20")
 
 
 def parse_args():
@@ -212,6 +414,8 @@ def parse_args():
         "--sanitizer-thread", action="store_true", help="Run sanitizer-thread testing"
     )
 
+    parser.add_argument("stockfish_path", type=str, help="Path to Stockfish binary")
+
     return parser.parse_args()
 
 
@@ -219,11 +423,10 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
-    TestStockfishCLI.test()
-    # test_stockfish = TestStockfish()
+    framework = MiniTestFramework()
+    framework.run([TestCLI, TestInteractive])
 
-    # test_stockfish.setUp()
+    if framework.has_failed():
+        sys.exit(1)
 
-    # test_stockfish.test_is_ready()
-
-    # test_stockfish.tearDown()
+    sys.exit(0)
