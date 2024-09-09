@@ -114,6 +114,9 @@ class MiniTestFramework:
 
                 # Redirect stdout to buffer for capturing test output
                 with redirect_stdout(buffer):
+                    if hasattr(test_instance, "beforeEach"):
+                        test_instance.beforeEach()
+
                     getattr(test_instance, method)()
 
                     if hasattr(test_instance, "afterEach"):

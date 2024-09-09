@@ -63,6 +63,7 @@ def Stockfish(*args, **kwargs):
 class TestCLI(metaclass=OrderedClassMembers):
 
     def beforeAll(self):
+
         EPD.create_bench_epd()
         TSAN.set_tsan_option()
 
@@ -70,119 +71,106 @@ class TestCLI(metaclass=OrderedClassMembers):
         EPD.delete_bench_epd()
         TSAN.unset_tsan_option()
 
+    def beforeEach(self):
+        self.stockfish = None
+
     def afterEach(self):
         assert postfix_check(self.stockfish.get_output()) == True
 
-    @staticmethod
-    def test_eval():
-        stockfish = Stockfish("eval".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_eval(self):
+        self.stockfish = Stockfish("eval".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_nodes_1000():
-        stockfish = Stockfish("go nodes 1000".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_nodes_1000(self):
+        self.stockfish = Stockfish("go nodes 1000".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_depth_10():
-        stockfish = Stockfish("go depth 10".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_depth_10(self):
+        self.stockfish = Stockfish("go depth 10".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_perft_4():
-        stockfish = Stockfish("go perft 4".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_perft_4(self):
+        self.stockfish = Stockfish("go perft 4".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_movetime_1000():
-        stockfish = Stockfish("go movetime 1000".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_movetime_1000(self):
+        self.stockfish = Stockfish("go movetime 1000".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_wtime_8000_btime_8000_winc_500_binc_500():
-        stockfish = Stockfish(
+    def test_go_wtime_8000_btime_8000_winc_500_binc_500(self):
+        self.stockfish = Stockfish(
             "go wtime 8000 btime 8000 winc 500 binc 500".split(" "),
             True,
         )
-        assert stockfish.process.returncode == 0
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_wtime_1000_btime_1000_winc_0_binc_0():
-        stockfish = Stockfish(
+    def test_go_wtime_1000_btime_1000_winc_0_binc_0(self):
+        self.stockfish = Stockfish(
             "go wtime 1000 btime 1000 winc 0 binc 0".split(" "),
             True,
         )
-        assert stockfish.process.returncode == 0
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_wtime_1000_btime_1000_winc_0_binc_0_movestogo_5():
-        stockfish = Stockfish(
+    def test_go_wtime_1000_btime_1000_winc_0_binc_0_movestogo_5(self):
+        self.stockfish = Stockfish(
             "go wtime 1000 btime 1000 winc 0 binc 0 movestogo 5".split(" "),
             True,
         )
-        assert stockfish.process.returncode == 0
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_movetime_200():
-        stockfish = Stockfish("go movetime 200".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_movetime_200(self):
+        self.stockfish = Stockfish("go movetime 200".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_go_nodes_20000_searchmoves_e2e4_d2d4():
-        stockfish = Stockfish("go nodes 20000 searchmoves e2e4 d2d4".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_go_nodes_20000_searchmoves_e2e4_d2d4(self):
+        self.stockfish = Stockfish(
+            "go nodes 20000 searchmoves e2e4 d2d4".split(" "), True
+        )
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_bench_128_threads_8_default_depth():
-        stockfish = Stockfish(
+    def test_bench_128_threads_8_default_depth(self):
+        self.stockfish = Stockfish(
             f"bench 128 {get_threads()} 8 default depth".split(" "),
             True,
         )
-        assert stockfish.process.returncode == 0
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_bench_128_threads_3_bench_tmp_epd_depth():
-        stockfish = Stockfish(
+    def test_bench_128_threads_3_bench_tmp_epd_depth(self):
+        self.stockfish = Stockfish(
             f"bench 128 {get_threads()} 3 bench_tmp.epd depth".split(" "),
             True,
         )
-        assert stockfish.process.returncode == 0
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_export_net_verify_nnue():
-        stockfish = Stockfish("export_net verify.nnue".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_export_net_verify_nnue(self):
+        self.stockfish = Stockfish("export_net verify.nnue".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_d():
-        stockfish = Stockfish("d".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_d(self):
+        self.stockfish = Stockfish("d".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_compiler():
-        stockfish = Stockfish("compiler".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_compiler(self):
+        self.stockfish = Stockfish("compiler".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_license():
-        stockfish = Stockfish("license".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_license(self):
+        self.stockfish = Stockfish("license".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
-    @staticmethod
-    def test_uci():
-        stockfish = Stockfish("uci".split(" "), True)
-        assert stockfish.process.returncode == 0
+    def test_uci(self):
+        self.stockfish = Stockfish("uci".split(" "), True)
+        assert self.stockfish.process.returncode == 0
 
     # verify the generated net equals the base net
 
-    @staticmethod
-    def test_network_equals_base():
-        stockfish = Stockfish(
+    def test_network_equals_base(self):
+        self.stockfish = Stockfish(
             ["uci"],
             True,
         )
 
-        output = stockfish.process.stdout
+        output = self.stockfish.process.stdout
 
         # find line
         for line in output.split("\n"):
