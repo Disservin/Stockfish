@@ -414,6 +414,9 @@ def parse_args():
         "--sanitizer-thread", action="store_true", help="Run sanitizer-thread testing"
     )
 
+    parser.add_argument(
+        "--none", action="store_true", help="Run without any testing options"
+    )
     parser.add_argument("stockfish_path", type=str, help="Path to Stockfish binary")
 
     return parser.parse_args()
