@@ -229,7 +229,6 @@ class Stockfish:
     def __init__(
         self,
         prefix: List[str],
-        postfix_check: Callable,
         stockfish_path: str,
         args: List[str] = [],
         cli: bool = False,
@@ -239,13 +238,9 @@ class Stockfish:
         self.args = args
         self.cli = cli
         self.prefix = prefix
-        self.postfix_check = postfix_check
         self.output = []
 
         self.start()
-
-    def __del__(self):
-        assert self.postfix_check(self.output) == True
 
     def start(self):
         if self.cli:
@@ -352,7 +347,6 @@ class Stockfish:
         if self.process:
             self.process.stdin.close()
             self.process.stdout.close()
-            self.process.stderr.close()
             self.process.terminate()
             return self.process.wait()
 

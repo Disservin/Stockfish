@@ -57,7 +57,7 @@ def postfix_check(output):
 
 
 def Stockfish(*args, **kwargs):
-    return Engine(get_prefix(), postfix_check, get_path(), *args, **kwargs)
+    return Engine(get_prefix(), get_path(), *args, **kwargs)
 
 
 class TestCLI(metaclass=OrderedClassMembers):
