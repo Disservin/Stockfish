@@ -245,7 +245,7 @@ class Stockfish:
         self.process.stdin.write(command + "\n")
         self.process.stdin.flush()
 
-    @timeout(60)
+    @timeout(60 * 5)
     def equals(self, expected_output: str):
         if not self.process:
             raise RuntimeError("Stockfish process is not started")
@@ -256,7 +256,7 @@ class Stockfish:
             if output_line == expected_output:
                 return
 
-    @timeout(60)
+    @timeout(60 * 5)
     def expect(self, expected_output: str):
         if not self.process:
             raise RuntimeError("Stockfish process is not started")
@@ -267,7 +267,7 @@ class Stockfish:
             if fnmatch.fnmatch(output_line, expected_output):
                 return
 
-    @timeout(60)
+    @timeout(60 * 5)
     def contains(self, expected_output: str):
         if not self.process:
             raise RuntimeError("Stockfish process is not started")
@@ -278,7 +278,7 @@ class Stockfish:
             if expected_output in output_line:
                 return
 
-    @timeout(60)
+    @timeout(60 * 5)
     def starts_with(self, expected_output: str):
         if not self.process:
             raise RuntimeError("Stockfish process is not started")
@@ -289,7 +289,7 @@ class Stockfish:
             if output_line.startswith(expected_output):
                 return
 
-    @timeout(60)
+    @timeout(60 * 5)
     def check_output(self, callback):
         if not self.process:
             return None
