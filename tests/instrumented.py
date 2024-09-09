@@ -435,8 +435,7 @@ if __name__ == "__main__":
     args = parse_args()
 
     framework = MiniTestFramework()
-    # framework.run([TestCLI, TestInteractive])
-    framework.run([TestInteractive])
+    framework.run([TestCLI, TestInteractive])
 
     if framework.has_failed():
         sys.exit(1)
