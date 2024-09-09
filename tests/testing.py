@@ -189,13 +189,13 @@ class TSAN:
     def set_tsan_option():
         with open("tsan.supp", "w") as f:
             f.write(
-                """
-race:Stockfish::TTEntry::read
-race:Stockfish::TTEntry::save
-
-race:Stockfish::TranspositionTable::probe
-race:Stockfish::TranspositionTable::hashfull
-"""
+                ""
+                #                 """
+                # race:Stockfish::TTEntry::read
+                # race:Stockfish::TTEntry::save
+                # race:Stockfish::TranspositionTable::probe
+                # race:Stockfish::TranspositionTable::hashfull
+                # """
             )
 
         os.environ["TSAN_OPTIONS"] = "suppressions=./tsan.supp"
