@@ -258,7 +258,7 @@ class Stockfish:
             self.prefix + [self.stockfish_path] + self.args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
+            # stderr=subprocess.STDOUT,
             universal_newlines=True,
             bufsize=1,
         )
