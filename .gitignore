@@ -11,3 +11,7 @@ src/-lstdc++.res
 **/*.nnue
 
 __pycache__/
+
+tests/syzygy
+tests/tsan.supp
+tests/bench_tmp.epd

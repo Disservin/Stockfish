@@ -10,6 +10,9 @@ import signal
 from functools import wraps
 from contextlib import redirect_stdout
 import io
+import tarfile
+import urllib.request
+import pathlib
 
 CYAN_COLOR = "\033[36m"
 GRAY_COLOR = "\033[2m"
@@ -19,6 +22,87 @@ RESET_COLOR = "\033[0m"
 WHITE_BOLD = "\033[1m"
 
 MAX_TIMEOUT = 60 * 5
+
+PATH = pathlib.Path(__file__).parent.resolve()
+
+
+class Valgrind:
+    @staticmethod
+    def get_valgrind_command():
+        return [
+            "valgrind",
+            "--error-exitcode=42",
+            "--errors-for-leak-kinds=all",
+            "--leak-check=full",
+        ]
+
+    @staticmethod
+    def get_valgrind_thread_command():
+        return ["valgrind", "--error-exitcode=42", "--fair-sched=try"]
+
+
+class TSAN:
+    @staticmethod
+    def set_tsan_option():
+        with open(f"{PATH}/tsan.supp", "w") as f:
+            f.write(
+                """
+race:Stockfish::TTEntry::read
+race:Stockfish::TTEntry::save
+race:Stockfish::TranspositionTable::probe
+race:Stockfish::TranspositionTable::hashfull
+"""
+            )
+
+        os.environ["TSAN_OPTIONS"] = "suppressions=./tsan.supp"
+
+    @staticmethod
+    def unset_tsan_option():
+        os.environ.pop("TSAN_OPTIONS", None)
+        os.remove("tsan.supp")
+
+
+class EPD:
+    @staticmethod
+    def create_bench_epd():
+        with open(f"{PATH}/bench_tmp.epd", "w") as f:
+            f.write(
+                """
+Rn6/1rbq1bk1/2p2n1p/2Bp1p2/3Pp1pP/1N2P1P1/2Q1NPB1/6K1 w - - 2 26
+rnbqkb1r/ppp1pp2/5n1p/3p2p1/P2PP3/5P2/1PP3PP/RNBQKBNR w KQkq - 0 3
+3qnrk1/4bp1p/1p2p1pP/p2bN3/1P1P1B2/P2BQ3/5PP1/4R1K1 w - - 9 28
+r4rk1/1b2ppbp/pq4pn/2pp1PB1/1p2P3/1P1P1NN1/1PP3PP/R2Q1RK1 w - - 0 13
+"""
+            )
+
+    @staticmethod
+    def delete_bench_epd():
+        os.remove("bench_tmp.epd")
+
+
+class Syzygy:
+    @staticmethod
+    def get_syzygy_path():
+        return os.path.abspath("syzygy")
+
+    @staticmethod
+    def download_syzygy():
+        if not os.path.isdir("../tests/syzygy"):
+
+            url = "https://api.github.com/repos/niklasf/python-chess/tarball/9b9aa13f9f36d08aadfabff872882f4ab1494e95"
+            tarball_path = "/tmp/python-chess.tar.gz"
+
+            print("downloading syzygy..")
+
+            urllib.request.urlretrieve(url, tarball_path)
+
+            print("downloaded syzygy..")
+
+            with tarfile.open(tarball_path, "r:gz") as tar:
+                tar.extractall("/tmp")
+
+            os.rename("/tmp/niklasf-python-chess-9b9aa13", "../tests/syzygy")
+            print("extracted syzygy")
 
 
 class OrderedClassMembers(type):
@@ -183,60 +267,6 @@ class MiniTestFramework:
         return bool(fails)
 
 
-class Valgrind:
-    @staticmethod
-    def get_valgrind_command():
-        return [
-            "valgrind",
-            "--error-exitcode=42",
-            "--errors-for-leak-kinds=all",
-            "--leak-check=full",
-        ]
-
-    @staticmethod
-    def get_valgrind_thread_command():
-        return ["valgrind", "--error-exitcode=42", "--fair-sched=try"]
-
-
-class TSAN:
-    @staticmethod
-    def set_tsan_option():
-        with open("tsan.supp", "w") as f:
-            f.write(
-                """
-race:Stockfish::TTEntry::read
-race:Stockfish::TTEntry::save
-race:Stockfish::TranspositionTable::probe
-race:Stockfish::TranspositionTable::hashfull
-"""
-            )
-
-        os.environ["TSAN_OPTIONS"] = "suppressions=./tsan.supp"
-
-    @staticmethod
-    def unset_tsan_option():
-        os.environ.pop("TSAN_OPTIONS", None)
-        os.remove("tsan.supp")
-
-
-class EPD:
-    @staticmethod
-    def create_bench_epd():
-        with open("bench_tmp.epd", "w") as f:
-            f.write(
-                """
-Rn6/1rbq1bk1/2p2n1p/2Bp1p2/3Pp1pP/1N2P1P1/2Q1NPB1/6K1 w - - 2 26
-rnbqkb1r/ppp1pp2/5n1p/3p2p1/P2PP3/5P2/1PP3PP/RNBQKBNR w KQkq - 0 3
-3qnrk1/4bp1p/1p2p1pP/p2bN3/1P1P1B2/P2BQ3/5PP1/4R1K1 w - - 9 28
-r4rk1/1b2ppbp/pq4pn/2pp1PB1/1p2P3/1P1P1NN1/1PP3PP/R2Q1RK1 w - - 0 13
-"""
-            )
-
-    @staticmethod
-    def delete_bench_epd():
-        os.remove("bench_tmp.epd")
-
-
 class Stockfish:
     def __init__(
         self,
@@ -334,11 +364,13 @@ class Stockfish:
     def get_output(self) -> List[str]:
         return self.output
 
+    def quit(self):
+        self.send_command("quit")
+
     def close(self):
         if self.process:
             self.process.stdin.close()
             self.process.stdout.close()
-            self.process.terminate()
             return self.process.wait()
 
         return 0
