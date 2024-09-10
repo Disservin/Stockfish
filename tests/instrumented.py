@@ -148,10 +148,6 @@ class TestCLI(metaclass=OrderedClassMembers):
         )
         assert self.stockfish.process.returncode == 0
 
-    def test_export_net_verify_nnue(self):
-        self.stockfish = Stockfish("export_net verify.nnue".split(" "), True)
-        assert self.stockfish.process.returncode == 0
-
     def test_d(self):
         self.stockfish = Stockfish("d".split(" "), True)
         assert self.stockfish.process.returncode == 0
@@ -166,6 +162,13 @@ class TestCLI(metaclass=OrderedClassMembers):
 
     def test_uci(self):
         self.stockfish = Stockfish("uci".split(" "), True)
+        assert self.stockfish.process.returncode == 0
+
+    def test_export_net_verify_nnue(self):
+        current_path = os.path.abspath(os.getcwd())
+        self.stockfish = Stockfish(
+            f"export_net {os.path.join(current_path , 'verify.nnue')}".split(" "), True
+        )
         assert self.stockfish.process.returncode == 0
 
     # verify the generated net equals the base net
@@ -183,6 +186,15 @@ class TestCLI(metaclass=OrderedClassMembers):
             if "option name EvalFile type string default" in line:
                 network = line.split(" ")[-1]
                 break
+
+        # find network file in src dir
+        network = os.path.join(PATH.parent.resolve(), "src", network)
+
+        if not os.path.exists(network):
+            print(
+                f"Network file {network} not found, please download the network file over the make command."
+            )
+            assert False
 
         diff = subprocess.run(["diff", network, f"verify.nnue"])
 
@@ -376,6 +388,11 @@ class TestInteractive(metaclass=OrderedClassMembers):
         self.stockfish.starts_with("bestmove e3e2")
 
     def test_verify_nnue_network(self):
+        current_path = os.path.abspath(os.getcwd())
+        Stockfish(
+            f"export_net {os.path.join(current_path , 'verify.nnue')}".split(" "), True
+        )
+
         self.stockfish.send_command("setoption name EvalFile value verify.nnue")
         self.stockfish.send_command("position startpos")
         self.stockfish.send_command("go depth 5")
@@ -482,7 +499,6 @@ def parse_args():
     return parser.parse_args()
 
 
-# To run the tests
 if __name__ == "__main__":
     args = parse_args()
 
@@ -491,10 +507,9 @@ if __name__ == "__main__":
     Syzygy.download_syzygy()
 
     framework = MiniTestFramework()
-    framework.run([TestCLI, TestInteractive, TestSyzygy])
 
-    EPD.delete_bench_epd()
-    TSAN.unset_tsan_option()
+    # Each test suite will be ran inside a temporary directory
+    framework.run([TestCLI, TestInteractive, TestSyzygy])
 
     if framework.has_failed():
         sys.exit(1)

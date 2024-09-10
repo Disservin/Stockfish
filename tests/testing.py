@@ -6,7 +6,6 @@ import time
 import sys
 import traceback
 import fnmatch
-import signal
 from functools import wraps
 from contextlib import redirect_stdout
 import io
@@ -14,6 +13,7 @@ import tarfile
 import urllib.request
 import pathlib
 import concurrent.futures
+import tempfile
 
 CYAN_COLOR = "\033[36m"
 GRAY_COLOR = "\033[2m"
@@ -88,7 +88,7 @@ class Syzygy:
 
     @staticmethod
     def download_syzygy():
-        if not os.path.isdir("../tests/syzygy"):
+        if not os.path.isdir(os.path.join(PATH, "syzygy")):
             url = "https://api.github.com/repos/niklasf/python-chess/tarball/9b9aa13f9f36d08aadfabff872882f4ab1494e95"
             tarball_path = "/tmp/python-chess.tar.gz"
 
@@ -97,7 +97,7 @@ class Syzygy:
             with tarfile.open(tarball_path, "r:gz") as tar:
                 tar.extractall("/tmp")
 
-            os.rename("/tmp/niklasf-python-chess-9b9aa13", "../tests/syzygy")
+            os.rename("/tmp/niklasf-python-chess-9b9aa13", os.path.join(PATH, "syzygy"))
 
 
 class OrderedClassMembers(type):
@@ -152,11 +152,17 @@ class MiniTestFramework:
         self.start_time = time.time()
 
         for test_class in classes:
-            ret = self.__run(test_class)
-            if ret:
-                self.failed_test_suites += 1
-            else:
-                self.passed_test_suites += 1
+            with tempfile.TemporaryDirectory() as tmpdirname:
+                original_cwd = os.getcwd()
+                os.chdir(tmpdirname)
+                try:
+                    ret = self.__run(test_class)
+                    if ret:
+                        self.failed_test_suites += 1
+                    else:
+                        self.passed_test_suites += 1
+                finally:
+                    os.chdir(original_cwd)
 
         duration = round(time.time() - self.start_time, 2)
 
