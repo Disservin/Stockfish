@@ -45,7 +45,7 @@ class Valgrind:
 class TSAN:
     @staticmethod
     def set_tsan_option():
-        with open(f"tsan.supp", "w") as f:
+        with open(os.path.join(PATH, "tsan.supp"), "w") as f:
             f.write(
                 """
 race:Stockfish::TTEntry::read
@@ -55,18 +55,18 @@ race:Stockfish::TranspositionTable::hashfull
 """
             )
 
-        os.environ["TSAN_OPTIONS"] = "suppressions=./tsan.supp"
+        os.environ["TSAN_OPTIONS"] = f"suppressions={os.path.join(PATH,'tsan.supp')}"
 
     @staticmethod
     def unset_tsan_option():
         os.environ.pop("TSAN_OPTIONS", None)
-        os.remove(f"tsan.supp")
+        os.remove(os.path.join(PATH, "tsan.supp"))
 
 
 class EPD:
     @staticmethod
     def create_bench_epd():
-        with open(f"{os.path.join(PATH,'bench_tmp.epd')}", "w") as f:
+        with open(os.path.join(PATH, "bench_tmp.epd"), "w") as f:
             f.write(
                 """
 Rn6/1rbq1bk1/2p2n1p/2Bp1p2/3Pp1pP/1N2P1P1/2Q1NPB1/6K1 w - - 2 26
@@ -138,12 +138,28 @@ def timeout_decorator(timeout: float):
     return decorator
 
 
+import threading
+import tempfile
+import os
+import time
+import sys
+import traceback
+from contextlib import redirect_stdout
+import io
+from typing import List
+
+
 class MiniTestFramework:
     def __init__(self):
         self.passed_test_suites = 0
         self.failed_test_suites = 0
         self.passed_tests = 0
         self.failed_tests = 0
+        self.output_lock = threading.Lock()  # Lock for managing output
+        self.test_results = {}  # To store the results of each test class
+        self.output_lines = []  # To store all printed lines
+        self.start_time = None
+        self.printed_lines = 0  # To track how many lines have been printed
 
     def has_failed(self):
         return bool(self.failed_test_suites)
@@ -151,33 +167,31 @@ class MiniTestFramework:
     def run(self, classes: List[type]):
         self.start_time = time.time()
 
+        threads = []
         for test_class in classes:
-            with tempfile.TemporaryDirectory() as tmpdirname:
-                original_cwd = os.getcwd()
-                os.chdir(tmpdirname)
-                try:
-                    ret = self.__run(test_class)
-                    if ret:
-                        self.failed_test_suites += 1
-                    else:
-                        self.passed_test_suites += 1
-                finally:
-                    os.chdir(original_cwd)
+            thread = threading.Thread(target=self._run_test_suite, args=(test_class,))
+            threads.append(thread)
+            thread.start()
 
-        duration = round(time.time() - self.start_time, 2)
+        for thread in threads:
+            thread.join()  # Wait for all threads to complete
 
-        print(f"\n{WHITE_BOLD}Test Summary{RESET_COLOR}\n")
-        print(
-            f"    Test Suites: {GREEN_COLOR}{self.passed_test_suites} passed{RESET_COLOR}, {RED_COLOR}{self.failed_test_suites} failed{RESET_COLOR}, {self.passed_test_suites + self.failed_test_suites} total"
-        )
-        print(
-            f"    Tests:       {GREEN_COLOR}{self.passed_tests} passed{RESET_COLOR}, {RED_COLOR}{self.failed_tests} failed{RESET_COLOR}, {self.passed_tests + self.failed_tests} total"
-        )
-        print(f"    Time:        {duration}s\n")
+        # Final output once all threads have finished
+        self._print_summary()
 
         return bool(self.failed_test_suites)
 
-    def __run(self, test_class):
+    def _run_test_suite(self, test_class):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            ret = self.__run(test_class, tmpdirname)
+
+            with self.output_lock:
+                if ret:
+                    self.failed_test_suites += 1
+                else:
+                    self.passed_test_suites += 1
+
+    def __run(self, test_class, tmpdirname):
         test_instance = test_class()
         test_name = test_instance.__class__.__name__
 
@@ -186,79 +200,119 @@ class MiniTestFramework:
         ]
 
         if "beforeAll" in dir(test_instance):
-            test_instance.beforeAll()
+            test_instance.beforeAll(tmpdirname)
 
-        print(f"\nTest Suite: {test_name}")
+        with self.output_lock:
+            self.test_results[test_name] = [f"Test Suite: {test_name}"]
+            self._redraw_status()
 
         fails = 0
 
         for method in test_methods:
-            print(f"    Running {method}... \r", end="", flush=True)
             buffer = io.StringIO()
 
             try:
-
                 t0 = time.time()
 
-                with redirect_stdout(buffer):
-                    if hasattr(test_instance, "beforeEach"):
-                        test_instance.beforeEach()
+                # with redirect_stdout(buffer):
+                if hasattr(test_instance, "beforeEach"):
+                    test_instance.beforeEach()
 
-                    getattr(test_instance, method)()
+                getattr(test_instance, method)()
 
-                    if hasattr(test_instance, "afterEach"):
-                        test_instance.afterEach()
+                if hasattr(test_instance, "afterEach"):
+                    test_instance.afterEach()
 
                 duration = time.time() - t0
 
-                self.print_success(f" {method} ({duration * 1000:.2f}ms)")
+                with self.output_lock:
+                    self.passed_tests += 1
+                    self.test_results[test_name].append(
+                        self._format_success(method, duration)
+                    )
+                    self._redraw_status()
 
-                self.passed_tests += 1
             except TimeoutException as e:
-                self.print_failure(
-                    f" {method} (hit execution limit of {e.timeout} seconds)"
-                )
-
-                fails += 1
-                self.failed_tests += 1
+                with self.output_lock:
+                    fails += 1
+                    self.failed_tests += 1
+                    self.test_results[test_name].append(
+                        self._format_failure(method, e.timeout)
+                    )
+                    self._redraw_status()
             except AssertionError:
                 duration = time.time() - t0
-
-                self.print_failure(f" {method} ({duration * 1000:.2f}ms)")
-
-                traceback_output = "".join(traceback.format_tb(sys.exc_info()[2]))
-
-                colored_traceback = "\n".join(
-                    f"  {CYAN_COLOR}{line}{RESET_COLOR}"
-                    for line in traceback_output.splitlines()
-                )
-
-                print(colored_traceback)
-
-                fails += 1
-                self.failed_tests += 1
+                with self.output_lock:
+                    fails += 1
+                    self.failed_tests += 1
+                    traceback_output = "".join(traceback.format_tb(sys.exc_info()[2]))
+                    self.test_results[test_name].append(
+                        self._format_failure(method, duration, traceback_output)
+                    )
+                    self._redraw_status()
             finally:
                 val = buffer.getvalue()
-
-                if val:
-                    indented_output = "\n".join(
-                        f"    {line}" for line in val.splitlines()
-                    )
-
-                    print(f"    {RED_COLOR}⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯OUTPUT⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯{RESET_COLOR}")
-                    print(f"{GRAY_COLOR}{indented_output}{RESET_COLOR}")
-                    print(f"    {RED_COLOR}⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯OUTPUT⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯{RESET_COLOR}")
+                # if val:
+                #     print(val)
+                #     exit(1)
+                #     indented_output = "\n".join(
+                #         f"    {line}" for line in val.splitlines()
+                #     )
+                #     with self.output_lock:
+                #         self.test_results[test_name].append(f"\n{indented_output}\n")
+                #         self._redraw_status()
 
         if hasattr(test_instance, "afterAll"):
             test_instance.afterAll()
 
         return bool(fails)
 
-    def print_failure(self, add: str):
-        print(f"    {RED_COLOR}✗{RESET_COLOR}{add}", flush=True)
+    def _format_success(self, method, duration):
+        return f"    {GREEN_COLOR}✓ {method} ({duration * 1000:.2f}ms){RESET_COLOR}"
 
-    def print_success(self, add: str):
-        print(f"    {GREEN_COLOR}✓{RESET_COLOR}{add}", flush=True)
+    def _format_failure(self, method, duration, traceback_output=""):
+        failure_msg = (
+            f"    {RED_COLOR}✗ {method} ({duration * 1000:.2f}ms){RESET_COLOR}"
+        )
+        if traceback_output:
+            colored_traceback = "\n".join(
+                f"  {CYAN_COLOR}{line}{RESET_COLOR}"
+                for line in traceback_output.splitlines()
+            )
+            failure_msg += f"\n{colored_traceback}"
+        return failure_msg
+
+    def _redraw_status(self):
+        self.clear_lines(self.printed_lines)  # Clear the previously printed lines
+        self.output_lines = []  # Reset the output_lines for new drawing
+
+        # Prepare and store the updated lines
+        for test_name, results in self.test_results.items():
+            self.output_lines.extend(results)
+
+        # print(self.test_results)
+        # # Print each new line and track how many lines were printed
+        for line in self.output_lines:
+            print(line)
+
+        self.printed_lines = len(self.output_lines)  # Track how many lines were printed
+
+    def _print_summary(self):
+        duration = round(time.time() - self.start_time, 2)
+        summary_lines = [
+            f"\n{WHITE_BOLD}Test Summary{RESET_COLOR}\n",
+            f"    Test Suites: {GREEN_COLOR}{self.passed_test_suites} passed{RESET_COLOR}, {RED_COLOR}{self.failed_test_suites} failed{RESET_COLOR}, {self.passed_test_suites + self.failed_test_suites} total",
+            f"    Tests:       {GREEN_COLOR}{self.passed_tests} passed{RESET_COLOR}, {RED_COLOR}{self.failed_tests} failed{RESET_COLOR}, {self.passed_tests + self.failed_tests} total",
+            f"    Time:        {duration}s\n",
+        ]
+        for line in summary_lines:
+            print(line)
+
+    def clear_lines(self, n=1):
+        LINE_UP = "\033[1A"
+        LINE_CLEAR = "\x1b[2K"
+        for _ in range(n):
+            print(LINE_UP, end=LINE_CLEAR)
 
 
 class Stockfish:

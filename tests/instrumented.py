@@ -67,9 +67,8 @@ def Stockfish(*args, **kwargs):
 
 
 class TestCLI(metaclass=OrderedClassMembers):
-
-    def beforeAll(self):
-        pass
+    def beforeAll(self, dir):
+        self.dir = os.path.abspath(dir)
 
     def afterAll(self):
         pass
@@ -165,10 +164,10 @@ class TestCLI(metaclass=OrderedClassMembers):
         assert self.stockfish.process.returncode == 0
 
     def test_export_net_verify_nnue(self):
-        current_path = os.path.abspath(os.getcwd())
         self.stockfish = Stockfish(
-            f"export_net {os.path.join(current_path , 'verify.nnue')}".split(" "), True
+            f"export_net {os.path.join(self.dir , 'verify.nnue')}".split(" "), True
         )
+
         assert self.stockfish.process.returncode == 0
 
     # verify the generated net equals the base net
@@ -202,8 +201,9 @@ class TestCLI(metaclass=OrderedClassMembers):
 
 
 class TestInteractive(metaclass=OrderedClassMembers):
-    def beforeAll(self):
+    def beforeAll(self, dir):
         self.stockfish = Stockfish()
+        self.dir = os.path.abspath(dir)
 
     def afterAll(self):
         self.stockfish.quit()
@@ -388,9 +388,8 @@ class TestInteractive(metaclass=OrderedClassMembers):
         self.stockfish.starts_with("bestmove e3e2")
 
     def test_verify_nnue_network(self):
-        current_path = os.path.abspath(os.getcwd())
         Stockfish(
-            f"export_net {os.path.join(current_path , 'verify.nnue')}".split(" "), True
+            f"export_net {os.path.join(self.dir , 'verify.nnue')}".split(" "), True
         )
 
         self.stockfish.send_command("setoption name EvalFile value verify.nnue")
@@ -414,8 +413,9 @@ class TestInteractive(metaclass=OrderedClassMembers):
 
 
 class TestSyzygy(metaclass=OrderedClassMembers):
-    def beforeAll(self):
+    def beforeAll(self, dir):
         self.stockfish = Stockfish()
+        self.dir = os.path.abspath(dir)
 
     def afterAll(self):
         self.stockfish.quit()
