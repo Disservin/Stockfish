@@ -13,6 +13,7 @@ import io
 import tarfile
 import urllib.request
 import pathlib
+import concurrent.futures
 
 CYAN_COLOR = "\033[36m"
 GRAY_COLOR = "\033[2m"
@@ -65,7 +66,7 @@ race:Stockfish::TranspositionTable::hashfull
 class EPD:
     @staticmethod
     def create_bench_epd():
-        with open(f"{PATH}/bench_tmp.epd", "w") as f:
+        with open(f"{os.path.join(PATH,'bench_tmp.epd')}", "w") as f:
             f.write(
                 """
 Rn6/1rbq1bk1/2p2n1p/2Bp1p2/3Pp1pP/1N2P1P1/2Q1NPB1/6K1 w - - 2 26
@@ -77,7 +78,7 @@ r4rk1/1b2ppbp/pq4pn/2pp1PB1/1p2P3/1P1P1NN1/1PP3PP/R2Q1RK1 w - - 0 13
 
     @staticmethod
     def delete_bench_epd():
-        os.remove(f"{PATH}/bench_tmp.epd")
+        os.remove(f"{os.path.join(PATH,'bench_tmp.epd')}")
 
 
 class Syzygy:
@@ -117,24 +118,19 @@ class TimeoutException(Exception):
         self.timeout = timeout
 
 
-def timeout(seconds: int) -> Callable:
-    def decorator(func: Callable) -> Callable:
-        def _handle_timeout(signum, frame):
-            raise TimeoutException(
-                f"Function '{func.__name__}' timed out after {seconds} seconds",
-                seconds,
-            )
-
+def timeout_decorator(timeout: float):
+    def decorator(func):
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
-            # Set the signal handler and a timeout alarm
-            signal.signal(signal.SIGALRM, _handle_timeout)
-            signal.alarm(seconds)
-            try:
-                result = func(*args, **kwargs)
-            finally:
-                # Disable the alarm after function completion
-                signal.alarm(0)
+        def wrapper(*args, **kwargs):
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(func, *args, **kwargs)
+                try:
+                    result = future.result(timeout=timeout)
+                except concurrent.futures.TimeoutError:
+                    raise TimeoutException(
+                        f"Function {func.__name__} timed out after {timeout} seconds",
+                        timeout,
+                    )
             return result
 
         return wrapper
@@ -195,9 +191,9 @@ class MiniTestFramework:
             buffer = io.StringIO()
 
             try:
+
                 t0 = time.time()
 
-                # Redirect stdout to buffer for capturing test output
                 with redirect_stdout(buffer):
                     if hasattr(test_instance, "beforeEach"):
                         test_instance.beforeEach()
@@ -309,31 +305,31 @@ class Stockfish:
         self.process.stdin.write(command + "\n")
         self.process.stdin.flush()
 
-    @timeout(MAX_TIMEOUT)
+    @timeout_decorator(MAX_TIMEOUT)
     def equals(self, expected_output: str):
         for line in self.readline():
             if line == expected_output:
                 return
 
-    @timeout(MAX_TIMEOUT)
+    @timeout_decorator(MAX_TIMEOUT)
     def expect(self, expected_output: str):
         for line in self.readline():
             if fnmatch.fnmatch(line, expected_output):
                 return
 
-    @timeout(MAX_TIMEOUT)
+    @timeout_decorator(MAX_TIMEOUT)
     def contains(self, expected_output: str):
         for line in self.readline():
             if expected_output in line:
                 return
 
-    @timeout(MAX_TIMEOUT)
+    @timeout_decorator(MAX_TIMEOUT)
     def starts_with(self, expected_output: str):
         for line in self.readline():
             if line.startswith(expected_output):
                 return
 
-    @timeout(MAX_TIMEOUT)
+    @timeout_decorator(MAX_TIMEOUT)
     def check_output(self, callback):
         if not callback:
             raise ValueError("Callback function is required")

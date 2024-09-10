@@ -3,6 +3,7 @@ import re
 import sys
 import subprocess
 import pathlib
+import os
 
 from testing import (
     EPD,
@@ -15,6 +16,7 @@ from testing import (
 )
 
 PATH = pathlib.Path(__file__).parent.resolve()
+CWD = os.getcwd()
 
 
 def get_prefix():
@@ -33,7 +35,7 @@ def get_threads():
 
 
 def get_path():
-    return args.stockfish_path
+    return os.path.abspath(os.path.join(CWD, args.stockfish_path))
 
 
 def postfix_check(output):
@@ -67,13 +69,10 @@ def Stockfish(*args, **kwargs):
 class TestCLI(metaclass=OrderedClassMembers):
 
     def beforeAll(self):
-
-        EPD.create_bench_epd()
-        TSAN.set_tsan_option()
+        pass
 
     def afterAll(self):
-        EPD.delete_bench_epd()
-        TSAN.unset_tsan_option()
+        pass
 
     def beforeEach(self):
         self.stockfish = None
@@ -142,7 +141,9 @@ class TestCLI(metaclass=OrderedClassMembers):
 
     def test_bench_128_threads_3_bench_tmp_epd_depth(self):
         self.stockfish = Stockfish(
-            f"bench 128 {get_threads()} 3 {PATH}/bench_tmp.epd depth".split(" "),
+            f"bench 128 {get_threads()} 3 {os.path.join(PATH,'bench_tmp.epd')} depth".split(
+                " "
+            ),
             True,
         )
         assert self.stockfish.process.returncode == 0
@@ -190,17 +191,11 @@ class TestCLI(metaclass=OrderedClassMembers):
 
 class TestInteractive(metaclass=OrderedClassMembers):
     def beforeAll(self):
-        EPD.create_bench_epd()
-        TSAN.set_tsan_option()
-
         self.stockfish = Stockfish()
 
     def afterAll(self):
         self.stockfish.quit()
         assert self.stockfish.close() == 0
-
-        EPD.delete_bench_epd()
-        TSAN.unset_tsan_option()
 
     def afterEach(self):
         assert postfix_check(self.stockfish.get_output()) == True
@@ -403,16 +398,11 @@ class TestInteractive(metaclass=OrderedClassMembers):
 
 class TestSyzygy(metaclass=OrderedClassMembers):
     def beforeAll(self):
-        TSAN.set_tsan_option()
-        Syzygy.download_syzygy()
-
         self.stockfish = Stockfish()
 
     def afterAll(self):
         self.stockfish.quit()
         assert self.stockfish.close() == 0
-
-        TSAN.unset_tsan_option()
 
     def afterEach(self):
         assert postfix_check(self.stockfish.get_output()) == True
@@ -421,7 +411,9 @@ class TestSyzygy(metaclass=OrderedClassMembers):
     def test_syzygy_setup(self):
         self.stockfish.starts_with("Stockfish")
         self.stockfish.send_command("uci")
-        self.stockfish.send_command(f"setoption name SyzygyPath value {PATH}/syzygy")
+        self.stockfish.send_command(
+            f"setoption name SyzygyPath value {os.path.join(PATH, 'syzygy')}"
+        )
         self.stockfish.expect(
             "info string Found 35 WDL and 35 DTZ tablebase files (up to 4-man)."
         )
@@ -494,8 +486,15 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
 
+    EPD.create_bench_epd()
+    TSAN.set_tsan_option()
+    Syzygy.download_syzygy()
+
     framework = MiniTestFramework()
     framework.run([TestCLI, TestInteractive, TestSyzygy])
+
+    EPD.delete_bench_epd()
+    TSAN.unset_tsan_option()
 
     if framework.has_failed():
         sys.exit(1)
