@@ -44,7 +44,7 @@ class Valgrind:
 class TSAN:
     @staticmethod
     def set_tsan_option():
-        with open(f"{PATH}/tsan.supp", "w") as f:
+        with open(f"tsan.supp", "w") as f:
             f.write(
                 """
 race:Stockfish::TTEntry::read
@@ -59,7 +59,7 @@ race:Stockfish::TranspositionTable::hashfull
     @staticmethod
     def unset_tsan_option():
         os.environ.pop("TSAN_OPTIONS", None)
-        os.remove(f"{PATH}/tsan.supp")
+        os.remove(f"tsan.supp")
 
 
 class EPD:

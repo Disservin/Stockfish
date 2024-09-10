@@ -13,7 +13,7 @@ src/-lstdc++.res
 __pycache__/
 
 tests/syzygy
-tests/tsan.supp
 tests/bench_tmp.epd
 
 verify.nnue
+tsan.supp
