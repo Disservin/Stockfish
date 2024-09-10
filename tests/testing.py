@@ -59,7 +59,7 @@ race:Stockfish::TranspositionTable::hashfull
     @staticmethod
     def unset_tsan_option():
         os.environ.pop("TSAN_OPTIONS", None)
-        os.remove("tsan.supp")
+        os.remove(f"{PATH}/tsan.supp")
 
 
 class EPD:
@@ -77,7 +77,7 @@ r4rk1/1b2ppbp/pq4pn/2pp1PB1/1p2P3/1P1P1NN1/1PP3PP/R2Q1RK1 w - - 0 13
 
     @staticmethod
     def delete_bench_epd():
-        os.remove("bench_tmp.epd")
+        os.remove(f"{PATH}/bench_tmp.epd")
 
 
 class Syzygy:

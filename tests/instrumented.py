@@ -142,7 +142,7 @@ class TestCLI(metaclass=OrderedClassMembers):
 
     def test_bench_128_threads_3_bench_tmp_epd_depth(self):
         self.stockfish = Stockfish(
-            f"bench 128 {get_threads()} 3 bench_tmp.epd depth".split(" "),
+            f"bench 128 {get_threads()} 3 {PATH}/bench_tmp.epd depth".split(" "),
             True,
         )
         assert self.stockfish.process.returncode == 0
@@ -183,7 +183,7 @@ class TestCLI(metaclass=OrderedClassMembers):
                 network = line.split(" ")[-1]
                 break
 
-        diff = subprocess.run(["diff", network, "verify.nnue"])
+        diff = subprocess.run(["diff", network, f"{PATH}/verify.nnue"])
 
         assert diff.returncode == 0
 
