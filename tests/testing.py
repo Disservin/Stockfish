@@ -205,28 +205,20 @@ class MiniTestFramework:
 
                 duration = time.time() - t0
 
-                print(
-                    f"    {GREEN_COLOR}✓{RESET_COLOR} {method} ({duration * 1000:.2f}ms)",
-                    flush=True,
-                )
+                self.print_success(f" {method} ({duration * 1000:.2f}ms)")
 
                 self.passed_tests += 1
             except TimeoutException as e:
-                print(
-                    f"    {RED_COLOR}✗{RESET_COLOR} {method} (hit execution limit of {e.timeout} seconds)",
-                    flush=True,
+                self.print_failure(
+                    f" {method} (hit execution limit of {e.timeout} seconds)"
                 )
 
                 fails += 1
                 self.failed_tests += 1
-
             except AssertionError:
                 duration = time.time() - t0
 
-                print(
-                    f"    {RED_COLOR}✗{RESET_COLOR} {method} ({duration * 1000:.2f}ms)",
-                    flush=True,
-                )
+                self.print_failure(f" {method} ({duration * 1000:.2f}ms)")
 
                 traceback_output = "".join(traceback.format_tb(sys.exc_info()[2]))
 
@@ -255,6 +247,12 @@ class MiniTestFramework:
             test_instance.afterAll()
 
         return bool(fails)
+
+    def print_failure(self, add: str):
+        print(f"    {RED_COLOR}✗{RESET_COLOR}{add}", flush=True)
+
+    def print_success(self, add: str):
+        print(f"    {GREEN_COLOR}✓{RESET_COLOR}{add}", flush=True)
 
 
 class Stockfish:
