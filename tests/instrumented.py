@@ -183,7 +183,7 @@ class TestCLI(metaclass=OrderedClassMembers):
                 network = line.split(" ")[-1]
                 break
 
-        diff = subprocess.run(["diff", network, f"{PATH}/verify.nnue"])
+        diff = subprocess.run(["diff", network, f"verify.nnue"])
 
         assert diff.returncode == 0
 
