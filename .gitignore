@@ -10,3 +10,10 @@ src/-lstdc++.res
 # Neural network for the NNUE evaluation
 **/*.nnue
 
+__pycache__/
+
+tests/syzygy
+tests/bench_tmp.epd
+
+verify.nnue
+tsan.supp
