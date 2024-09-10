@@ -1,8 +1,6 @@
 import subprocess
-from typing import List, Optional, Callable, Any
-import argparse
+from typing import List, Callable, Any
 import os
-import re
 import collections
 import time
 import sys
@@ -12,6 +10,15 @@ import signal
 from functools import wraps
 from contextlib import redirect_stdout
 import io
+
+CYAN_COLOR = "\033[36m"
+GRAY_COLOR = "\033[2m"
+RED_COLOR = "\033[31m"
+GREEN_COLOR = "\033[32m"
+RESET_COLOR = "\033[0m"
+WHITE_BOLD = "\033[1m"
+
+MAX_TIMEOUT = 60 * 5
 
 
 class OrderedClassMembers(type):
@@ -27,7 +34,7 @@ class OrderedClassMembers(type):
 
 
 class TimeoutException(Exception):
-    def __init__(self, message, timeout):
+    def __init__(self, message: str, timeout: int):
         self.message = message
         self.timeout = timeout
 
@@ -63,7 +70,6 @@ class MiniTestFramework:
         self.failed_test_suites = 0
         self.passed_tests = 0
         self.failed_tests = 0
-        self.total_tests = 0
 
     def has_failed(self):
         return bool(self.failed_test_suites)
@@ -80,33 +86,34 @@ class MiniTestFramework:
 
         duration = round(time.time() - self.start_time, 2)
 
-        print("\n\033[1mTest Summary\033[0m\n")
+        print(f"\n{WHITE_BOLD}Test Summary{RESET_COLOR}\n")
         print(
-            f"    Test Suites: \033[42m{self.passed_test_suites} passed\033[0m, {self.failed_test_suites} total"
+            f"    Test Suites: {GREEN_COLOR}{self.passed_test_suites} passed{RESET_COLOR}, {RED_COLOR}{self.failed_test_suites} failed{RESET_COLOR}, {self.passed_test_suites + self.failed_test_suites} total"
         )
         print(
-            f"    Tests:       \033[42m{self.passed_tests} passed\033[0m, {self.failed_tests} failed, {self.total_tests} total"
+            f"    Tests:       {GREEN_COLOR}{self.passed_tests} passed{RESET_COLOR}, {RED_COLOR}{self.failed_tests} failed{RESET_COLOR}, {self.passed_tests + self.failed_tests} total"
         )
-        print(f"    Time:        {round(duration, 2)}s\n")
+        print(f"    Time:        {duration}s\n")
 
         return bool(self.failed_test_suites)
 
     def __run(self, test_class):
         test_instance = test_class()
-        methods = [
+        test_name = test_instance.__class__.__name__
+
+        test_methods = [
             method for method in test_instance.__ordered__ if method.startswith("test_")
         ]
 
         if "beforeAll" in dir(test_instance):
             test_instance.beforeAll()
 
-        print(f"\nTest Suite: {test_instance.__class__.__name__}")
+        print(f"\nTest Suite: {test_name}")
 
         fails = 0
 
-        for method in methods:
-            self.total_tests += 1
-            print(f"    Running {method}... ", end="", flush=True)
+        for method in test_methods:
+            print(f"    Running {method}... \r", end="", flush=True)
             buffer = io.StringIO()
 
             try:
@@ -125,13 +132,15 @@ class MiniTestFramework:
                 duration = time.time() - t0
 
                 print(
-                    f"\033[32m✓\033[0m \033[42m\033[97m PASS \033[0m  ({duration * 1000:.2f}ms)"
+                    f"    {GREEN_COLOR}✓{RESET_COLOR} {method} ({duration * 1000:.2f}ms)",
+                    flush=True,
                 )
 
                 self.passed_tests += 1
             except TimeoutException as e:
                 print(
-                    f"\033[31m✗\033[0m \033[41m\033[97m FAIL \033[0m  hit execution limit of {e.timeout} seconds"
+                    f"    {RED_COLOR}✗{RESET_COLOR} {method} (hit execution limit of {e.timeout} seconds)",
+                    flush=True,
                 )
 
                 fails += 1
@@ -139,17 +148,16 @@ class MiniTestFramework:
 
             except AssertionError:
                 duration = time.time() - t0
+
                 print(
-                    f"\033[31m✗\033[0m \033[41m\033[97m FAIL \033[0m  ({duration * 1000:.2f}ms)"
+                    f"    {RED_COLOR}✗{RESET_COLOR} {method} ({duration * 1000:.2f}ms)",
+                    flush=True,
                 )
 
                 traceback_output = "".join(traceback.format_tb(sys.exc_info()[2]))
 
-                color_code = "\033[36m"
-                reset_code = "\033[0m"
-
                 colored_traceback = "\n".join(
-                    f"  {color_code}{line}{reset_code}"
+                    f"  {CYAN_COLOR}{line}{RESET_COLOR}"
                     for line in traceback_output.splitlines()
                 )
 
@@ -164,9 +172,12 @@ class MiniTestFramework:
                     indented_output = "\n".join(
                         f"    {line}" for line in val.splitlines()
                     )
-                    print(f"\033[2m{indented_output}\033[0m")
 
-        if "afterAll" in dir(test_instance):
+                    print(f"    {RED_COLOR}⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯OUTPUT⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯{RESET_COLOR}")
+                    print(f"{GRAY_COLOR}{indented_output}{RESET_COLOR}")
+                    print(f"    {RED_COLOR}⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯OUTPUT⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯{RESET_COLOR}")
+
+        if hasattr(test_instance, "afterAll"):
             test_instance.afterAll()
 
         return bool(fails)
@@ -205,7 +216,6 @@ race:Stockfish::TranspositionTable::hashfull
     @staticmethod
     def unset_tsan_option():
         os.environ.pop("TSAN_OPTIONS", None)
-
         os.remove("tsan.supp")
 
 
@@ -231,11 +241,11 @@ class Stockfish:
     def __init__(
         self,
         prefix: List[str],
-        stockfish_path: str,
+        path: str,
         args: List[str] = [],
         cli: bool = False,
     ):
-        self.stockfish_path = stockfish_path
+        self.path = path
         self.process = None
         self.args = args
         self.cli = cli
@@ -247,7 +257,7 @@ class Stockfish:
     def start(self):
         if self.cli:
             self.process = subprocess.run(
-                self.prefix + [self.stockfish_path] + self.args,
+                self.prefix + [self.path] + self.args,
                 capture_output=True,
                 text=True,
             )
@@ -257,7 +267,7 @@ class Stockfish:
             return
 
         self.process = subprocess.Popen(
-            self.prefix + [self.stockfish_path] + self.args,
+            self.prefix + [self.path] + self.args,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -275,72 +285,51 @@ class Stockfish:
         self.process.stdin.write(command + "\n")
         self.process.stdin.flush()
 
-    @timeout(60 * 5)
+    @timeout(MAX_TIMEOUT)
     def equals(self, expected_output: str):
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        while True:
-            output_line = self.readline()
-
-            if output_line == expected_output:
+        for line in self.readline():
+            if line == expected_output:
                 return
 
-    @timeout(60 * 5)
+    @timeout(MAX_TIMEOUT)
     def expect(self, expected_output: str):
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        while True:
-            output_line = self.readline()
-
-            if fnmatch.fnmatch(output_line, expected_output):
+        for line in self.readline():
+            if fnmatch.fnmatch(line, expected_output):
                 return
 
-    @timeout(60 * 5)
+    @timeout(MAX_TIMEOUT)
     def contains(self, expected_output: str):
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        while True:
-            output_line = self.readline()
-
-            if expected_output in output_line:
+        for line in self.readline():
+            if expected_output in line:
                 return
 
-    @timeout(60 * 5)
+    @timeout(MAX_TIMEOUT)
     def starts_with(self, expected_output: str):
-        if not self.process:
-            raise RuntimeError("Stockfish process is not started")
-
-        while True:
-            output_line = self.readline()
-
-            if output_line.startswith(expected_output):
+        for line in self.readline():
+            if line.startswith(expected_output):
                 return
 
-    @timeout(60 * 5)
+    @timeout(MAX_TIMEOUT)
     def check_output(self, callback):
-        if not self.process:
-            return None
-
         if not callback:
             raise ValueError("Callback function is required")
 
-        while True:
-            output_line = self.readline()
-
-            if callback(output_line) == True:
+        for line in self.readline():
+            if callback(line) == True:
                 return
 
-    def readline(self) -> str:
+    def readline(self):
         if not self.process:
-            return None
+            raise RuntimeError("Stockfish process is not started")
 
-        line = self.process.stdout.readline().strip()
-        self.output.append(line)
+        while True:
+            line = self.process.stdout.readline().strip()
+            self.output.append(line)
 
-        return line
+            yield line
+
+    def clear_output(self):
+        self.output = []
 
     def get_output(self) -> List[str]:
         return self.output

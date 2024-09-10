@@ -76,6 +76,7 @@ class TestCLI(metaclass=OrderedClassMembers):
 
     def afterEach(self):
         assert postfix_check(self.stockfish.get_output()) == True
+        self.stockfish.clear_output()
 
     def test_eval(self):
         self.stockfish = Stockfish("eval".split(" "), True)
@@ -198,6 +199,7 @@ class TestInteractive(metaclass=OrderedClassMembers):
 
     def afterEach(self):
         assert postfix_check(self.stockfish.get_output()) == True
+        self.stockfish.clear_output()
 
     def test_startup_output(self):
         self.stockfish.starts_with("Stockfish")
@@ -262,7 +264,6 @@ class TestInteractive(metaclass=OrderedClassMembers):
 
             regex = f"info depth {depth} seldepth \d+ multipv \d+ score cp \d+ wdl \d+ \d+ \d+ nodes \d+ nps \d+ hashfull \d+ tbhits \d+ time \d+ pv"
 
-            # print(output)
             if output.startswith("info depth"):
                 if not re.match(regex, output):
                     assert False
