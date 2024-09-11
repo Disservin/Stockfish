@@ -101,7 +101,6 @@ jobs:
   Games:
     uses: ./.github/workflows/games.yml
   Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
     needs: [Matrix, Prerelease, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
@@ -111,7 +110,6 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   ARM_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
     needs: [Matrix, Prerelease, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
