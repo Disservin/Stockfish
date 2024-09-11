@@ -13,7 +13,6 @@ on:
       - tools
 jobs:
   Prerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && (github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'))
     runs-on: ubuntu-latest
     permissions:
       contents: write # For deleting/creating a prerelease
