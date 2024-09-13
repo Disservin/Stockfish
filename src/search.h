@@ -288,7 +288,7 @@ class Worker {
     void iterative_deepening();
 
     // This is the main search function, for both PV and non-PV nodes
-    template<NodeType nodeType>
+    template<bool mainThread, NodeType nodeType>
     Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
 
     // Quiescence search function, which is called by the main search
