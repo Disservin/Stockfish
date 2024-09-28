@@ -576,8 +576,7 @@ class NumaConfig {
 
         // Since versions before Windows 11 we can't distinguish between affinity set by the user
         // and the default os affinity, we ignore the affinity set by the user to use all threads by default.
-        if (respectProcessAffinity && affinitySetting == AffinitySetting::AUTO
-            && !isWindows11OrGreater())
+        if (affinitySetting == AffinitySetting::AUTO && !isWindows11OrGreater())
         {
             respectProcessAffinity = false;
         }
