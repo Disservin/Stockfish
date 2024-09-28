@@ -23,6 +23,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -34,7 +35,6 @@
 #include <thread>
 #include <utility>
 #include <vector>
-#include <cstring>
 
 #include "memory.h"
 
@@ -95,6 +95,30 @@ inline CpuIndex get_hardware_concurrency() {
 inline const CpuIndex SYSTEM_THREADS_NB = std::max<CpuIndex>(1, get_hardware_concurrency());
 
 #if defined(_WIN64)
+
+using RtlGetVersion_t = NTSTATUS(WINAPI*)(PRTL_OSVERSIONINFOW);
+
+inline bool isWindows11OrGreater() {
+    auto ntdll   = GetModuleHandleW(L"ntdll.dll");
+    auto version = reinterpret_cast<RtlGetVersion_t>(GetProcAddress(ntdll, "RtlGetVersion"));
+
+    if (version != nullptr)
+    {
+        RTL_OSVERSIONINFOW osInfo  = {};
+        osInfo.dwOSVersionInfoSize = sizeof(osInfo);
+
+        version(&osInfo);
+
+        // 22000 is the build number of Windows 11
+        if (osInfo.dwMajorVersion == 10 && osInfo.dwMinorVersion == 0
+            && osInfo.dwBuildNumber >= 22000)
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 struct WindowsAffinity {
     std::optional<std::set<CpuIndex>> oldApi;
@@ -461,6 +485,12 @@ class NumaReplicatedAccessToken {
 // should be thrown are replaced by std::exit.
 class NumaConfig {
    public:
+    enum class AffinitySetting {
+        AUTO,
+        SYSTEM,
+        HARDWARE,
+    };
+
     NumaConfig() :
         highestCpuIndex(0),
         customAffinity(false) {
@@ -472,8 +502,11 @@ class NumaConfig {
     // On Linux we read from standardized kernel sysfs, with a fallback to single NUMA
     // node. On Windows we utilize GetNumaProcessorNodeEx, which has its quirks, see
     // comment for Windows implementation of get_process_affinity.
-    static NumaConfig from_system([[maybe_unused]] bool respectProcessAffinity = true) {
+    static NumaConfig from_system(AffinitySetting affinitySetting = AffinitySetting::AUTO) {
         NumaConfig cfg = empty();
+
+        [[maybe_unused]] bool respectProcessAffinity =
+          affinitySetting == AffinitySetting::AUTO || affinitySetting == AffinitySetting::SYSTEM;
 
 #if defined(__linux__) && !defined(__ANDROID__)
 
@@ -540,6 +573,14 @@ class NumaConfig {
         }
 
 #elif defined(_WIN64)
+
+        // Since versions before Windows 11 we can't distinguish between affinity set by the user
+        // and the default os affinity, we ignore the affinity set by the user to use all threads by default.
+        if (respectProcessAffinity && affinitySetting == AffinitySetting::AUTO
+            && !isWindows11OrGreater())
+        {
+            respectProcessAffinity = false;
+        }
 
         std::optional<std::set<CpuIndex>> allowedCpus;
 

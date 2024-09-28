@@ -184,14 +184,18 @@ void Engine::set_position(const std::string& fen, const std::vector<std::string>
 // modifiers
 
 void Engine::set_numa_config_from_option(const std::string& o) {
-    if (o == "auto" || o == "system")
+    if (o == "auto")
     {
-        numaContext.set_numa_config(NumaConfig::from_system());
+        numaContext.set_numa_config(NumaConfig::from_system(NumaConfig::AffinitySetting::AUTO));
+    }
+    else if (o == "system")
+    {
+        numaContext.set_numa_config(NumaConfig::from_system(NumaConfig::AffinitySetting::SYSTEM));
     }
     else if (o == "hardware")
     {
         // Don't respect affinity set in the system.
-        numaContext.set_numa_config(NumaConfig::from_system(false));
+        numaContext.set_numa_config(NumaConfig::from_system(NumaConfig::AffinitySetting::HARDWARE));
     }
     else if (o == "none")
     {
