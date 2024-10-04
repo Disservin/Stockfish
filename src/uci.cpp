@@ -431,11 +431,10 @@ void UCIEngine::benchmark(std::istream& args) {
     if (threadBinding.empty())
         threadBinding = "none";
 
+    // clang-format off
+
     std::cerr << "==========================="
-              << "\nVersion                    : "
-              << engine_version_info()
-              // "\nCompiled by                : "
-              << compiler_info()
+              << "\nVersion                    : " << engine_version_info() << compiler_info()
               << "Large pages                : " << (has_large_pages() ? "yes" : "no")
               << "\nUser invocation            : " << BenchmarkCommand << " "
               << setup.originalInvocation << "\nFilled invocation          : " << BenchmarkCommand
@@ -452,6 +451,8 @@ void UCIEngine::benchmark(std::istream& args) {
               << "\nTotal nodes searched       : " << nodes
               << "\nTotal search time [s]      : " << totalTime / 1000.0
               << "\nNodes/second               : " << 1000 * nodes / totalTime << std::endl;
+
+    // clang-format on
 
     init_search_update_listeners();
 }
