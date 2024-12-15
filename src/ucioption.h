@@ -25,8 +25,10 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <variant>
 
 namespace Stockfish {
+
 // Define a custom comparator, because the UCI options should be case-insensitive
 struct CaseInsensitiveLess {
     bool operator()(const std::string&, const std::string&) const;
@@ -34,17 +36,38 @@ struct CaseInsensitiveLess {
 
 class OptionsMap;
 
+struct CheckOption {
+    bool value;
+};
+
+struct SpinOption {
+    int value;
+    int min;
+    int max;
+};
+
+struct ComboOption {
+    std::string value;
+    std::string defaultValue;
+};
+
+struct StringOption {
+    std::string value;
+};
+
+struct ButtonOption {};
+
 // The Option class implements each option as specified by the UCI protocol
 class Option {
    public:
+    using OptionValue =
+      std::variant<CheckOption, SpinOption, ComboOption, StringOption, ButtonOption>;
+
     using OnChange = std::function<std::optional<std::string>(const Option&)>;
 
+    Option(OnChange f = nullptr);
     Option(const OptionsMap*);
-    Option(OnChange = nullptr);
-    Option(bool v, OnChange = nullptr);
-    Option(const char* v, OnChange = nullptr);
-    Option(double v, int minv, int maxv, OnChange = nullptr);
-    Option(const char* v, const char* cur, OnChange = nullptr);
+    Option(const OptionValue& v, OnChange f = nullptr);
 
     Option& operator=(const std::string&);
     operator int() const;
@@ -59,13 +82,17 @@ class Option {
     friend class Engine;
     friend class Tune;
 
-    void operator<<(const Option&);
+    std::string get_type_string() const;
 
-    std::string       defaultValue, currentValue, type;
-    int               min, max;
-    size_t            idx;
+    void operator<<(const Option&);
+    void operator<<(const OptionValue&);
+
+    OptionValue       value;
+    size_t            idx = 0;
     OnChange          on_change;
     const OptionsMap* parent = nullptr;
+
+    static size_t insert_order;
 };
 
 class OptionsMap {

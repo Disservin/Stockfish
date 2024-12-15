@@ -29,6 +29,16 @@
 
 namespace Stockfish {
 
+template<typename... Ts>
+struct overload: Ts... {
+    using Ts::operator()...;
+};
+
+template<typename... Ts>
+overload(Ts...) -> overload<Ts...>;
+
+size_t Option::insert_order = 0;
+
 bool CaseInsensitiveLess::operator()(const std::string& s1, const std::string& s2) const {
 
     return std::lexicographical_compare(
@@ -70,74 +80,80 @@ Option& OptionsMap::operator[](const std::string& name) {
 
 std::size_t OptionsMap::count(const std::string& name) const { return options_map.count(name); }
 
+Option::Option(OnChange f) :
+    on_change(std::move(f)) {}
+
 Option::Option(const OptionsMap* map) :
     parent(map) {}
 
-Option::Option(const char* v, OnChange f) :
-    type("string"),
-    min(0),
-    max(0),
-    on_change(std::move(f)) {
-    defaultValue = currentValue = v;
-}
-
-Option::Option(bool v, OnChange f) :
-    type("check"),
-    min(0),
-    max(0),
-    on_change(std::move(f)) {
-    defaultValue = currentValue = (v ? "true" : "false");
-}
-
-Option::Option(OnChange f) :
-    type("button"),
-    min(0),
-    max(0),
+Option::Option(const OptionValue& v, OnChange f) :
+    value(v),
     on_change(std::move(f)) {}
 
-Option::Option(double v, int minv, int maxv, OnChange f) :
-    type("spin"),
-    min(minv),
-    max(maxv),
-    on_change(std::move(f)) {
-    defaultValue = currentValue = std::to_string(v);
-}
-
-Option::Option(const char* v, const char* cur, OnChange f) :
-    type("combo"),
-    min(0),
-    max(0),
-    on_change(std::move(f)) {
-    defaultValue = v;
-    currentValue = cur;
-}
-
 Option::operator int() const {
-    assert(type == "check" || type == "spin");
-    return (type == "spin" ? std::stoi(currentValue) : currentValue == "true");
+
+    if (const auto* check = std::get_if<CheckOption>(&value))
+        return check->value;
+
+    if (const auto* spin = std::get_if<SpinOption>(&value))
+        return spin->value;
+
+    assert(false);
+
+    return 0;
 }
 
 Option::operator std::string() const {
-    assert(type == "string");
-    return currentValue;
+
+    if (const auto* str = std::get_if<StringOption>(&value))
+        return str->value;
+
+    if (const auto* combo = std::get_if<ComboOption>(&value))
+        return combo->value;
+
+    assert(false);
+
+    return "";
 }
 
 bool Option::operator==(const char* s) const {
-    assert(type == "combo");
-    return !CaseInsensitiveLess()(currentValue, s) && !CaseInsensitiveLess()(s, currentValue);
+
+    const auto* combo = std::get_if<ComboOption>(&value);
+    assert(combo != nullptr);
+
+    return !CaseInsensitiveLess()(combo->value, s) && !CaseInsensitiveLess()(s, combo->value);
 }
 
 bool Option::operator!=(const char* s) const { return !(*this == s); }
+
+std::string Option::get_type_string() const {
+    const auto pattern = overload{
+      [](const CheckOption&) -> std::string { return "check"; },
+      [](const SpinOption&) -> std::string { return "spin"; },
+      [](const ComboOption&) -> std::string { return "combo"; },
+      [](const StringOption&) -> std::string { return "string"; },
+      [](const ButtonOption&) -> std::string { return "button"; }  //
+    };
+
+    return std::visit(pattern, value);
+}
 
 
 // Inits options and assigns idx in the correct printing order
 
 void Option::operator<<(const Option& o) {
 
-    static size_t insert_order = 0;
-
     auto p = this->parent;
     *this  = o;
+
+    this->parent = p;
+    idx          = insert_order++;
+}
+
+void Option::operator<<(const OptionValue& o) {
+
+    auto p      = this->parent;
+    this->value = o;
 
     this->parent = p;
     idx          = insert_order++;
@@ -148,33 +164,44 @@ void Option::operator<<(const Option& o) {
 // from the user by console window, so let's check the bounds anyway.
 Option& Option::operator=(const std::string& v) {
 
-    assert(!type.empty());
+    const auto pattern = overload{
+      [](ButtonOption&) {
+          // do nothing
+      },
+      [&v](CheckOption& opt) {
+          if (v != "true" && v != "false")
+              return;
 
-    if ((type != "button" && type != "string" && v.empty())
-        || (type == "check" && v != "true" && v != "false")
-        || (type == "spin" && (std::stof(v) < min || std::stof(v) > max)))
-        return *this;
+          opt.value = (v == "true");
+      },
+      [&v](SpinOption& opt) {
+          int new_value = std::stoi(v);
 
-    if (type == "combo")
-    {
-        OptionsMap         comboMap;  // To have case insensitive compare
-        std::string        token;
-        std::istringstream ss(defaultValue);
-        while (ss >> token)
-            comboMap[token] << Option();
-        if (!comboMap.count(v) || v == "var")
-            return *this;
-    }
+          if (new_value < opt.min || new_value > opt.max)
+              return;
 
-    if (type == "string")
-        currentValue = v == "<empty>" ? "" : v;
-    else if (type != "button")
-        currentValue = v;
+          opt.value = new_value;
+      },
+      [&v](ComboOption& opt) {
+          OptionsMap         comboMap;  // To have case insensitive compare
+          std::string        token;
+          std::istringstream ss(opt.defaultValue);
+
+          while (ss >> token)
+              comboMap[token] << Option();
+          if (!comboMap.count(v) || v == "var")
+              return;
+
+          opt.value = v;
+      },
+      [&v](StringOption& opt) { opt.value = v == "<empty>" ? "" : v; }  //
+    };
+
+    std::visit(pattern, value);
 
     if (on_change)
     {
         const auto ret = on_change(*this);
-
         if (ret && parent != nullptr && parent->info != nullptr)
             parent->info(ret);
     }
@@ -183,28 +210,39 @@ Option& Option::operator=(const std::string& v) {
 }
 
 std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
+
     for (size_t idx = 0; idx < om.options_map.size(); ++idx)
-        for (const auto& it : om.options_map)
-            if (it.second.idx == idx)
-            {
-                const Option& o = it.second;
-                os << "\noption name " << it.first << " type " << o.type;
+    {
+        for (const auto& [name, option] : om.options_map)
+        {
+            if (option.idx != idx)
+                continue;
 
-                if (o.type == "check" || o.type == "combo")
-                    os << " default " << o.defaultValue;
+            os << "\noption name " << name << " type " << option.get_type_string();
 
-                else if (o.type == "string")
-                {
-                    std::string defaultValue = o.defaultValue.empty() ? "<empty>" : o.defaultValue;
-                    os << " default " << defaultValue;
-                }
+            const auto pattern = overload{
+              [&os](const CheckOption& opt) {
+                  os << " default " << (opt.value ? "true" : "false");
+              },
+              [&os](const SpinOption& opt) {
+                  os << " default " << opt.value << " min " << opt.min << " max " << opt.max;
+              },
+              [&os](const ComboOption& opt) {  //
+                  os << " default " << opt.value;
+              },
+              [&os](const StringOption& opt) {
+                  os << " default " << (opt.value.empty() ? "<empty>" : opt.value);
+              },
+              [](const ButtonOption&) {
+                  // do nothing
+              }  //
+            };
 
-                else if (o.type == "spin")
-                    os << " default " << int(stof(o.defaultValue)) << " min " << o.min << " max "
-                       << o.max;
+            std::visit(pattern, option.value);
 
-                break;
-            }
+            break;
+        }
+    }
 
     return os;
 }

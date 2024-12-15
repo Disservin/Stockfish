@@ -60,57 +60,57 @@ Engine::Engine(std::optional<std::string> path) :
     pos.set(StartFEN, false, &states->back());
     capSq = SQ_NONE;
 
-    options["Debug Log File"] << Option("", [](const Option& o) {
+    options["Debug Log File"] << Option(StringOption{""}, [](const Option& o) {
         start_logger(o);
         return std::nullopt;
     });
 
-    options["NumaPolicy"] << Option("auto", [this](const Option& o) {
+    options["NumaPolicy"] << Option(StringOption{"auto"}, [this](const Option& o) {
         set_numa_config_from_option(o);
         return numa_config_information_as_string() + "\n"
              + thread_allocation_information_as_string();
     });
 
-    options["Threads"] << Option(1, 1, 1024, [this](const Option&) {
+    options["Threads"] << Option(SpinOption{1, 1, 1024}, [this](const Option&) {
         resize_threads();
         return thread_allocation_information_as_string();
     });
 
-    options["Hash"] << Option(16, 1, MaxHashMB, [this](const Option& o) {
+    options["Hash"] << Option(SpinOption{16, 1, MaxHashMB}, [this](const Option& o) {
         set_tt_size(o);
         return std::nullopt;
     });
 
-    options["Clear Hash"] << Option([this](const Option&) {
+    options["Clear Hash"] << Option(ButtonOption{}, [this](const Option&) {
         search_clear();
         return std::nullopt;
     });
-    options["Ponder"] << Option(false);
-    options["MultiPV"] << Option(1, 1, MAX_MOVES);
-    options["Skill Level"] << Option(20, 0, 20);
-    options["Move Overhead"] << Option(10, 0, 5000);
-    options["nodestime"] << Option(0, 0, 10000);
-    options["UCI_Chess960"] << Option(false);
-    options["UCI_LimitStrength"] << Option(false);
-    options["UCI_Elo"] << Option(Stockfish::Search::Skill::LowestElo,
-                                 Stockfish::Search::Skill::LowestElo,
-                                 Stockfish::Search::Skill::HighestElo);
-    options["UCI_ShowWDL"] << Option(false);
-    options["SyzygyPath"] << Option("", [](const Option& o) {
+    options["Ponder"] << CheckOption{false};
+    options["MultiPV"] << SpinOption{1, 1, MAX_MOVES};
+    options["Skill Level"] << SpinOption{20, 0, 20};
+    options["Move Overhead"] << SpinOption{10, 0, 5000};
+    options["nodestime"] << SpinOption{0, 0, 10000};
+    options["UCI_Chess960"] << CheckOption{false};
+    options["UCI_LimitStrength"] << CheckOption{false};
+    options["UCI_Elo"] << SpinOption{Search::Skill::LowestElo, Search::Skill::LowestElo,
+                                     Search::Skill::HighestElo};
+    options["UCI_ShowWDL"] << CheckOption{false};
+    options["SyzygyPath"] << Option(StringOption{""}, [](const Option& o) {
         Tablebases::init(o);
         return std::nullopt;
     });
-    options["SyzygyProbeDepth"] << Option(1, 1, 100);
-    options["Syzygy50MoveRule"] << Option(true);
-    options["SyzygyProbeLimit"] << Option(7, 0, 7);
-    options["EvalFile"] << Option(EvalFileDefaultNameBig, [this](const Option& o) {
+    options["SyzygyProbeDepth"] << SpinOption{1, 1, 100};
+    options["Syzygy50MoveRule"] << CheckOption{true};
+    options["SyzygyProbeLimit"] << SpinOption{7, 0, 7};
+    options["EvalFile"] << Option(StringOption{EvalFileDefaultNameBig}, [this](const Option& o) {
         load_big_network(o);
         return std::nullopt;
     });
-    options["EvalFileSmall"] << Option(EvalFileDefaultNameSmall, [this](const Option& o) {
-        load_small_network(o);
-        return std::nullopt;
-    });
+    options["EvalFileSmall"] << Option(  //
+      StringOption{EvalFileDefaultNameSmall}, [this](const Option& o) {
+          load_small_network(o);
+          return std::nullopt;
+      });
 
     load_networks();
     resize_threads();
