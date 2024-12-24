@@ -246,6 +246,7 @@ class SearchManager: public ISearchManager {
     Value                bestPreviousScore;
     Value                bestPreviousAverageScore;
     bool                 stopOnPonderhit;
+    std::size_t          lastNPS = 0;
 
     size_t id;
 

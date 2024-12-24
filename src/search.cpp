@@ -466,6 +466,21 @@ void Search::Worker::iterative_deepening() {
                 && !mainThread->ponder)
                 threads.stop = true;
 
+            // calculate branching factor on the fly?
+            std::size_t nodesNextIteration = std::exp((rootDepth + 1) * std::log(1.8));
+
+            if (nodesNextIteration > nodes)
+            {
+                std::size_t nodesLeftToSearch = nodesNextIteration - nodes;
+
+                auto timeLeft = std::max(0.0, totalTime - elapsedTime);
+
+                std::size_t expectedNodesForSearch = main_manager()->lastNPS * timeLeft / 1000;
+
+                if (nodesLeftToSearch > expectedNodesForSearch)
+                    threads.stop = true;
+            }
+
             // Stop the search if we have exceeded the totalTime
             if (elapsedTime > totalTime)
             {
@@ -2141,6 +2156,8 @@ void SearchManager::pv(Search::Worker&           worker,
         info.hashfull  = tt.hashfull();
 
         updates.onUpdateFull(info);
+
+        lastNPS = info.nps;
     }
 }
 
