@@ -467,7 +467,7 @@ void Search::Worker::iterative_deepening() {
                 threads.stop = true;
 
             // calculate branching factor on the fly?
-            std::size_t nodesNextIteration = std::exp((rootDepth + 1) * std::log(1.9));
+            std::size_t nodesNextIteration = std::exp((rootDepth + 1) * std::log(1.7));
 
             if (nodesNextIteration > nodes)
             {
