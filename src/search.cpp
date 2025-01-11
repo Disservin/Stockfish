@@ -52,10 +52,10 @@
 
 namespace Stockfish {
 
-int A = 1834;
-int B = 1024;
+int A = 3686;
+int B = 2048;
 
-TUNE(SetRange(1792, 1894), A);
+TUNE(SetRange(3584, 3789), A);
 
 namespace TB = Tablebases;
 
