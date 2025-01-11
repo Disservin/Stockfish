@@ -52,6 +52,11 @@
 
 namespace Stockfish {
 
+int A = 116;
+int B = 64;
+
+TUNE(A);
+
 namespace TB = Tablebases;
 
 void syzygy_extend_pv(const OptionsMap&            options,
@@ -467,7 +472,7 @@ void Search::Worker::iterative_deepening() {
                 threads.stop = true;
 
             // calculate branching factor on the fly?
-            std::size_t nodesNextIteration = std::exp((rootDepth + 1) * std::log(1.9));
+            std::size_t nodesNextIteration = std::exp((rootDepth + 1) * std::log(A / double(B)));
 
             if (nodesNextIteration > nodes)
             {
