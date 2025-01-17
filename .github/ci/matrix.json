@@ -11,6 +11,15 @@
       "sde": "/home/runner/work/Stockfish/Stockfish/.output/sde-temp-files/sde-external-9.27.0-2023-09-13-lin/sde -future --"
     },
     {
+      "name": "Ubuntu 22.04 ARM GCC",
+      "os": "ubuntu-22.04-arm",
+      "simple_name": "ubuntu_arm",
+      "compiler": "g++",
+      "comp": "gcc",
+      "shell": "bash",
+      "archive_ext": "tar"
+    },
+    {
       "name": "MacOS 13 Apple Clang",
       "os": "macos-13",
       "simple_name": "macos",
@@ -51,7 +60,9 @@
     "x86-64-avx512",
     "x86-64-vnni256",
     "x86-64-vnni512",
-    "apple-silicon"
+    "apple-silicon",
+    "arm8",
+    "arm8-dotprod"
   ],
   "exclude": [
     {
@@ -109,9 +120,15 @@
       }
     },
     {
-      "binaries": "x86-64-avxvnni",
+      "binaries": "arm8",
       "config": {
-        "ubuntu-22.04": null
+        "os": "macos-14"
+      }
+    },
+    {
+      "binaries": "arm8-dotprod",
+      "config": {
+        "os": "macos-14"
       }
     },
     {
@@ -141,11 +158,17 @@
     {
       "binaries": "apple-silicon",
       "config": {
-        "os": "windows-2022"
+        "os": "macos-13"
       }
     },
     {
-      "binaries": "apple-silicon",
+      "binaries": "arm8",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "arm8-dotprod",
       "config": {
         "os": "macos-13"
       }
@@ -153,7 +176,97 @@
     {
       "binaries": "apple-silicon",
       "config": {
+        "os": "windows-2022"
+      }
+    },
+    {
+      "binaries": "arm8",
+      "config": {
+        "os": "windows-2022"
+      }
+    },
+    {
+      "binaries": "arm8-dotprod",
+      "config": {
+        "os": "windows-2022"
+      }
+    },
+    {
+      "binaries": "apple-silicon",
+      "config": {
         "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "x86-64-avxvnni",
+      "config": {
+        "ubuntu-22.04": null
+      }
+    },
+    {
+      "binaries": "arm8",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "arm8-dotprod",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "x86-64",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avx2",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avx512",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avxvnni",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-bmi2",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-sse41-popcnt",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni256",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni512",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "apple-silicon",
+      "config": {
+        "os": "ubuntu-22.04-arm"
       }
     }
   ]
