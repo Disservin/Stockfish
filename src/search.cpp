@@ -252,7 +252,7 @@ void Search::Worker::start_searching() {
 void Search::Worker::iterative_deepening() {
 
     SearchManager* mainThread = (is_mainthread() ? main_manager() : nullptr);
-    const auto     pvs        = multiPV();
+    const auto     multiPvs   = multiPV();
 
     Move pv[MAX_PLY + 1];
 
@@ -325,7 +325,7 @@ void Search::Worker::iterative_deepening() {
             searchAgainCounter++;
 
         // MultiPV loop. We perform a full root search for each PV line
-        for (pvIdx = 0; pvIdx < pvs; ++pvIdx)
+        for (pvIdx = 0; pvIdx < multiPvs; ++pvIdx)
         {
             if (pvIdx == pvLast)
             {
@@ -377,7 +377,7 @@ void Search::Worker::iterative_deepening() {
                 // When failing high/low give some update before a re-search. To avoid
                 // excessive output that could hang GUIs like Fritz 19, only start
                 // at nodes > 10M (rather than depth N, which can be reached quickly)
-                if (mainThread && pvs == 1 && (bestValue <= alpha || bestValue >= beta)
+                if (mainThread && multiPvs == 1 && (bestValue <= alpha || bestValue >= beta)
                     && nodes > 10000000)
                     main_manager()->pv(*this, threads, tt, rootDepth);
 
@@ -410,7 +410,7 @@ void Search::Worker::iterative_deepening() {
             std::stable_sort(rootMoves.begin() + pvFirst, rootMoves.begin() + pvIdx + 1);
 
             if (mainThread
-                && (threads.stop || pvIdx + 1 == pvs || nodes > 10000000)
+                && (threads.stop || pvIdx + 1 == multiPvs || nodes > 10000000)
                 // A thread that aborted search can have mated-in/TB-loss PV and
                 // score that cannot be trusted, i.e. it can be delayed or refuted
                 // if we would have had time to fully search other root-moves. Thus
@@ -452,7 +452,7 @@ void Search::Worker::iterative_deepening() {
 
         // If the skill level is enabled and time is up, pick a sub-optimal best move
         if (skill.enabled() && skill.time_to_pick(rootDepth))
-            skill.pick_best(rootMoves, pvs);
+            skill.pick_best(rootMoves, multiPvs);
 
         // Use part of the gained time from a previous stable move for the current move
         for (auto&& th : threads)
@@ -516,7 +516,7 @@ void Search::Worker::iterative_deepening() {
 
     // If the skill level is enabled, swap the best PV line with the sub-optimal one
     if (skill.enabled())
-        rootMoves.swap_bestmove(skill.best ? skill.best : skill.pick_best(rootMoves, pvs));
+        rootMoves.swap_bestmove(skill.best ? skill.best : skill.pick_best(rootMoves, multiPvs));
 }
 
 // Reset histories, usually before a new game
