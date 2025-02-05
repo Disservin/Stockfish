@@ -31,7 +31,7 @@ using Depth = int;
 
 namespace Search {
 struct RootMove;
-using RootMoves = std::vector<RootMove>;
+class RootMoves;
 }
 }
 

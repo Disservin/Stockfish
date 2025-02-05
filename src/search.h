@@ -83,7 +83,7 @@ struct Stack {
 // we store a score and a PV (really a refutation in the case of moves which
 // fail low). Score is normally set at -VALUE_INFINITE for all non-pv moves.
 struct RootMove {
-
+    RootMove() = default;
     explicit RootMove(Move m) :
         pv(1, m) {}
     bool extract_ponder_from_tt(const TranspositionTable& tt, Position& pos);
@@ -107,8 +107,61 @@ struct RootMove {
     std::vector<Move> pv;
 };
 
-using RootMoves = std::vector<RootMove>;
+class RootMoves {
+   private:
+    std::vector<RootMove> moves;
 
+   public:
+    RootMoves() = default;
+
+    RootMove&       operator[](size_t index) { return moves[index]; }
+    const RootMove& operator[](size_t index) const { return moves[index]; }
+
+    bool   empty() const { return moves.empty(); }
+    size_t size() const { return moves.size(); }
+
+    template<typename... Args>
+    RootMove& emplace_back(Args&&... args) {
+        return moves.emplace_back(std::forward<Args>(args)...);
+    }
+
+    auto begin() { return moves.begin(); }
+    auto end() { return moves.end(); }
+    auto begin() const { return moves.begin(); }
+    auto end() const { return moves.end(); }
+
+    void resize(size_t new_size) { moves.resize(new_size); }
+
+    template<typename T>
+    void move_to_front(const T& target) {
+        Utility::move_to_front(moves, [&target](const auto& rm) { return rm == target; });
+    }
+
+    const auto& bestmove() const { return moves[0].pv[0]; }
+    const auto& ponder() const { return moves[0].pv[1]; }
+
+    auto has_ponder() const { return moves[0].pv.size() > 1; }
+
+    bool mate_in(int x) const {
+        if (!x || moves[0].score != moves[0].uciScore)
+            return false;
+
+        auto score           = moves[0].score;
+        auto mating_distance = 2 * x;
+
+        bool give_mate = score >= VALUE_MATE_IN_MAX_PLY && VALUE_MATE - score <= mating_distance;
+        bool get_mated = score != -VALUE_INFINITE && score <= VALUE_MATED_IN_MAX_PLY
+                      && VALUE_MATE + score <= mating_distance;
+
+        return give_mate || get_mated;
+    }
+
+    void swap_bestmove(Move m) { std::swap(moves[0], *std::find(moves.begin(), moves.end(), m)); }
+
+    bool includes(Move m, int pvIdx, int pvLast) const {
+        return std::count(moves.begin() + pvIdx, moves.begin() + pvLast, m);
+    }
+};
 
 // LimitsType struct stores information sent by the caller about the analysis required.
 struct LimitsType {
@@ -193,8 +246,9 @@ struct Skill {
     // Lowest and highest Elo ratings used in the skill level calculation
     constexpr static int LowestElo  = 1320;
     constexpr static int HighestElo = 3190;
+    constexpr static int MaxSkill   = 20;
 
-    Skill(int skill_level, int uci_elo) {
+    Skill(int skill_level = MaxSkill, int uci_elo = 0) {
         if (uci_elo)
         {
             double e = double(uci_elo - LowestElo) / (HighestElo - LowestElo);
@@ -203,7 +257,7 @@ struct Skill {
         else
             level = double(skill_level);
     }
-    bool enabled() const { return level < 20.0; }
+    bool enabled() const { return level < MaxSkill; }
     bool time_to_pick(Depth depth) const { return depth == 1 + int(level); }
     Move pick_best(const RootMoves&, size_t multiPV);
 
@@ -292,6 +346,10 @@ class Worker {
     CorrectionHistory<NonPawn>      nonPawnCorrectionHistory[COLOR_NB];
     CorrectionHistory<Continuation> continuationCorrectionHistory;
 
+    auto& pawn_his(const Position& pos, Square sq) {
+        return pawnHistory[pawn_structure_index(pos)][pos.piece_on(sq)][sq];
+    }
+
    private:
     void iterative_deepening();
 
@@ -316,6 +374,9 @@ class Worker {
 
     Value evaluate(const Position&);
 
+    std::size_t multiPV() const;
+
+    Skill      skill;
     LimitsType limits;
 
     size_t                pvIdx, pvLast;
