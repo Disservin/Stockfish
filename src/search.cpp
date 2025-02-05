@@ -1745,7 +1745,6 @@ Value Search::Worker::evaluate(const Position& pos) {
 }
 
 std::size_t Search::Worker::multiPV() const {
-    // std::size_t pvs = int(options["MultiPV"])
     size_t pvs = size_t(options["MultiPV"]);
 
     // When playing with strength handicap enable MultiPV search that we will
