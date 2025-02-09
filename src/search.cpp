@@ -246,8 +246,7 @@ void Search::Worker::start_searching() {
     auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[0], rootPos.is_chess960());
 
     if (nodes > 100000) {
-        auto bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
-
+        bestmove = UCIEngine::move(bestThread->rootMoves[0].pv[1], rootPos.is_chess960());
     }
 
     main_manager()->updates.onBestmove(bestmove, ponder);
