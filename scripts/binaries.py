@@ -68,7 +68,6 @@ def generate_build_matrix():
         "x86-64-vnni512",
         "apple-silicon",
         "armv7",
-        "armv7-neon",
         "armv8",
         "armv8-dotprod",
     ]

@@ -75,6 +75,9 @@ jobs:
 
       - name: Compile ${{ matrix.config.binaries }} build
         run: |
+          if [[ "${{ matrix.config.os }}" == *"arm"* ]]; then
+            export LDFLAGS="-static"
+          fi
           make clean
           make -j4 profile-build ARCH=$BINARY COMP=$COMP WINE_PATH="$SDE"
           make strip ARCH=$BINARY COMP=$COMP
@@ -89,6 +92,6 @@ jobs:
         with:
           name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output

@@ -62,7 +62,6 @@
     "x86-64-vnni512",
     "apple-silicon",
     "armv7",
-    "armv7-neon",
     "armv8",
     "armv8-dotprod"
   ],
@@ -86,12 +85,6 @@
       }
     },
     {
-      "binaries": "armv7-neon",
-      "config": {
-        "os": "ubuntu-22.04"
-      }
-    },
-    {
       "binaries": "armv8",
       "config": {
         "os": "ubuntu-22.04"
@@ -194,12 +187,6 @@
       }
     },
     {
-      "binaries": "armv7-neon",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
       "binaries": "armv8",
       "config": {
         "os": "macos-13"
@@ -266,12 +253,6 @@
       }
     },
     {
-      "binaries": "armv7-neon",
-      "config": {
-        "os": "macos-14"
-      }
-    },
-    {
       "binaries": "armv8",
       "config": {
         "os": "macos-14"
@@ -291,12 +272,6 @@
     },
     {
       "binaries": "armv7",
-      "config": {
-        "os": "windows-2022"
-      }
-    },
-    {
-      "binaries": "armv7-neon",
       "config": {
         "os": "windows-2022"
       }
