@@ -75,7 +75,7 @@ jobs:
 
       - name: Compile ${{ matrix.config.binaries }} build
         run: |
-          if [[ "${{ matrix.config.os }}" == *"arm"* ]]; then
+          if [[ "${{ matrix.config.os }}" == "ubuntu-22.04-arm" ]]; then
             export LDFLAGS="-static"
           fi
           make clean
