@@ -61,8 +61,8 @@
     "x86-64-vnni256",
     "x86-64-vnni512",
     "apple-silicon",
-    "arm8",
-    "arm8-dotprod"
+    "armv8",
+    "armv8-dotprod"
   ],
   "exclude": [
     {
