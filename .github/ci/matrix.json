@@ -66,6 +66,126 @@
   ],
   "exclude": [
     {
+      "binaries": "x86-64-avxvnni",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "apple-silicon",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "armv8",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "armv8-dotprod",
+      "config": {
+        "os": "ubuntu-22.04"
+      }
+    },
+    {
+      "binaries": "x86-64",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-sse41-popcnt",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avx2",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-bmi2",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avxvnni",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avx512",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni256",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni512",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "apple-silicon",
+      "config": {
+        "os": "ubuntu-22.04-arm"
+      }
+    },
+    {
+      "binaries": "x86-64-avxvnni",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "x86-64-avx512",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni256",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "x86-64-vnni512",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "apple-silicon",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "armv8",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
+      "binaries": "armv8-dotprod",
+      "config": {
+        "os": "macos-13"
+      }
+    },
+    {
       "binaries": "x86-64",
       "config": {
         "os": "macos-14"
@@ -96,12 +216,6 @@
       }
     },
     {
-      "binaries": "x86-64-avxvnni",
-      "config": {
-        "os": "macos-14"
-      }
-    },
-    {
       "binaries": "x86-64-avx512",
       "config": {
         "os": "macos-14"
@@ -120,153 +234,33 @@
       }
     },
     {
-      "binaries": "arm8",
+      "binaries": "armv8",
       "config": {
         "os": "macos-14"
       }
     },
     {
-      "binaries": "arm8-dotprod",
+      "binaries": "armv8-dotprod",
       "config": {
         "os": "macos-14"
       }
     },
     {
-      "binaries": "x86-64-avxvnni",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "x86-64-avx512",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "x86-64-vnni256",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "x86-64-vnni512",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "apple-silicon",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "arm8",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
-      "binaries": "arm8-dotprod",
-      "config": {
-        "os": "macos-13"
-      }
-    },
-    {
       "binaries": "apple-silicon",
       "config": {
         "os": "windows-2022"
       }
     },
     {
-      "binaries": "arm8",
+      "binaries": "armv8",
       "config": {
         "os": "windows-2022"
       }
     },
     {
-      "binaries": "arm8-dotprod",
+      "binaries": "armv8-dotprod",
       "config": {
         "os": "windows-2022"
-      }
-    },
-    {
-      "binaries": "apple-silicon",
-      "config": {
-        "os": "ubuntu-22.04"
-      }
-    },
-    {
-      "binaries": "x86-64-avxvnni",
-      "config": {
-        "ubuntu-22.04": null
-      }
-    },
-    {
-      "binaries": "arm8",
-      "config": {
-        "os": "ubuntu-22.04"
-      }
-    },
-    {
-      "binaries": "arm8-dotprod",
-      "config": {
-        "os": "ubuntu-22.04"
-      }
-    },
-    {
-      "binaries": "x86-64",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-avx2",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-avx512",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-avxvnni",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-bmi2",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-sse41-popcnt",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-vnni256",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "x86-64-vnni512",
-      "config": {
-        "os": "ubuntu-22.04-arm"
-      }
-    },
-    {
-      "binaries": "apple-silicon",
-      "config": {
-        "os": "ubuntu-22.04-arm"
       }
     }
   ]
