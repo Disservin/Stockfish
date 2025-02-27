@@ -89,6 +89,6 @@ jobs:
         with:
           name: ${{ matrix.config.simple_name }} ${{ matrix.binaries }}
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output
