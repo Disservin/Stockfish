@@ -81,7 +81,6 @@ def generate_build_matrix():
             "x86-64-avx512",
             "x86-64-vnni256",
             "x86-64-vnni512",
-            # Note: x86-64-avxvnni removed as it was causing issues
         ],
         "ubuntu-22.04-arm": ["armv7", "armv7-neon", "armv8", "armv8-dotprod"],
         "macos-13": ["x86-64", "x86-64-sse41-popcnt", "x86-64-avx2", "x86-64-bmi2"],
