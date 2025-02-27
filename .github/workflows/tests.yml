@@ -118,7 +118,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install expect valgrind qemu-user-static
+          sudo apt install -y expect valgrind qemu-user-static build-essential libstdc++-dev
 
       - name: Install NDK
         if: runner.os == 'Linux' && matrix.config.comp == 'ndk'
