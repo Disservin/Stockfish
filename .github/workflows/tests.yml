@@ -118,7 +118,12 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y expect valgrind qemu-user-static build-essential libstdc++-11-dev
+          sudo apt install -y expect valgrind qemu-user-static
+
+      - name: Download additional packages
+        if: runner.os == 'Linux' && matrix.config.os != 'ubuntu-22.04-arm'
+        run: |
+          sudo apt install -y g++-multilib
 
       - name: Install NDK
         if: runner.os == 'Linux' && matrix.config.comp == 'ndk'
