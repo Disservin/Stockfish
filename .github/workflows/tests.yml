@@ -27,6 +27,13 @@ jobs:
             run_32bit_tests: true
             run_64bit_tests: true
             shell: bash
+          - name: Ubuntu 22.04 ARM GCC
+            os: ubuntu-22.04-arm
+            compiler: g++
+            comp: gcc
+            run_32bit_tests: true
+            run_64bit_tests: true
+            shell: bash
           - name: Android NDK aarch64
             os: ubuntu-22.04
             compiler: aarch64-linux-android21-clang++
