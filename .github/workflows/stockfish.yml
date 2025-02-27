@@ -87,7 +87,7 @@ jobs:
       matrix: ${{ needs.Matrix.outputs.matrix }}
   AndroidCompilation:
     needs: [Matrix]
-    uses: ./.github/workflows/arm_compilation.yml
+    uses: ./.github/workflows/android_compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.android_matrix }}
   IWYU:
