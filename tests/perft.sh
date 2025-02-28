@@ -17,8 +17,8 @@ EXPECT_SCRIPT=$(mktemp)
 cat << 'EOF' > $EXPECT_SCRIPT
 #!/usr/bin/expect -f
 set timeout 30
-log_file -noappend [lindex $argv 3]
-lassign [lrange $argv 0 3] pos depth result chess960
+lassign [lrange $argv 0 4] pos depth result chess960 logfile
+log_file -noappend $logfile
 spawn ./stockfish
 if {$chess960 == "true"} {
   send "setoption name UCI_Chess960 value true\n"
