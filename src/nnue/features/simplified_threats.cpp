@@ -27,7 +27,6 @@
 namespace Stockfish::Eval::NNUE::Features {
 //lookup array for indexing threats
 void Simplified_Threats::init_threat_offsets() {
-    indices.reserve(16);
     int pieceoffset = 0;
     PieceType piecetbl[PIECE_NB] = {NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE_TYPE,
     NO_PIECE_TYPE, PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE_TYPE};
@@ -76,6 +75,8 @@ void Simplified_Threats::append_active_threats(const Bitboard *colorBB, const Bi
     Square ksq = lsb(colorBB[Perspective] & pieceBB[KING]);
     Color order[2][2] = {{WHITE, BLACK}, {BLACK, WHITE}};
     Bitboard occupied = colorBB[WHITE] | colorBB[BLACK];
+    IndexList indices;
+
     for (int i = WHITE; i <= BLACK; i++) {
         for (int j = PAWN; j <= KING; j++) {
             Color c = order[Perspective][i];
@@ -105,6 +106,8 @@ template<Color Perspective>
 void Simplified_Threats::append_active_psq(const Bitboard *colorBB, const Bitboard *pieceBB, const Piece *board, IndexList& active) {
     Square ksq = lsb(colorBB[Perspective] & pieceBB[KING]);
     Color order[2][2] = {{WHITE, BLACK}, {BLACK, WHITE}};
+    IndexList indices;
+
     for (int i = WHITE; i <= BLACK; i++) {
         for (int j = PAWN; j <= KING; j++) {
             Color c = order[Perspective][i];
@@ -130,6 +133,7 @@ void Simplified_Threats::append_active_features(const Bitboard *colorBB, const B
     Square ksq = lsb(colorBB[Perspective] & pieceBB[KING]);
     Color order[2][2] = {{WHITE, BLACK}, {BLACK, WHITE}};
     Bitboard occupied = colorBB[WHITE] | colorBB[BLACK];
+    IndexList indices;
     for (int i = WHITE; i <= BLACK; i++) {
         for (int j = PAWN; j <= KING; j++) {
             Color c = order[Perspective][i];

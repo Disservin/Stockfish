@@ -105,7 +105,6 @@ class Simplified_Threats {
     using IndexList                                = ValueList<IndexType, MaxActiveDimensions>;
 
     //Use this for storing intermediate features
-    std::vector<IndexType> indices;
 
 
     Simplified_Threats() { init_threat_offsets(); };
