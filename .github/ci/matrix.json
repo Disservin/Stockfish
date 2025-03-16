@@ -22,7 +22,7 @@
     {
       "name": "MacOS 14 Apple Clang M1",
       "os": "macos-14",
-      "simple_name": "macos-m1",
+      "simple_name": "macos",
       "compiler": "clang++",
       "comp": "clang",
       "shell": "bash",
