@@ -49,7 +49,7 @@ PREFIX = /usr/local
 BINDIR = $(PREFIX)/bin
 
 ### Built-in benchmark for pgo-builds
-PGOBENCH = $(WINE_PATH) ./$(EXE) bench
+PGOBENCH = $(WINE_PATH) ./$(EXE) speedtest 1 16 20
 
 ### Source and object files
 SRCS = benchmark.cpp bitboard.cpp evaluate.cpp main.cpp \
@@ -626,7 +626,7 @@ endif
 ### 3.3 Optimization
 ifeq ($(optimize),yes)
 
-	CXXFLAGS += -O3 -funroll-loops
+	CXXFLAGS += -O3 -funroll-loops -g3
 
 	ifeq ($(comp),gcc)
 		ifeq ($(OS), Android)
