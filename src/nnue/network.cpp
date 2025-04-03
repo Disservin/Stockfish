@@ -21,9 +21,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <memory>
 #include <optional>
-#include <type_traits>
 #include <vector>
 
 #define INCBIN_SILENCE_BITCODE_WARNING

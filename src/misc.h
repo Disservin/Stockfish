@@ -30,6 +30,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <vector>
 
 #define stringify2(x) #x
@@ -141,8 +142,8 @@ class ValueList {
 };
 
 
-template<typename T, std::size_t Size, std::size_t... Sizes>
-class MultiArray;
+// template<typename T, std::size_t Size, std::size_t... Sizes>
+// class MultiArray;
 
 namespace Detail {
 

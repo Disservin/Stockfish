@@ -22,6 +22,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <optional>
 #include <sstream>
