@@ -26,15 +26,15 @@ jobs:
 
       - name: Download required linux packages
         run: |
-          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-17 main'
+          sudo add-apt-repository 'deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-20 main'
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
           sudo apt update
-          sudo apt install -y libclang-17-dev clang-17 libc++-17-dev
+          sudo apt install -y libclang-20-dev clang-20 libc++-20-dev
 
       - name: Set up include-what-you-use
         run: |
           mkdir build && cd build
-          cmake -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="/usr/lib/llvm-17" ..
+          cmake -G "Unix Makefiles" -DCMAKE_PREFIX_PATH="/usr/lib/llvm-20" ..
           sudo make install
         working-directory: include-what-you-use
 
