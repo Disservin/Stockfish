@@ -92,7 +92,7 @@ class Network {
     bool write_parameters(std::ostream&, const std::string&) const;
 
     // Input feature converter
-    LargePagePtr<Transformer> featureTransformer;
+    std::unique_ptr<Transformer> featureTransformer;
 
     // Evaluation function
     AlignedPtr<Arch[]> network;
