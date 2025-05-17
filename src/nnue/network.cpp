@@ -26,6 +26,7 @@
 #include <type_traits>
 #include <vector>
 
+
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "../incbin/incbin.h"
 
@@ -34,6 +35,8 @@
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
+#include "layers/affine_transform.h"
+#include "layers/affine_transform_sparse_input.h"
 #include "nnue_architecture.h"
 #include "nnue_common.h"
 #include "nnue_misc.h"
@@ -80,11 +83,17 @@ EmbeddedNNUE get_embedded(EmbeddedNNUEType type) {
         return EmbeddedNNUE(gEmbeddedNNUESmallData, gEmbeddedNNUESmallEnd, gEmbeddedNNUESmallSize);
 }
 
+
 }
 
 
 namespace Stockfish::Eval::NNUE {
 
+
+namespace {
+SharedMemoryManager<char> managers[2];
+
+}
 
 namespace Detail {
 
@@ -101,7 +110,7 @@ bool read_parameters(std::istream& stream, T& reference) {
 
 // Write evaluation function parameters
 template<typename T>
-bool write_parameters(std::ostream& stream, T& reference) {
+bool write_parameters(std::ostream& stream, const T& reference) {
 
     write_little_endian<std::uint32_t>(stream, T::get_hash_value());
     return reference.write_parameters(stream);
@@ -114,13 +123,15 @@ Network<Arch, Transformer>::Network(const Network<Arch, Transformer>& other) :
     evalFile(other.evalFile),
     embeddedType(other.embeddedType) {
 
-    if (other.featureTransformer)
-        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+    // if (other.featureTransformer)
+    featureTransformer = other.featureTransformer;
+    // featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
 
-    network = make_unique_aligned<Arch[]>(LayerStacks);
+    // network = make_unique_aligned<Arch[]>(LayerStacks);
 
-    if (!other.network)
-        return;
+
+    // if (!other.network)
+    //     return;
 
     for (std::size_t i = 0; i < LayerStacks; ++i)
         network[i] = other.network[i];
@@ -132,13 +143,14 @@ Network<Arch, Transformer>::operator=(const Network<Arch, Transformer>& other) {
     evalFile     = other.evalFile;
     embeddedType = other.embeddedType;
 
-    if (other.featureTransformer)
-        featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
+    // if (other.featureTransformer)
+    featureTransformer = other.featureTransformer;
+    // featureTransformer = make_unique_large_page<Transformer>(*other.featureTransformer);
 
-    network = make_unique_aligned<Arch[]>(LayerStacks);
+    // network = make_unique_aligned<Arch[]>(LayerStacks);
 
-    if (!other.network)
-        return *this;
+    // if (!other.network)
+    //     return *this;
 
     for (std::size_t i = 0; i < LayerStacks; ++i)
         network[i] = other.network[i];
@@ -222,7 +234,7 @@ Network<Arch, Transformer>::evaluate(const Position&                         pos
 
     const int  bucket = (pos.count<ALL_PIECES>() - 1) / 4;
     const auto psqt =
-      featureTransformer->transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
+      featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
     const auto positional = network[bucket].propagate(transformedFeatures);
     return {static_cast<Value>(psqt / OutputScale), static_cast<Value>(positional / OutputScale)};
 }
@@ -259,9 +271,9 @@ void Network<Arch, Transformer>::verify(std::string                             
 
     if (f)
     {
-        size_t size = sizeof(*featureTransformer) + sizeof(Arch) * LayerStacks;
+        size_t size = sizeof(featureTransformer) + sizeof(Arch) * LayerStacks;
         f("NNUE evaluation using " + evalfilePath + " (" + std::to_string(size / (1024 * 1024))
-          + "MiB, (" + std::to_string(featureTransformer->InputDimensions) + ", "
+          + "MiB, (" + std::to_string(featureTransformer.InputDimensions) + ", "
           + std::to_string(network[0].TransformedFeatureDimensions) + ", "
           + std::to_string(network[0].FC_0_OUTPUTS) + ", " + std::to_string(network[0].FC_1_OUTPUTS)
           + ", 1))");
@@ -287,7 +299,7 @@ Network<Arch, Transformer>::trace_evaluate(const Position&                      
     for (IndexType bucket = 0; bucket < LayerStacks; ++bucket)
     {
         const auto materialist =
-          featureTransformer->transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
+          featureTransformer.transform(pos, accumulatorStack, cache, transformedFeatures, bucket);
         const auto positional = network[bucket].propagate(transformedFeatures);
 
         t.psqt[bucket]       = static_cast<Value>(materialist / OutputScale);
@@ -302,7 +314,7 @@ template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::load_user_net(const std::string& dir,
                                                const std::string& evalfilePath) {
     std::ifstream stream(dir + evalfilePath, std::ios::binary);
-    auto          description = load(stream);
+    auto          description = load(stream, evalfilePath);
 
     if (description.has_value())
     {
@@ -329,7 +341,9 @@ void Network<Arch, Transformer>::load_internal() {
                         size_t(embedded.size));
 
     std::istream stream(&buffer);
-    auto         description = load(stream);
+    auto         description =
+      load(stream, embeddedType == EmbeddedNNUEType::BIG ? EvalFileDefaultNameBig
+                                                         : EvalFileDefaultNameSmall);
 
     if (description.has_value())
     {
@@ -341,8 +355,8 @@ void Network<Arch, Transformer>::load_internal() {
 
 template<typename Arch, typename Transformer>
 void Network<Arch, Transformer>::initialize() {
-    featureTransformer = make_unique_large_page<Transformer>();
-    network            = make_unique_aligned<Arch[]>(LayerStacks);
+    // featureTransformer = make_unique_large_page<Transformer>();
+    // network            = make_unique_aligned<Arch[]>(LayerStacks);
 }
 
 
@@ -358,11 +372,202 @@ bool Network<Arch, Transformer>::save(std::ostream&      stream,
 
 
 template<typename Arch, typename Transformer>
-std::optional<std::string> Network<Arch, Transformer>::load(std::istream& stream) {
+std::optional<std::string> Network<Arch, Transformer>::load(std::istream&      stream,
+                                                            const std::string& evalfilePath) {
     initialize();
-    std::string description;
 
-    return read_parameters(stream, description) ? std::make_optional(description) : std::nullopt;
+    std::string   netDescription;
+    std::uint32_t hashValue;
+    if (!read_header(stream, &hashValue, &netDescription))
+        return std::nullopt;
+    if (hashValue != Network::hash)
+        return std::nullopt;
+
+    using NetType = std::remove_pointer_t<decltype(nnueParams.get())>;
+
+    constexpr size_t shmSize         = NetType::calculateBufferSize();
+    constexpr auto   HalfDimensions  = Transformer::OutputDimensions;
+    constexpr auto   InputDimensions = Transformer::InputDimensions;
+
+    auto  username   = getenv("USER") ? getenv("USER") : "default_user";
+    auto  shaVersion = evalfilePath;
+    auto& manager    = managers[int(embeddedType)];
+
+    std::cout << "Loading " << username << " " << shaVersion << std::endl;
+
+    bool jumped = false;
+
+start:
+    if (manager.open_existing(username, shaVersion, shmSize))
+    {
+        std::cout << "Loading from shared memory" << std::endl;
+
+        char* data = manager.data();
+
+        size_t offset              = 0;
+        featureTransformer.weights = reinterpret_cast<int16_t*>(data + offset);
+        offset += sizeof(NetType::FeatureWeights);
+
+        featureTransformer.biases = reinterpret_cast<int16_t*>(data + offset);
+        offset += sizeof(NetType::FeatureBiases);
+
+        featureTransformer.psqtWeights = reinterpret_cast<int32_t*>(data + offset);
+        offset += sizeof(NetType::PsqtWeights);
+
+        ASSERT_ALIGNED(featureTransformer.weights, 64);
+        ASSERT_ALIGNED(featureTransformer.biases, 64);
+        ASSERT_ALIGNED(featureTransformer.psqtWeights, 64);
+
+        for (std::size_t i = 0; i < LayerStacks; ++i)
+        {
+            auto align64 = [&offset, data]() {
+                // Align to 64-byte boundary
+                offset = (offset + 63) & ~63;
+                ASSERT_ALIGNED(data + offset, 64);
+                return data + offset;
+            };
+
+            network[i].fc_0.update_w(reinterpret_cast<int8_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L1Weights);
+
+            network[i].fc_0.update_b(reinterpret_cast<int32_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L1Biases);
+
+            network[i].fc_1.update_w(reinterpret_cast<int8_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L2Weights);
+
+            network[i].fc_1.update_b(reinterpret_cast<int32_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L2Biases);
+
+            network[i].fc_2.update_w(reinterpret_cast<int8_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L3Weights);
+
+            network[i].fc_2.update_b(reinterpret_cast<int32_t*>(align64()));
+            offset += sizeof(NetType::Layers[i].L3Biases);
+        }
+
+        std::cout << "Shared memory loaded successfully" << std::endl;
+
+        return netDescription;
+    }
+
+    if (jumped)
+    {
+        std::cout << "Shared memory not found" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Loading from file" << std::endl;
+
+    nnueParams = std::make_unique<NetType>();
+
+    // std::uint32_t header;
+    // header =
+    read_little_endian<std::uint32_t>(stream);
+
+    read_leb_128<int16_t>(stream, nnueParams->FeatureBiases, HalfDimensions);
+    read_leb_128<int16_t>(stream, nnueParams->FeatureWeights, HalfDimensions * InputDimensions);
+    read_leb_128<int32_t>(stream, nnueParams->PsqtWeights, PSQTBuckets * InputDimensions);
+
+    Transformer::permute_weights(nnueParams->FeatureBiases, nnueParams->FeatureWeights);
+    Transformer::scale_weights(nnueParams->FeatureBiases, nnueParams->FeatureWeights, true);
+
+    for (std::size_t k = 0; k < LayerStacks; ++k)
+    {
+        auto OutputDimensions      = Arch::L1Type::OutputDimensions;
+        auto PaddedInputDimensions = Arch::L1Type::PaddedInputDimensions;
+
+        //header =
+        read_little_endian<std::uint32_t>(stream);
+
+        // fc0
+        read_little_endian<int32_t>(stream, nnueParams->Layers[k].L1Biases, OutputDimensions);
+        for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
+            nnueParams->Layers[k].L1Weights[Arch::L1Type::get_weight_index(i)] =
+              read_little_endian<int8_t>(stream);
+
+        OutputDimensions      = Arch::L2Type::OutputDimensions;
+        PaddedInputDimensions = Arch::L2Type::PaddedInputDimensions;
+
+        // fc1
+        read_little_endian<int32_t>(stream, nnueParams->Layers[k].L2Biases, OutputDimensions);
+        for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
+            nnueParams->Layers[k].L2Weights[Arch::L2Type::get_weight_index(i)] =
+              read_little_endian<int8_t>(stream);
+
+        OutputDimensions      = Arch::L3Type::OutputDimensions;
+        PaddedInputDimensions = Arch::L3Type::PaddedInputDimensions;
+
+        // fc2
+        read_little_endian<int32_t>(stream, nnueParams->Layers[k].L3Biases, OutputDimensions);
+        for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
+            nnueParams->Layers[k].L3Weights[Arch::L3Type::get_weight_index(i)] =
+              read_little_endian<int8_t>(stream);
+    }
+
+    featureTransformer.biases      = nnueParams->FeatureBiases;
+    featureTransformer.weights     = nnueParams->FeatureWeights;
+    featureTransformer.psqtWeights = nnueParams->PsqtWeights;
+
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+    {
+        network[i].fc_0.update_w(nnueParams->Layers[i].L1Weights);
+        network[i].fc_0.update_b(nnueParams->Layers[i].L1Biases);
+
+
+        network[i].fc_1.update_w(nnueParams->Layers[i].L2Weights);
+        network[i].fc_1.update_b(nnueParams->Layers[i].L2Biases);
+
+
+        network[i].fc_2.update_w(nnueParams->Layers[i].L3Weights);
+        network[i].fc_2.update_b(nnueParams->Layers[i].L3Biases);
+    }
+
+    // avoid infinite loop and just use the in process memory
+    if (jumped)
+        return std::nullopt;
+
+    // update shm
+
+    std::cout << "Loading from file done" << std::endl;
+    std::cout << "Saving to shared memory" << std::endl;
+
+    std::vector<char> buffer;
+
+    auto append = [&buffer](void* data, size_t size) {
+        buffer.insert(buffer.end(), reinterpret_cast<char*>(data),
+                      reinterpret_cast<char*>(data) + size);
+
+        // Align to 64-byte boundary
+        size_t padding = (64 - (buffer.size() % 64)) % 64;
+        if (padding > 0)
+            buffer.insert(buffer.end(), padding, 0);
+    };
+
+    append(nnueParams->FeatureWeights, sizeof(nnueParams->FeatureWeights));
+    append(nnueParams->FeatureBiases, sizeof(nnueParams->FeatureBiases));
+    append(nnueParams->PsqtWeights, sizeof(nnueParams->PsqtWeights));
+
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+    {
+        append(nnueParams->Layers[i].L1Weights, sizeof(nnueParams->Layers[i].L1Weights));
+        append(nnueParams->Layers[i].L1Biases, sizeof(nnueParams->Layers[i].L1Biases));
+        append(nnueParams->Layers[i].L2Weights, sizeof(nnueParams->Layers[i].L2Weights));
+        append(nnueParams->Layers[i].L2Biases, sizeof(nnueParams->Layers[i].L2Biases));
+        append(nnueParams->Layers[i].L3Weights, sizeof(nnueParams->Layers[i].L3Weights));
+        append(nnueParams->Layers[i].L3Biases, sizeof(nnueParams->Layers[i].L3Biases));
+    }
+
+    nnueParams.reset();
+
+    std::cout << "Size of the buffer: " << shmSize << " " << buffer.size() << std::endl;
+
+    manager.create(username, shaVersion, buffer.data(), buffer.size());
+
+    jumped = true;
+    goto start;
+
+    return netDescription;
 }
 
 
@@ -398,21 +603,21 @@ bool Network<Arch, Transformer>::write_header(std::ostream&      stream,
 
 
 template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
-                                                 std::string&  netDescription) const {
-    std::uint32_t hashValue;
-    if (!read_header(stream, &hashValue, &netDescription))
-        return false;
-    if (hashValue != Network::hash)
-        return false;
-    if (!Detail::read_parameters(stream, *featureTransformer))
-        return false;
-    for (std::size_t i = 0; i < LayerStacks; ++i)
-    {
-        if (!Detail::read_parameters(stream, network[i]))
-            return false;
-    }
-    return stream && stream.peek() == std::ios::traits_type::eof();
+bool Network<Arch, Transformer>::read_parameters(std::istream&, std::string&) const {
+    // std::uint32_t hashValue;
+    // if (!read_header(stream, &hashValue, &netDescription))
+    //     return false;
+    // if (hashValue != Network::hash)
+    //     return false;f
+    // if (!Detail::read_parameters(stream, *featureTransformer))
+    //     return false;
+    // for (std::size_t i = 0; i < LayerStacks; ++i)
+    // {
+    //     if (!Detail::read_parameters(stream, Layers[i].network))
+    //         return false;
+    // }
+    // return stream && stream.peek() == std::ios::traits_type::eof();
+    return true;
 }
 
 
@@ -421,7 +626,7 @@ bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
                                                   const std::string& netDescription) const {
     if (!write_header(stream, Network::hash, netDescription))
         return false;
-    if (!Detail::write_parameters(stream, *featureTransformer))
+    if (!Detail::write_parameters(stream, featureTransformer))
         return false;
     for (std::size_t i = 0; i < LayerStacks; ++i)
     {

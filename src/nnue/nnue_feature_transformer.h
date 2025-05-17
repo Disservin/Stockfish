@@ -122,17 +122,20 @@ class FeatureTransformer {
         return FeatureSet::HashValue ^ (OutputDimensions * 2);
     }
 
-    void permute_weights() {
+    template<typename T, std::size_t N, typename U, std::size_t M>
+    static void permute_weights(T (&biases)[N], U (&weights)[M]) {
         permute<16>(biases, PackusEpi16Order);
         permute<16>(weights, PackusEpi16Order);
     }
 
-    void unpermute_weights() {
+    template<typename T, std::size_t N, typename U, std::size_t M>
+    static void unpermute_weights(T (&biases)[N], U (&weights)[M]) {
         permute<16>(biases, InversePackusEpi16Order);
         permute<16>(weights, InversePackusEpi16Order);
     }
 
-    inline void scale_weights(bool read) {
+    template<typename T, typename U>
+    static void scale_weights(T biases, U weights, bool read) {
         for (IndexType j = 0; j < InputDimensions; ++j)
         {
             WeightType* w = &weights[j * HalfDimensions];
@@ -145,29 +148,33 @@ class FeatureTransformer {
     }
 
     // Read network parameters
-    bool read_parameters(std::istream& stream) {
+    // bool read_parameters(std::istream& stream) {
 
-        read_leb_128<BiasType>(stream, biases, HalfDimensions);
-        read_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
-        read_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
+    //     read_leb_128<BiasType>(stream, biases, HalfDimensions);
+    //     read_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
+    //     read_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
 
-        permute_weights();
-        scale_weights(true);
-        return !stream.fail();
-    }
+    //     permute_weights(biases, weights);
+    //     scale_weights(biases, weights, true);
+    //     return !stream.fail();
+    // }
 
     // Write network parameters
-    bool write_parameters(std::ostream& stream) {
+    bool write_parameters(std::ostream& stream) const {
 
-        unpermute_weights();
-        scale_weights(false);
+        BiasType biases_copy[HalfDimensions];
+        std::memcpy(biases_copy, biases, HalfDimensions * sizeof(BiasType));
 
-        write_leb_128<BiasType>(stream, biases, HalfDimensions);
-        write_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
+        WeightType weights_copy[HalfDimensions * InputDimensions];
+        std::memcpy(weights_copy, weights, HalfDimensions * InputDimensions * sizeof(WeightType));
+
+        unpermute_weights(biases_copy, weights_copy);
+        scale_weights(biases_copy, weights_copy, false);
+
+        write_leb_128<BiasType>(stream, biases_copy, HalfDimensions);
+        write_leb_128<WeightType>(stream, weights_copy, HalfDimensions * InputDimensions);
         write_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
 
-        permute_weights();
-        scale_weights(true);
         return !stream.fail();
     }
 
@@ -302,9 +309,16 @@ class FeatureTransformer {
         return psqt;
     }  // end of function transform()
 
-    alignas(CacheLineSize) BiasType biases[HalfDimensions];
-    alignas(CacheLineSize) WeightType weights[HalfDimensions * InputDimensions];
-    alignas(CacheLineSize) PSQTWeightType psqtWeights[InputDimensions * PSQTBuckets];
+
+    void update(BiasType* biases_ptr, WeightType* weights_ptr, PSQTWeightType* psqtWeights_ptr) {
+        weights     = weights_ptr;
+        biases      = biases_ptr;
+        psqtWeights = psqtWeights_ptr;
+    }
+
+    const BiasType*       biases;
+    const WeightType*     weights;
+    const PSQTWeightType* psqtWeights;
 };
 
 }  // namespace Stockfish::Eval::NNUE
