@@ -229,7 +229,6 @@ template<typename T>
 class SharedMemoryManager {
    private:
     std::string name;
-    size_t      elementCount;
     T*          mmapAddr;
     int         fd;
     size_t      mmapSize;
@@ -261,16 +260,6 @@ class SharedMemoryManager {
         return hash;
     }
 
-   public:
-    SharedMemoryManager() :
-        mmapAddr(nullptr),
-        fd(-1),
-        mmapSize(0),
-        isOwner(false),
-        isInit(false) {}
-
-    ~SharedMemoryManager() { cleanup(); }
-
 
     static bool check_exists(const std::string& username, const std::string& shaVersion) {
         std::string name = build_shm_name(username, shaVersion);
@@ -285,29 +274,46 @@ class SharedMemoryManager {
         return true;
     }
 
-    bool read_existing(const std::string& username, const std::string& shaVersion, size_t count) {
+   public:
+    SharedMemoryManager() :
+        mmapAddr(nullptr),
+        fd(-1),
+        mmapSize(0),
+        isOwner(false),
+        isInit(false) {}
+
+    ~SharedMemoryManager() { cleanup(); }
+
+    SharedMemoryManager(const SharedMemoryManager&)            = delete;
+    SharedMemoryManager& operator=(const SharedMemoryManager&) = delete;
+    SharedMemoryManager(SharedMemoryManager&&)                 = delete;
+    SharedMemoryManager& operator=(SharedMemoryManager&&)      = delete;
+
+    bool
+    open_existing(const std::string& username, const std::string& shaVersion, size_t elementCount) {
         if (isInit)
-        {
             return true;
-        }
 
         name = build_shm_name(username, shaVersion);
 
-        fd = shm_open(name.c_str(), O_RDONLY, 0444);
-        if (fd == -1)
-        {
-            std::cerr << "Failed to open existing shared memory object: " << strerror(errno)
-                      << std::endl;
-            return false;
-        }
+        fd = shm_open(name.c_str(), O_RDONLY, 0);
 
-        elementCount = count;
-        mmapSize     = elementCount * sizeof(T);
+        if (fd == -1)
+            return false;
+
+        close(fd);
+
+        fd = shm_open(name.c_str(), O_RDONLY, 0444);
+
+        if (fd == -1)
+            return false;
+
+        mmapSize = elementCount * sizeof(T);
 
         mmapAddr = static_cast<T*>(mmap(nullptr, mmapSize, PROT_READ, MAP_SHARED, fd, 0));
+
         if (mmapAddr == MAP_FAILED)
         {
-            std::cerr << "Failed to map shared memory: " << strerror(errno) << std::endl;
             close(fd);
             fd = -1;
             return false;
@@ -317,47 +323,39 @@ class SharedMemoryManager {
         return true;
     }
 
-    bool init(const std::string& username,
-              const std::string& shaVersion,
-              const T*           sourceArray,
-              size_t             count) {
+    bool create(const std::string& username,
+                const std::string& shaVersion,
+                const T*           sourceArray,
+                size_t             elementCount) {
 
-        if (isInit)
-        {
-            return true;
-        }
-
-        elementCount = count;
-        mmapSize     = elementCount * sizeof(T);
-        name         = build_shm_name(username, shaVersion);
+        // elementCount = count;
+        mmapSize = elementCount * sizeof(T);
+        name     = build_shm_name(username, shaVersion);
 
         bool exists = check_exists(username, shaVersion);
 
         fd = shm_open(name.c_str(), O_RDWR | (exists ? 0 : O_CREAT), 0660);
+
         if (fd == -1)
-        {
-            std::cerr << "Failed to open shared memory object: " << strerror(errno) << std::endl;
             return false;
-        }
 
         if (!exists)
         {
             if (ftruncate(fd, mmapSize) == -1)
             {
-                std::cerr << "Failed to set size of shared memory object: " << strerror(errno)
-                          << std::endl;
                 close(fd);
                 fd = -1;
                 return false;
             }
+
             isOwner = true;
         }
 
         mmapAddr =
           static_cast<T*>(mmap(nullptr, mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+
         if (mmapAddr == MAP_FAILED)
         {
-            std::cerr << "Failed to map shared memory: " << strerror(errno) << std::endl;
             close(fd);
             fd = -1;
             return false;
@@ -372,33 +370,12 @@ class SharedMemoryManager {
             std::memcpy(mmapAddr, sourceArray, mmapSize);
 
             if (msync(mmapAddr, mmapSize, MS_SYNC) == -1)
-            {
                 std::cerr << "Failed to sync shared memory: " << strerror(errno) << std::endl;
-            }
         }
 
-        isInit = true;
-        return true;
-    }
+        munmap(mmapAddr, mmapSize);
 
-    T* data() const {
-        if (!isInit)
-        {
-            std::cerr << "Warning: Accessing data() on uninitialized SharedMemoryManager"
-                      << std::endl;
-            return nullptr;
-        }
-        return mmapAddr;
-    }
-
-    size_t size() const { return elementCount; }
-
-    void close_mmap() {
-        if (mmapAddr != nullptr && mmapAddr != MAP_FAILED)
-        {
-            munmap(mmapAddr, mmapSize);
-            mmapAddr = nullptr;
-        }
+        mmapAddr = nullptr;
 
         if (fd != -1)
         {
@@ -406,9 +383,19 @@ class SharedMemoryManager {
             fd = -1;
         }
 
-        isInit = false;
+
+        return true;
     }
 
+    T* data() const {
+        if (!isInit)
+            return nullptr;
+
+        return mmapAddr;
+    }
+
+
+    // Fully release resources and delete the shared memory if owner
     void cleanup() {
         if (mmapAddr != nullptr && mmapAddr != MAP_FAILED)
         {
@@ -422,13 +409,14 @@ class SharedMemoryManager {
             fd = -1;
         }
 
+        isInit = false;
+
         if (isOwner && !name.empty())
         {
             std::cout << "unlink" << std::endl;
             shm_unlink(name.c_str());
+            isOwner = false;
         }
-
-        isInit = false;
     }
 };
 

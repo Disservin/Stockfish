@@ -64,6 +64,34 @@ struct Net {
         alignas(64) int8_t L3Weights[L3];
         alignas(64) int32_t L3Biases[1];
     } Layers[8];
+
+    static constexpr size_t calculateBufferSize() {
+        constexpr size_t Alignment = 64;
+        size_t           totalSize = 0;
+
+        auto addAligned = [&totalSize](size_t dataSize) {
+            totalSize += dataSize;
+            size_t padding = (Alignment - (totalSize % Alignment)) % Alignment;
+            totalSize += padding;
+        };
+
+        addAligned(sizeof(FeatureWeights));
+        addAligned(sizeof(FeatureBiases));
+        addAligned(sizeof(PsqtWeights));
+
+        constexpr size_t LayerCount = 8;
+        for (size_t i = 0; i < LayerCount; ++i)
+        {
+            addAligned(sizeof(Layers::L1Weights));
+            addAligned(sizeof(Layers::L1Biases));
+            addAligned(sizeof(Layers::L2Weights));
+            addAligned(sizeof(Layers::L2Biases));
+            addAligned(sizeof(Layers::L3Weights));
+            addAligned(sizeof(Layers::L3Biases));
+        }
+
+        return totalSize;
+    }
 };
 
 template<typename Arch, typename Transformer>

@@ -92,7 +92,7 @@ namespace Stockfish::Eval::NNUE {
 
 
 namespace {
-SharedMemoryManager<char> manager[2];
+SharedMemoryManager<char> managers[2];
 
 }
 
@@ -377,50 +377,44 @@ template<typename Arch, typename Transformer>
 std::optional<std::string> Network<Arch, Transformer>::load(std::istream&      stream,
                                                             const std::string& evalfilePath) {
     initialize();
-    std::string netDescription;
 
-
+    std::string   netDescription;
     std::uint32_t hashValue;
     if (!read_header(stream, &hashValue, &netDescription))
         return std::nullopt;
     if (hashValue != Network::hash)
         return std::nullopt;
 
-    using nettype = Net<Transformer::OutputDimensions, Arch::FC_0_OUTPUTS, Arch::FC_1_OUTPUTS>;
-    constexpr auto netsize = sizeof(nettype);
+    using NetType = std::remove_pointer_t<decltype(nnueParams.get())>;
 
-    std::string username   = getenv("USER") ? getenv("USER") : "default_user";
-    std::string shaVersion = evalfilePath;
+    constexpr size_t shmSize         = NetType::calculateBufferSize();
+    constexpr auto   HalfDimensions  = Transformer::OutputDimensions;
+    constexpr auto   InputDimensions = Transformer::InputDimensions;
 
-    constexpr auto HalfDimensions  = Transformer::OutputDimensions;
-    constexpr auto InputDimensions = Transformer::InputDimensions;
+    auto  username   = getenv("USER") ? getenv("USER") : "default_user";
+    auto  shaVersion = evalfilePath;
+    auto& manager    = managers[int(embeddedType)];
 
     std::cout << "Loading " << username << " " << shaVersion << std::endl;
+
     bool jumped = false;
 
 start:
-    if (manager[int(embeddedType)].check_exists(username, shaVersion))
+    if (manager.open_existing(username, shaVersion, shmSize))
     {
-        if (!manager[int(embeddedType)].read_existing(username, shaVersion, netsize))
-        {
-            std::cerr << "Failed to read existing shared memory object: " << strerror(errno)
-                      << std::endl;
-            return std::nullopt;
-        }
-
         std::cout << "Loading from shared memory" << std::endl;
 
-        char* data = manager[int(embeddedType)].data();
+        char* data = manager.data();
 
         size_t offset              = 0;
         featureTransformer.weights = reinterpret_cast<int16_t*>(data + offset);
-        offset += sizeof(nettype::FeatureWeights);
+        offset += sizeof(NetType::FeatureWeights);
 
         featureTransformer.biases = reinterpret_cast<int16_t*>(data + offset);
-        offset += sizeof(nettype::FeatureBiases);
+        offset += sizeof(NetType::FeatureBiases);
 
         featureTransformer.psqtWeights = reinterpret_cast<int32_t*>(data + offset);
-        offset += sizeof(nettype::PsqtWeights);
+        offset += sizeof(NetType::PsqtWeights);
 
         ASSERT_ALIGNED(featureTransformer.weights, 64);
         ASSERT_ALIGNED(featureTransformer.biases, 64);
@@ -436,22 +430,22 @@ start:
             };
 
             network[i].fc_0.update_w(reinterpret_cast<int8_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L1Weights);
+            offset += sizeof(NetType::Layers[i].L1Weights);
 
             network[i].fc_0.update_b(reinterpret_cast<int32_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L1Biases);
+            offset += sizeof(NetType::Layers[i].L1Biases);
 
             network[i].fc_1.update_w(reinterpret_cast<int8_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L2Weights);
+            offset += sizeof(NetType::Layers[i].L2Weights);
 
             network[i].fc_1.update_b(reinterpret_cast<int32_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L2Biases);
+            offset += sizeof(NetType::Layers[i].L2Biases);
 
             network[i].fc_2.update_w(reinterpret_cast<int8_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L3Weights);
+            offset += sizeof(NetType::Layers[i].L3Weights);
 
             network[i].fc_2.update_b(reinterpret_cast<int32_t*>(align64()));
-            offset += sizeof(nettype::Layers[i].L3Biases);
+            offset += sizeof(NetType::Layers[i].L3Biases);
         }
 
         std::cout << "Shared memory loaded successfully" << std::endl;
@@ -459,12 +453,10 @@ start:
         return netDescription;
     }
 
-    if (jumped)
-        return std::nullopt;
 
     std::cout << "Loading from file" << std::endl;
 
-    nnueParams = std::make_unique<nettype>();
+    nnueParams = std::make_unique<NetType>();
 
     // std::uint32_t header;
     // header =
@@ -528,8 +520,11 @@ start:
         network[i].fc_2.update_b(nnueParams->Layers[i].L3Biases);
     }
 
-    // update
+    // avoid infinite loop and just use the in process memory
+    if (jumped)
+        return std::nullopt;
 
+    // update shm
 
     std::cout << "Loading from file done" << std::endl;
     std::cout << "Saving to shared memory" << std::endl;
@@ -559,12 +554,12 @@ start:
         append(nnueParams->Layers[i].L3Weights, sizeof(nnueParams->Layers[i].L3Weights));
         append(nnueParams->Layers[i].L3Biases, sizeof(nnueParams->Layers[i].L3Biases));
     }
+
     nnueParams.reset();
 
-    std::cout << "Size of the buffer: " << netsize << " " << buffer.size() << std::endl;
+    std::cout << "Size of the buffer: " << shmSize << " " << buffer.size() << std::endl;
 
-    manager[int(embeddedType)].init(username, shaVersion, buffer.data(), buffer.size());
-    manager[int(embeddedType)].close_mmap();
+    manager.create(username, shaVersion, buffer.data(), buffer.size());
 
     jumped = true;
     goto start;
