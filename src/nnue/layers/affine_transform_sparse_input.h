@@ -215,15 +215,16 @@ class AffineTransformSparseInput {
     //     return !stream.fail();
     // }
 
-    // // Write network parameters
-    // bool write_parameters(std::ostream& stream) const {
-    //     write_little_endian<BiasType>(stream, biases, OutputDimensions);
+    // Write network parameters
+    bool write_parameters(std::ostream& stream) const {
+        write_little_endian<BiasType>(stream, biases, OutputDimensions);
 
-    //     for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
-    //         write_little_endian<WeightType>(stream, weights[get_weight_index(i)]);
+        for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
+            write_little_endian<WeightType>(stream, weights[get_weight_index(i)]);
 
-    //     return !stream.fail();
-    // }
+        return !stream.fail();
+    }
+
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
 

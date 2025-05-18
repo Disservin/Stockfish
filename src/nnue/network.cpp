@@ -111,11 +111,10 @@ bool read_parameters(std::istream& stream, T& reference) {
 
 // Write evaluation function parameters
 template<typename T>
-bool write_parameters(std::ostream& stream, T& reference) {
+bool write_parameters(std::ostream& stream, const T& reference) {
 
-    // write_little_endian<std::uint32_t>(stream, T::get_hash_value());
-    // return reference.write_parameters(stream);
-    return true;
+    write_little_endian<std::uint32_t>(stream, T::get_hash_value());
+    return reference.write_parameters(stream);
 }
 
 }  // namespace Detail
@@ -619,18 +618,18 @@ bool Network<Arch, Transformer>::read_parameters(std::istream&, std::string&) co
 
 
 template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::write_parameters(std::ostream&, const std::string&) const {
-    // if (!write_header(stream, Network::hash, netDescription))
-    //     return false;
-    // if (!Detail::write_parameters(stream, *featureTransformer))
-    //     return false;
-    // for (std::size_t i = 0; i < LayerStacks; ++i)
-    // {
-    //     if (!Detail::write_parameters(stream, Layers[i].network))
-    //         return false;
-    // }
-    // return bool(stream);
-    return true;
+bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
+                                                  const std::string& netDescription) const {
+    if (!write_header(stream, Network::hash, netDescription))
+        return false;
+    if (!Detail::write_parameters(stream, featureTransformer))
+        return false;
+    for (std::size_t i = 0; i < LayerStacks; ++i)
+    {
+        if (!Detail::write_parameters(stream, network[i]))
+            return false;
+    }
+    return bool(stream);
 }
 
 // Explicit template instantiations

@@ -347,8 +347,8 @@ class FeatureTransformer {
         permute<16>(weights, PackusEpi16Order);
     }
 
-    template<typename T, typename U>
-    static void unpermute_weights(T biases, U weights) {
+    template<typename T, std::size_t N, typename U, std::size_t M>
+    static void unpermute_weights(T (&biases)[N], U (&weights)[M]) {
         permute<16>(biases, InversePackusEpi16Order);
         permute<16>(weights, InversePackusEpi16Order);
     }
@@ -378,20 +378,24 @@ class FeatureTransformer {
     //     return !stream.fail();
     // }
 
-    // // Write network parameters
-    // bool write_parameters(std::ostream& stream) {
+    // Write network parameters
+    bool write_parameters(std::ostream& stream) const {
 
-    //     unpermute_weights(biases, weights);
-    //     scale_weights(biases, weights, false);
+        BiasType biases_copy[HalfDimensions];
+        std::memcpy(biases_copy, biases, HalfDimensions * sizeof(BiasType));
 
-    //     write_leb_128<BiasType>(stream, biases, HalfDimensions);
-    //     write_leb_128<WeightType>(stream, weights, HalfDimensions * InputDimensions);
-    //     write_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
+        WeightType weights_copy[HalfDimensions * InputDimensions];
+        std::memcpy(weights_copy, weights, HalfDimensions * InputDimensions * sizeof(WeightType));
 
-    //     permute_weights(biases, weights);
-    //     scale_weights(biases, weights, true);
-    //     return !stream.fail();
-    // }
+        unpermute_weights(biases_copy, weights_copy);
+        scale_weights(biases_copy, weights_copy, false);
+
+        write_leb_128<BiasType>(stream, biases_copy, HalfDimensions);
+        write_leb_128<WeightType>(stream, weights_copy, HalfDimensions * InputDimensions);
+        write_leb_128<PSQTWeightType>(stream, psqtWeights, PSQTBuckets * InputDimensions);
+
+        return !stream.fail();
+    }
 
     // Convert input features
     std::int32_t transform(const Position&                           pos,
