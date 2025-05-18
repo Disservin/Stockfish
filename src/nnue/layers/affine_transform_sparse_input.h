@@ -225,10 +225,7 @@ class AffineTransformSparseInput {
     //     return !stream.fail();
     // }
     // Forward propagation
-    void propagate(const InputType* param_input, OutputType* param_output) const {
-        InputType*  input = reinterpret_cast<InputType*>(__builtin_assume_aligned(param_input, 64));
-        OutputType* output =
-          reinterpret_cast<OutputType*>(__builtin_assume_aligned(param_output, 64));
+    void propagate(const InputType* input, OutputType* output) const {
 
 #if (USE_SSSE3 | (USE_NEON >= 8))
     #if defined(USE_AVX512)

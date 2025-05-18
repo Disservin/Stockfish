@@ -397,11 +397,8 @@ class FeatureTransformer {
     std::int32_t transform(const Position&                           pos,
                            AccumulatorStack&                         accumulatorStack,
                            AccumulatorCaches::Cache<HalfDimensions>* cache,
-                           OutputType*                               param_output,
+                           OutputType*                               output,
                            int                                       bucket) const {
-
-        OutputType* output =
-          reinterpret_cast<OutputType*>(__builtin_assume_aligned(param_output, 64));
 
         accumulatorStack.evaluate(pos, *this, *cache);
         const auto& accumulatorState = accumulatorStack.latest();
