@@ -19,12 +19,14 @@
 #include "network.h"
 
 #include <cstdlib>
+#include <errno.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
-#include <type_traits>
+#include <string.h>
 #include <vector>
+
 
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "../incbin/incbin.h"
@@ -34,6 +36,8 @@
 #include "../misc.h"
 #include "../position.h"
 #include "../types.h"
+#include "layers/affine_transform.h"
+#include "layers/affine_transform_sparse_input.h"
 #include "nnue_architecture.h"
 #include "nnue_common.h"
 #include "nnue_misc.h"
@@ -601,8 +605,7 @@ bool Network<Arch, Transformer>::write_header(std::ostream&      stream,
 
 
 template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
-                                                 std::string&  netDescription) const {
+bool Network<Arch, Transformer>::read_parameters(std::istream&, std::string&) const {
     // std::uint32_t hashValue;
     // if (!read_header(stream, &hashValue, &netDescription))
     //     return false;
@@ -621,8 +624,7 @@ bool Network<Arch, Transformer>::read_parameters(std::istream& stream,
 
 
 template<typename Arch, typename Transformer>
-bool Network<Arch, Transformer>::write_parameters(std::ostream&      stream,
-                                                  const std::string& netDescription) const {
+bool Network<Arch, Transformer>::write_parameters(std::ostream&, const std::string&) const {
     // if (!write_header(stream, Network::hash, netDescription))
     //     return false;
     // if (!Detail::write_parameters(stream, *featureTransformer))

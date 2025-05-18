@@ -20,23 +20,23 @@
 #define MEMORY_H_INCLUDED
 
 #include <algorithm>
-#include <cstddef>
+#include <cassert>
 #include <cstdint>
 #include <cstring>
+#include <errno.h>
 #include <fcntl.h>
 #include <filesystem>
-#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <new>
+#include <sstream>
+#include <stdio.h>
 #include <string>
 #include <sys/mman.h>
-#include <sys/stat.h>
 #include <type_traits>
 #include <unistd.h>
 #include <utility>
-#include <sstream>
-#include <vector>
 
 #include "types.h"
 

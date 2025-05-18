@@ -18,6 +18,7 @@
 
 #include "memory.h"
 
+#include <cstddef>
 #include <cstdlib>
 
 #if __has_include("features.h")
