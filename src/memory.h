@@ -29,6 +29,7 @@
 #include <iostream>
 #include <memory>
 #include <new>
+#include <sched.h>
 #include <string>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -244,12 +245,31 @@ class SharedMemoryManager {
         return ss.str();
     }
 
+    // hack to get the numa node of the current process
+    static int get_numa_node_for_cpu() {
+        int cpu = sched_getcpu();
+        for (const auto& node_dir : fs::directory_iterator("/sys/devices/system/node"))
+        {
+            if (node_dir.path().filename().string().rfind("node", 0) == 0)
+            {
+                std::string cpu_path = node_dir.path().string() + "/cpu" + std::to_string(cpu);
+                if (fs::exists(cpu_path))
+                {
+                    std::string node_name = node_dir.path().filename().string();
+                    return std::stoi(node_name.substr(4));  // Extract number from "nodeX"
+                }
+            }
+        }
+        return 0;  // Not found, just return 0
+    }
+
     static std::string build_shm_name(const std::string& username, const std::string& shaVersion) {
         std::string baseSegment = username + "_sf-shared-net_";
 
         // Add NUMA node info
         char numaBuf[64] = {0};
-        int  numaNode    = 0;  // todo get numa
+        // int  numaNode    = 0;  // todo get numa
+        int numaNode = get_numa_node_for_cpu();
         snprintf(numaBuf, sizeof(numaBuf), "numa%d", numaNode);
 
         std::string shm_name = baseSegment + numaBuf + "_" + shaVersion + "_data";
