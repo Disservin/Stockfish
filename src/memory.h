@@ -35,6 +35,7 @@
 #include <type_traits>
 #include <unistd.h>
 #include <utility>
+#include <sstream>
 #include <vector>
 
 #include "types.h"
