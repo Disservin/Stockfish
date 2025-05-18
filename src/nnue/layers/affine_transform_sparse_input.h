@@ -224,7 +224,6 @@ class AffineTransformSparseInput {
 
         return !stream.fail();
     }
-
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
 
@@ -293,7 +292,6 @@ class AffineTransformSparseInput {
           output, weights, biases, input);
 #endif
     }
-
 
     void update(OutputType* biases_ptr, std::int8_t* weights_ptr) {
         weights = weights_ptr;

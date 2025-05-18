@@ -181,7 +181,6 @@ class AffineTransform {
 
         return !stream.fail();
     }
-
     // Forward propagation
     void propagate(const InputType* input, OutputType* output) const {
 
@@ -297,7 +296,6 @@ class AffineTransform {
 
     void update_w(std::int8_t* weights_ptr) { weights = weights_ptr; }
     void update_b(OutputType* biases_ptr) { biases = biases_ptr; }
-
 
    private:
     using BiasType   = OutputType;
