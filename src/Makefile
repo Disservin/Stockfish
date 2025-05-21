@@ -668,132 +668,134 @@ ifeq ($(bits),64)
 	CXXFLAGS += -DIS_64BIT
 endif
 
+ARCH_FLAGS = 
+
 ### 3.5 prefetch and popcount
 ifeq ($(prefetch),yes)
 	ifeq ($(sse),yes)
-		CXXFLAGS += -msse
+		ARCH_FLAGS += -msse
 	endif
 else
-	CXXFLAGS += -DNO_PREFETCH
+	ARCH_FLAGS += -DNO_PREFETCH
 endif
 
 ifeq ($(popcnt),yes)
 	ifeq ($(arch),$(filter $(arch),ppc64 ppc64-altivec ppc64-vsx armv7 armv8 arm64))
-		CXXFLAGS += -DUSE_POPCNT
+		ARCH_FLAGS += -DUSE_POPCNT
 	else
-		CXXFLAGS += -msse3 -mpopcnt -DUSE_POPCNT
+		ARCH_FLAGS += -msse3 -mpopcnt -DUSE_POPCNT
 	endif
 endif
 
 ### 3.6 SIMD architectures
 ifeq ($(avx2),yes)
-	CXXFLAGS += -DUSE_AVX2
+	ARCH_FLAGS += -DUSE_AVX2
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mavx2 -mbmi
+		ARCH_FLAGS += -mavx2 -mbmi
 	endif
 endif
 
 ifeq ($(avxvnni),yes)
-	CXXFLAGS += -DUSE_VNNI -DUSE_AVXVNNI
+	ARCH_FLAGS += -DUSE_VNNI -DUSE_AVXVNNI
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mavxvnni
+		ARCH_FLAGS += -mavxvnni
 	endif
 endif
 
 ifeq ($(avx512),yes)
-	CXXFLAGS += -DUSE_AVX512
+	ARCH_FLAGS += -DUSE_AVX512
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mavx512f -mavx512bw
+		ARCH_FLAGS += -mavx512f -mavx512bw
 	endif
 endif
 
 ifeq ($(vnni256),yes)
-	CXXFLAGS += -DUSE_VNNI
+	ARCH_FLAGS += -DUSE_VNNI
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mavx512f -mavx512bw -mavx512vnni -mavx512dq -mavx512vl -mprefer-vector-width=256
+		ARCH_FLAGS += -mavx512f -mavx512bw -mavx512vnni -mavx512dq -mavx512vl -mprefer-vector-width=256
 	endif
 endif
 
 ifeq ($(vnni512),yes)
-	CXXFLAGS += -DUSE_VNNI
+	ARCH_FLAGS += -DUSE_VNNI
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mavx512f -mavx512bw -mavx512vnni -mavx512dq -mavx512vl -mprefer-vector-width=512
+		ARCH_FLAGS += -mavx512f -mavx512bw -mavx512vnni -mavx512dq -mavx512vl -mprefer-vector-width=512
 	endif
 endif
 
 ifeq ($(sse41),yes)
-	CXXFLAGS += -DUSE_SSE41
+	ARCH_FLAGS += -DUSE_SSE41
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -msse4.1
+		ARCH_FLAGS += -msse4.1
 	endif
 endif
 
 ifeq ($(ssse3),yes)
-	CXXFLAGS += -DUSE_SSSE3
+	ARCH_FLAGS += -DUSE_SSSE3
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mssse3
+		ARCH_FLAGS += -mssse3
 	endif
 endif
 
 ifeq ($(sse2),yes)
-	CXXFLAGS += -DUSE_SSE2
+	ARCH_FLAGS += -DUSE_SSE2
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -msse2
+		ARCH_FLAGS += -msse2
 	endif
 endif
 
 ifeq ($(mmx),yes)
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mmmx
+		ARCH_FLAGS += -mmmx
 	endif
 endif
 
 ifeq ($(altivec),yes)
-	CXXFLAGS += -maltivec
+	ARCH_FLAGS += -maltivec
 	ifeq ($(COMP),gcc)
-		CXXFLAGS += -mabi=altivec
+		ARCH_FLAGS += -mabi=altivec
 	endif
 endif
 
 ifeq ($(vsx),yes)
-	CXXFLAGS += -mvsx
+	ARCH_FLAGS += -mvsx
 	ifeq ($(COMP),gcc)
-		CXXFLAGS += -DNO_WARN_X86_INTRINSICS -DUSE_SSE2
+		ARCH_FLAGS += -DNO_WARN_X86_INTRINSICS -DUSE_SSE2
 	endif
 endif
 
 ifeq ($(neon),yes)
-	CXXFLAGS += -DUSE_NEON=$(arm_version)
+	ARCH_FLAGS += -DUSE_NEON=$(arm_version)
 	ifeq ($(KERNEL),Linux)
 	ifneq ($(COMP),ndk)
 	ifneq ($(arch),armv8)
-		CXXFLAGS += -mfpu=neon
+		ARCH_FLAGS += -mfpu=neon
 	endif
 	endif
 	endif
 endif
 
 ifeq ($(dotprod),yes)
-	CXXFLAGS += -march=armv8.2-a+dotprod -DUSE_NEON_DOTPROD
+	ARCH_FLAGS += -march=armv8.2-a+dotprod -DUSE_NEON_DOTPROD
 endif
 
 ifeq ($(lasx),yes)
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mlasx
+		ARCH_FLAGS += -mlasx
 	endif
 endif
 
 ifeq ($(lsx),yes)
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mlsx
+		ARCH_FLAGS += -mlsx
 	endif
 endif
 
 ### 3.7 pext
 ifeq ($(pext),yes)
-	CXXFLAGS += -DUSE_PEXT
+	ARCH_FLAGS += -DUSE_PEXT
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
-		CXXFLAGS += -mbmi2
+		ARCH_FLAGS += -mbmi2
 	endif
 endif
 
@@ -1078,6 +1080,13 @@ config-sanity: net
 
 $(EXE): $(OBJS)
 	+$(CXX) -o $@ $(OBJS) $(LDFLAGS)
+
+%.o: %.cpp
+	@if echo "$<" | grep -q "nnue/"; then \
+		$(CXX) $(CXXFLAGS) $(ARCH_FLAGS) -c $< -o $@; \
+	else \
+		$(CXX) $(CXXFLAGS) -c $< -o $@; \
+	fi
 
 # Force recompilation to ensure version info is up-to-date
 misc.o: FORCE
