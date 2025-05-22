@@ -19,12 +19,11 @@
 #include "network.h"
 
 #include <cstdlib>
-#include <errno.h>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <optional>
-#include <string.h>
+#include <type_traits>
 #include <vector>
 
 

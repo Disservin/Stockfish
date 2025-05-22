@@ -24,6 +24,7 @@
 #include <iostream>
 #include <memory>
 #include <optional>
+#include <stddef.h>
 #include <string>
 #include <string_view>
 #include <tuple>
