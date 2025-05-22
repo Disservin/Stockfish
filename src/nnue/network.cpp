@@ -452,6 +452,11 @@ start:
         return netDescription;
     }
 
+    if (jumped)
+    {
+        std::cout << "Shared memory not found" << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
 
     std::cout << "Loading from file" << std::endl;
 
