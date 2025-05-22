@@ -25,7 +25,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Run clang-format style check
-        uses: jidicula/clang-format-action@f62da5e3d3a2d88ff364771d9d938773a618ab5e # @v4.11.0
+        uses: jidicula/clang-format-action@4726374d1aa3c6aecf132e5197e498979588ebc8 # @v4.15.0
         id: clang-format
         continue-on-error: true
         with:
