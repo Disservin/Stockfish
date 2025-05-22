@@ -202,8 +202,13 @@ std::ostream& operator<<(std::ostream& os, const OptionsMap& om) {
                 }
 
                 else if (o.type == "spin")
-                    os << " default " << int(stof(o.defaultValue)) << " min " << o.min << " max "
-                       << o.max;
+                    os
+                      << " default "
+                      << int(stof(o.defaultValue))
+                      << " min "
+                      << o.min
+                      << " max "
+                      << o.max;
 
                 break;
             }

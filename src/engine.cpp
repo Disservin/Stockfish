@@ -72,7 +72,8 @@ Engine::Engine(std::optional<std::string> path) :
     options.add(  //
       "NumaPolicy", Option("auto", [this](const Option& o) {
           set_numa_config_from_option(o);
-          return numa_config_information_as_string() + "\n"
+          return numa_config_information_as_string()
+               + "\n"
                + thread_allocation_information_as_string();
       }));
 

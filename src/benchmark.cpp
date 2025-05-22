@@ -464,8 +464,11 @@ BenchmarkSetup setup_benchmark(std::istream& is) {
     else
         setup.originalInvocation += " " + std::to_string(desiredTimeS);
 
-    setup.filledInvocation += std::to_string(setup.threads) + " " + std::to_string(setup.ttSize)
-                            + " " + std::to_string(desiredTimeS);
+    setup.filledInvocation += std::to_string(setup.threads)
+                            + " "
+                            + std::to_string(setup.ttSize)
+                            + " "
+                            + std::to_string(desiredTimeS);
 
     auto getCorrectedTime = [&](int ply) {
         // time per move is fit roughly based on LTC games

@@ -265,7 +265,9 @@ inline int popcount(Bitboard b) {
 
     std::uint16_t indices[4];
     std::memcpy(indices, &b, sizeof(b));
-    return PopCnt16[indices[0]] + PopCnt16[indices[1]] + PopCnt16[indices[2]]
+    return PopCnt16[indices[0]]
+         + PopCnt16[indices[1]]
+         + PopCnt16[indices[2]]
          + PopCnt16[indices[3]];
 
 #elif defined(_MSC_VER)

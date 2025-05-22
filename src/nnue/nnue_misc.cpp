@@ -85,10 +85,14 @@ void format_cp_aligned_dot(Value v, std::stringstream& stream, const Position& p
 
     const double pawns = std::abs(0.01 * UCIEngine::to_cp(v, pos));
 
-    stream << (v < 0   ? '-'
-               : v > 0 ? '+'
-                       : ' ')
-           << std::setiosflags(std::ios::fixed) << std::setw(6) << std::setprecision(2) << pawns;
+    stream
+      << (v < 0   ? '-'
+          : v > 0 ? '+'
+                  : ' ')
+      << std::setiosflags(std::ios::fixed)
+      << std::setw(6)
+      << std::setprecision(2)
+      << pawns;
 }
 }
 
@@ -159,26 +163,34 @@ trace(Position& pos, const Eval::NNUE::Networks& networks, Eval::NNUE::Accumulat
     accumulators.reset();
     auto t = networks.big.trace_evaluate(pos, accumulators, &caches.big);
 
-    ss << " NNUE network contributions "
-       << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)") << std::endl
-       << "+------------+------------+------------+------------+\n"
-       << "|   Bucket   |  Material  | Positional |   Total    |\n"
-       << "|            |   (PSQT)   |  (Layers)  |            |\n"
-       << "+------------+------------+------------+------------+\n";
+    ss
+      << " NNUE network contributions "
+      << (pos.side_to_move() == WHITE ? "(White to move)" : "(Black to move)")
+      << std::endl
+      << "+------------+------------+------------+------------+\n"
+      << "|   Bucket   |  Material  | Positional |   Total    |\n"
+      << "|            |   (PSQT)   |  (Layers)  |            |\n"
+      << "+------------+------------+------------+------------+\n";
 
     for (std::size_t bucket = 0; bucket < LayerStacks; ++bucket)
     {
-        ss << "|  " << bucket << "        "  //
-           << " |  ";
+        ss
+          << "|  "
+          << bucket
+          << "        "  //
+          << " |  ";
         format_cp_aligned_dot(t.psqt[bucket], ss, pos);
-        ss << "  "  //
-           << " |  ";
+        ss
+          << "  "  //
+          << " |  ";
         format_cp_aligned_dot(t.positional[bucket], ss, pos);
-        ss << "  "  //
-           << " |  ";
+        ss
+          << "  "  //
+          << " |  ";
         format_cp_aligned_dot(t.psqt[bucket] + t.positional[bucket], ss, pos);
-        ss << "  "  //
-           << " |";
+        ss
+          << "  "  //
+          << " |";
         if (bucket == t.correctBucket)
             ss << " <-- this bucket is used";
         ss << '\n';

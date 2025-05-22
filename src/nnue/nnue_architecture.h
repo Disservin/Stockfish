@@ -79,15 +79,19 @@ struct NetworkArchitecture {
 
     // Read network parameters
     bool read_parameters(std::istream& stream) {
-        return fc_0.read_parameters(stream) && ac_0.read_parameters(stream)
-            && fc_1.read_parameters(stream) && ac_1.read_parameters(stream)
+        return fc_0.read_parameters(stream)
+            && ac_0.read_parameters(stream)
+            && fc_1.read_parameters(stream)
+            && ac_1.read_parameters(stream)
             && fc_2.read_parameters(stream);
     }
 
     // Write network parameters
     bool write_parameters(std::ostream& stream) const {
-        return fc_0.write_parameters(stream) && ac_0.write_parameters(stream)
-            && fc_1.write_parameters(stream) && ac_1.write_parameters(stream)
+        return fc_0.write_parameters(stream)
+            && ac_0.write_parameters(stream)
+            && fc_1.write_parameters(stream)
+            && ac_1.write_parameters(stream)
             && fc_2.write_parameters(stream);
     }
 

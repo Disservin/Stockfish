@@ -248,8 +248,21 @@ void Network<Arch, Transformer>::verify(std::string                             
                              + evalFile.defaultName;
             std::string msg5 = "The engine will be terminated now.";
 
-            std::string msg = "ERROR: " + msg1 + '\n' + "ERROR: " + msg2 + '\n' + "ERROR: " + msg3
-                            + '\n' + "ERROR: " + msg4 + '\n' + "ERROR: " + msg5 + '\n';
+            std::string msg = "ERROR: "
+                            + msg1
+                            + '\n'
+                            + "ERROR: "
+                            + msg2
+                            + '\n'
+                            + "ERROR: "
+                            + msg3
+                            + '\n'
+                            + "ERROR: "
+                            + msg4
+                            + '\n'
+                            + "ERROR: "
+                            + msg5
+                            + '\n';
 
             f(msg);
         }
@@ -260,10 +273,18 @@ void Network<Arch, Transformer>::verify(std::string                             
     if (f)
     {
         size_t size = sizeof(*featureTransformer) + sizeof(Arch) * LayerStacks;
-        f("NNUE evaluation using " + evalfilePath + " (" + std::to_string(size / (1024 * 1024))
-          + "MiB, (" + std::to_string(featureTransformer->InputDimensions) + ", "
-          + std::to_string(network[0].TransformedFeatureDimensions) + ", "
-          + std::to_string(network[0].FC_0_OUTPUTS) + ", " + std::to_string(network[0].FC_1_OUTPUTS)
+        f("NNUE evaluation using "
+          + evalfilePath
+          + " ("
+          + std::to_string(size / (1024 * 1024))
+          + "MiB, ("
+          + std::to_string(featureTransformer->InputDimensions)
+          + ", "
+          + std::to_string(network[0].TransformedFeatureDimensions)
+          + ", "
+          + std::to_string(network[0].FC_0_OUTPUTS)
+          + ", "
+          + std::to_string(network[0].FC_1_OUTPUTS)
           + ", 1))");
     }
 }

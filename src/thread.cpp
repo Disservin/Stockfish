@@ -354,7 +354,8 @@ Thread* ThreadPool::get_best_thread() const {
             if (newThreadInProvenLoss && newThreadScore < bestThreadScore)
                 bestThread = th.get();
         }
-        else if (newThreadInProvenWin || newThreadInProvenLoss
+        else if (newThreadInProvenWin
+                 || newThreadInProvenLoss
                  || (!is_loss(newThreadScore)
                      && (newThreadMoveVote > bestThreadMoveVote
                          || (newThreadMoveVote == bestThreadMoveVote && betterVotingValue))))

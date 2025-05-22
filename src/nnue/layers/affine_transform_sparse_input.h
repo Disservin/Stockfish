@@ -195,7 +195,8 @@ class AffineTransformSparseInput {
 
     static constexpr IndexType get_weight_index_scrambled(IndexType i) {
         return (i / ChunkSize) % (PaddedInputDimensions / ChunkSize) * OutputDimensions * ChunkSize
-             + i / PaddedInputDimensions * ChunkSize + i % ChunkSize;
+             + i / PaddedInputDimensions * ChunkSize
+             + i % ChunkSize;
     }
 
     static constexpr IndexType get_weight_index(IndexType i) {

@@ -569,7 +569,8 @@ class NumaConfig {
                 const BOOL     status = GetNumaProcessorNodeEx(&procnum, &nodeNumber);
                 const CpuIndex c      = static_cast<CpuIndex>(procGroup) * WIN_PROCESSOR_GROUP_SIZE
                                  + static_cast<CpuIndex>(number);
-                if (status != 0 && nodeNumber != std::numeric_limits<USHORT>::max()
+                if (status != 0
+                    && nodeNumber != std::numeric_limits<USHORT>::max()
                     && is_cpu_allowed(c))
                 {
                     cfg.add_cpu_to_node(nodeNumber, c);

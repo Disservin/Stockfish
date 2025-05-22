@@ -42,3 +42,4 @@ SpaceBeforeCpp11BracedList: false
 SpaceBeforeInheritanceColon: false
 SpaceInEmptyBlock: false
 SpacesBeforeTrailingComments: 2
+BreakBinaryOperations: RespectPrecedence

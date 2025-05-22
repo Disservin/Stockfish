@@ -140,8 +140,14 @@ std::string engine_version_info() {
         std::stringstream date(__DATE__);  // From compiler, format is "Sep 21 2008"
 
         date >> month >> day >> year;
-        ss << year << std::setw(2) << std::setfill('0') << (1 + months.find(month) / 4)
-           << std::setw(2) << std::setfill('0') << day;
+        ss
+          << year
+          << std::setw(2)
+          << std::setfill('0')
+          << (1 + months.find(month) / 4)
+          << std::setw(2)
+          << std::setfill('0')
+          << day;
 #endif
 
         ss << "-";
@@ -157,7 +163,8 @@ std::string engine_version_info() {
 }
 
 std::string engine_info(bool to_uci) {
-    return engine_version_info() + (to_uci ? "\nid author " : " by ")
+    return engine_version_info()
+         + (to_uci ? "\nid author " : " by ")
          + "the Stockfish developers (see AUTHORS file)";
 }
 
@@ -366,8 +373,16 @@ void dbg_print() {
 
     for (int i = 0; i < MaxDebugSlots; ++i)
         if ((n = hit[i][0]))
-            std::cerr << "Hit #" << i << ": Total " << n << " Hits " << hit[i][1]
-                      << " Hit Rate (%) " << 100.0 * E(hit[i][1]) << std::endl;
+            std::cerr
+              << "Hit #"
+              << i
+              << ": Total "
+              << n
+              << " Hits "
+              << hit[i][1]
+              << " Hit Rate (%) "
+              << 100.0 * E(hit[i][1])
+              << std::endl;
 
     for (int i = 0; i < MaxDebugSlots; ++i)
         if ((n = mean[i][0]))
@@ -385,8 +400,16 @@ void dbg_print() {
     for (int i = 0; i < MaxDebugSlots; ++i)
         if ((n = extremes[i][0]))
         {
-            std::cerr << "Extremity #" << i << ": Total " << n << " Min " << extremes[i][2]
-                      << " Max " << extremes[i][1] << std::endl;
+            std::cerr
+              << "Extremity #"
+              << i
+              << ": Total "
+              << n
+              << " Min "
+              << extremes[i][2]
+              << " Max "
+              << extremes[i][1]
+              << std::endl;
         }
 
     for (int i = 0; i < MaxDebugSlots; ++i)

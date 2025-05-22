@@ -283,8 +283,12 @@ class TBFile: public std::ifstream {
 
         if (!*baseAddress)
         {
-            std::cerr << "MapViewOfFile() failed, name = " << fname
-                      << ", error = " << GetLastError() << std::endl;
+            std::cerr
+              << "MapViewOfFile() failed, name = "
+              << fname
+              << ", error = "
+              << GetLastError()
+              << std::endl;
             exit(EXIT_FAILURE);
         }
 #endif
@@ -493,8 +497,15 @@ class TBTables {
     }
 
     void info() const {
-        sync_cout << "info string Found " << foundWDLFiles << " WDL and " << foundDTZFiles
-                  << " DTZ tablebase files (up to " << MaxCardinality << "-man)." << sync_endl;
+        sync_cout
+          << "info string Found "
+          << foundWDLFiles
+          << " WDL and "
+          << foundDTZFiles
+          << " DTZ tablebase files (up to "
+          << MaxCardinality
+          << "-man)."
+          << sync_endl;
     }
 
     void add(const std::vector<PieceType>& pieces);
@@ -701,7 +712,8 @@ int map_score(TBTable<DTZ>* entry, File f, int value, WDLScore wdl) {
     // DTZ tables store distance to zero in number of moves or plies. We
     // want to return plies, so we have to convert to plies when needed.
     if ((wdl == WDLWin && !(flags & TBFlag::WinPlies))
-        || (wdl == WDLLoss && !(flags & TBFlag::LossPlies)) || wdl == WDLCursedWin
+        || (wdl == WDLLoss && !(flags & TBFlag::LossPlies))
+        || wdl == WDLCursedWin
         || wdl == WDLBlessedLoss)
         value *= 2;
 
@@ -890,18 +902,26 @@ do_probe_table(const Position& pos, T* entry, WDLScore wdl, ProbeState* result) 
         // 6 to differentiate from the above case, rank_of() maps a1-d4 diagonal
         // to 0...3 and finally MapB1H1H7[] maps the b1-h1-h7 triangle to 0..27.
         else if (off_A1H8(squares[1]))
-            idx = (6 * 63 + rank_of(squares[0]) * 28 + MapB1H1H7[squares[1]]) * 62 + squares[2]
+            idx = (6 * 63 + rank_of(squares[0]) * 28 + MapB1H1H7[squares[1]]) * 62
+                + squares[2]
                 - adjust2;
 
         // First two pieces are on a1-h8 diagonal, third below
         else if (off_A1H8(squares[2]))
-            idx = 6 * 63 * 62 + 4 * 28 * 62 + rank_of(squares[0]) * 7 * 28
-                + (rank_of(squares[1]) - adjust1) * 28 + MapB1H1H7[squares[2]];
+            idx = 6 * 63 * 62
+                + 4 * 28 * 62
+                + rank_of(squares[0]) * 7 * 28
+                + (rank_of(squares[1]) - adjust1) * 28
+                + MapB1H1H7[squares[2]];
 
         // All 3 pieces on the diagonal a1-h8
         else
-            idx = 6 * 63 * 62 + 4 * 28 * 62 + 4 * 7 * 28 + rank_of(squares[0]) * 7 * 6
-                + (rank_of(squares[1]) - adjust1) * 6 + (rank_of(squares[2]) - adjust2);
+            idx = 6 * 63 * 62
+                + 4 * 28 * 62
+                + 4 * 7 * 28
+                + rank_of(squares[0]) * 7 * 6
+                + (rank_of(squares[1]) - adjust1) * 6
+                + (rank_of(squares[2]) - adjust2);
     }
     else
         // We don't have at least 3 unique pieces, like in KRRvKBB, just map
@@ -1066,7 +1086,8 @@ uint8_t* set_sizes(PairsData* d, uint8_t* data) {
     int base64_size = static_cast<int>(d->base64.size());
     for (int i = base64_size - 2; i >= 0; --i)
     {
-        d->base64[i] = (d->base64[i + 1] + number<Sym, LittleEndian>(&d->lowestSym[i])
+        d->base64[i] = (d->base64[i + 1]
+                        + number<Sym, LittleEndian>(&d->lowestSym[i])
                         - number<Sym, LittleEndian>(&d->lowestSym[i + 1]))
                      / 2;
 

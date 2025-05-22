@@ -114,8 +114,12 @@ void UCIEngine::loop() {
 
         else if (token == "uci")
         {
-            sync_cout << "id name " << engine_info(true) << "\n"
-                      << engine.get_options() << sync_endl;
+            sync_cout
+              << "id name "
+              << engine_info(true)
+              << "\n"
+              << engine.get_options()
+              << sync_endl;
 
             sync_cout << "uciok" << sync_endl;
         }
@@ -172,8 +176,11 @@ void UCIEngine::loop() {
                  "\nor read the corresponding README.md and Copying.txt files distributed along with this program.\n"
               << sync_endl;
         else if (!token.empty() && token[0] != '#')
-            sync_cout << "Unknown command: '" << cmd << "'. Type help for more information."
-                      << sync_endl;
+            sync_cout
+              << "Unknown command: '"
+              << cmd
+              << "'. Type help for more information."
+              << sync_endl;
 
     } while (token != "quit" && cli.argc == 1);  // The command-line arguments are one-shot
 }
@@ -252,8 +259,15 @@ void UCIEngine::bench(std::istream& args) {
 
         if (token == "go" || token == "eval")
         {
-            std::cerr << "\nPosition: " << cnt++ << '/' << num << " (" << engine.fen() << ")"
-                      << std::endl;
+            std::cerr
+              << "\nPosition: "
+              << cnt++
+              << '/'
+              << num
+              << " ("
+              << engine.fen()
+              << ")"
+              << std::endl;
             if (token == "go")
             {
                 Search::LimitsType limits = parse_limits(is);
@@ -287,10 +301,15 @@ void UCIEngine::bench(std::istream& args) {
 
     dbg_print();
 
-    std::cerr << "\n==========================="    //
-              << "\nTotal time (ms) : " << elapsed  //
-              << "\nNodes searched  : " << nodes    //
-              << "\nNodes/second    : " << 1000 * nodes / elapsed << std::endl;
+    std::cerr
+      << "\n==========================="  //
+      << "\nTotal time (ms) : "
+      << elapsed  //
+      << "\nNodes searched  : "
+      << nodes  //
+      << "\nNodes/second    : "
+      << 1000 * nodes / elapsed
+      << std::endl;
 
     // reset callback, to not capture a dangling reference to nodesSearched
     engine.set_on_update_full([&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
@@ -506,8 +525,11 @@ struct WinRateParams {
 
 WinRateParams win_rate_params(const Position& pos) {
 
-    int material = pos.count<PAWN>() + 3 * pos.count<KNIGHT>() + 3 * pos.count<BISHOP>()
-                 + 5 * pos.count<ROOK>() + 9 * pos.count<QUEEN>();
+    int material = pos.count<PAWN>()
+                 + 3 * pos.count<KNIGHT>()
+                 + 3 * pos.count<BISHOP>()
+                 + 5 * pos.count<ROOK>()
+                 + 9 * pos.count<QUEEN>();
 
     // The fitted model only uses data for material counts in [17, 78], and is anchored at count 58.
     double m = std::clamp(material, 17, 78) / 58.0;
@@ -625,10 +647,15 @@ void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     std::stringstream ss;
 
     ss << "info";
-    ss << " depth " << info.depth                 //
-       << " seldepth " << info.selDepth           //
-       << " multipv " << info.multiPV             //
-       << " score " << format_score(info.score);  //
+    ss
+      << " depth "
+      << info.depth  //
+      << " seldepth "
+      << info.selDepth  //
+      << " multipv "
+      << info.multiPV  //
+      << " score "
+      << format_score(info.score);  //
 
     if (showWDL)
         ss << " wdl " << info.wdl;
@@ -636,12 +663,19 @@ void UCIEngine::on_update_full(const Engine::InfoFull& info, bool showWDL) {
     if (!info.bound.empty())
         ss << " " << info.bound;
 
-    ss << " nodes " << info.nodes        //
-       << " nps " << info.nps            //
-       << " hashfull " << info.hashfull  //
-       << " tbhits " << info.tbHits      //
-       << " time " << info.timeMs        //
-       << " pv " << info.pv;             //
+    ss
+      << " nodes "
+      << info.nodes  //
+      << " nps "
+      << info.nps  //
+      << " hashfull "
+      << info.hashfull  //
+      << " tbhits "
+      << info.tbHits  //
+      << " time "
+      << info.timeMs  //
+      << " pv "
+      << info.pv;  //
 
     sync_cout << ss.str() << sync_endl;
 }
@@ -650,9 +684,13 @@ void UCIEngine::on_iter(const Engine::InfoIter& info) {
     std::stringstream ss;
 
     ss << "info";
-    ss << " depth " << info.depth                     //
-       << " currmove " << info.currmove               //
-       << " currmovenumber " << info.currmovenumber;  //
+    ss
+      << " depth "
+      << info.depth  //
+      << " currmove "
+      << info.currmove  //
+      << " currmovenumber "
+      << info.currmovenumber;  //
 
     sync_cout << ss.str() << sync_endl;
 }

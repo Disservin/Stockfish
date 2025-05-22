@@ -28,7 +28,9 @@
     #include <sys/mman.h>
 #endif
 
-#if defined(__APPLE__) || defined(__ANDROID__) || defined(__OpenBSD__) \
+#if defined(__APPLE__) \
+  || defined(__ANDROID__) \
+  || defined(__OpenBSD__) \
   || (defined(__GLIBCXX__) && !defined(_GLIBCXX_HAVE_ALIGNED_ALLOC) && !defined(_WIN32)) \
   || defined(__e2k__)
     #define POSIXALIGNEDALLOC
@@ -254,8 +256,12 @@ void aligned_large_pages_free(void* mem) {
     if (mem && !VirtualFree(mem, 0, MEM_RELEASE))
     {
         DWORD err = GetLastError();
-        std::cerr << "Failed to free large page memory. Error code: 0x" << std::hex << err
-                  << std::dec << std::endl;
+        std::cerr
+          << "Failed to free large page memory. Error code: 0x"
+          << std::hex
+          << err
+          << std::dec
+          << std::endl;
         exit(EXIT_FAILURE);
     }
 }

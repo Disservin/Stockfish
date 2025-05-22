@@ -72,9 +72,19 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
         os << " | " << (1 + r) << "\n +---+---+---+---+---+---+---+---+\n";
     }
 
-    os << "   a   b   c   d   e   f   g   h\n"
-       << "\nFen: " << pos.fen() << "\nKey: " << std::hex << std::uppercase << std::setfill('0')
-       << std::setw(16) << pos.key() << std::setfill(' ') << std::dec << "\nCheckers: ";
+    os
+      << "   a   b   c   d   e   f   g   h\n"
+      << "\nFen: "
+      << pos.fen()
+      << "\nKey: "
+      << std::hex
+      << std::uppercase
+      << std::setfill('0')
+      << std::setw(16)
+      << pos.key()
+      << std::setfill(' ')
+      << std::dec
+      << "\nCheckers: ";
 
     for (Bitboard b = pos.checkers(); b;)
         os << UCIEngine::square(pop_lsb(b)) << " ";
@@ -88,8 +98,19 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
         Tablebases::ProbeState s1, s2;
         Tablebases::WDLScore   wdl = Tablebases::probe_wdl(p, &s1);
         int                    dtz = Tablebases::probe_dtz(p, &s2);
-        os << "\nTablebases WDL: " << std::setw(4) << wdl << " (" << s1 << ")"
-           << "\nTablebases DTZ: " << std::setw(4) << dtz << " (" << s2 << ")";
+        os
+          << "\nTablebases WDL: "
+          << std::setw(4)
+          << wdl
+          << " ("
+          << s1
+          << ")"
+          << "\nTablebases DTZ: "
+          << std::setw(4)
+          << dtz
+          << " ("
+          << s2
+          << ")";
     }
 
     return os;
@@ -395,8 +416,13 @@ Position& Position::set(const string& code, Color c, StateInfo* si) {
 
     std::transform(sides[c].begin(), sides[c].end(), sides[c].begin(), tolower);
 
-    string fenStr = "8/" + sides[0] + char(8 - sides[0].length() + '0') + "/8/8/8/8/" + sides[1]
-                  + char(8 - sides[1].length() + '0') + "/8 w - - 0 10";
+    string fenStr = "8/"
+                  + sides[0]
+                  + char(8 - sides[0].length() + '0')
+                  + "/8/8/8/8/"
+                  + sides[1]
+                  + char(8 - sides[1].length() + '0')
+                  + "/8 w - - 0 10";
 
     return set(fenStr, false, si);
 }
@@ -444,8 +470,11 @@ string Position::fen() const {
     if (!can_castle(ANY_CASTLING))
         ss << '-';
 
-    ss << (ep_square() == SQ_NONE ? " - " : " " + UCIEngine::square(ep_square()) + " ")
-       << st->rule50 << " " << 1 + (gamePly - (sideToMove == BLACK)) / 2;
+    ss
+      << (ep_square() == SQ_NONE ? " - " : " " + UCIEngine::square(ep_square()) + " ")
+      << st->rule50
+      << " "
+      << 1 + (gamePly - (sideToMove == BLACK)) / 2;
 
     return ss.str();
 }
@@ -489,7 +518,8 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied) const {
          | (attacks_bb<BISHOP>(s, occupied) & pieces(BISHOP, QUEEN))
          | (attacks_bb<PAWN>(s, BLACK) & pieces(WHITE, PAWN))
          | (attacks_bb<PAWN>(s, WHITE) & pieces(BLACK, PAWN))
-         | (attacks_bb<KNIGHT>(s) & pieces(KNIGHT)) | (attacks_bb<KING>(s) & pieces(KING));
+         | (attacks_bb<KNIGHT>(s) & pieces(KNIGHT))
+         | (attacks_bb<KING>(s) & pieces(KING));
 }
 
 bool Position::attackers_to_exist(Square s, Bitboard occupied, Color c) const {
@@ -498,7 +528,8 @@ bool Position::attackers_to_exist(Square s, Bitboard occupied, Color c) const {
             && (attacks_bb<ROOK>(s, occupied) & pieces(c, ROOK, QUEEN)))
         || ((attacks_bb<BISHOP>(s) & pieces(c, BISHOP, QUEEN))
             && (attacks_bb<BISHOP>(s, occupied) & pieces(c, BISHOP, QUEEN)))
-        || (((attacks_bb<PAWN>(s, ~c) & pieces(PAWN)) | (attacks_bb<KNIGHT>(s) & pieces(KNIGHT))
+        || (((attacks_bb<PAWN>(s, ~c) & pieces(PAWN))
+             | (attacks_bb<KNIGHT>(s) & pieces(KNIGHT))
              | (attacks_bb<KING>(s) & pieces(KING)))
             & pieces(c));
 }
@@ -601,7 +632,8 @@ bool Position::pseudo_legal(const Move m) const {
         const bool isCapture    = bool(attacks_bb<PAWN>(from, us) & pieces(~us) & to);
         const bool isSinglePush = (from + pawn_push(us) == to) && empty(to);
         const bool isDoublePush = (from + 2 * pawn_push(us) == to)
-                               && (relative_rank(us, from) == RANK_2) && empty(to)
+                               && (relative_rank(us, from) == RANK_2)
+                               && empty(to)
                                && empty(to - pawn_push(us));
 
         if (!(isCapture || isSinglePush || isDoublePush))
@@ -1269,7 +1301,8 @@ bool Position::pos_is_ok() const {
 
     constexpr bool Fast = true;  // Quick (default) or full check?
 
-    if ((sideToMove != WHITE && sideToMove != BLACK) || piece_on(square<KING>(WHITE)) != W_KING
+    if ((sideToMove != WHITE && sideToMove != BLACK)
+        || piece_on(square<KING>(WHITE)) != W_KING
         || piece_on(square<KING>(BLACK)) != B_KING
         || (ep_square() != SQ_NONE && relative_rank(sideToMove, ep_square()) != RANK_6))
         assert(0 && "pos_is_ok: Default");
@@ -1277,15 +1310,18 @@ bool Position::pos_is_ok() const {
     if (Fast)
         return true;
 
-    if (pieceCount[W_KING] != 1 || pieceCount[B_KING] != 1
+    if (pieceCount[W_KING] != 1
+        || pieceCount[B_KING] != 1
         || attackers_to_exist(square<KING>(~sideToMove), pieces(), sideToMove))
         assert(0 && "pos_is_ok: Kings");
 
     if ((pieces(PAWN) & (Rank1BB | Rank8BB)) || pieceCount[W_PAWN] > 8 || pieceCount[B_PAWN] > 8)
         assert(0 && "pos_is_ok: Pawns");
 
-    if ((pieces(WHITE) & pieces(BLACK)) || (pieces(WHITE) | pieces(BLACK)) != pieces()
-        || popcount(pieces(WHITE)) > 16 || popcount(pieces(BLACK)) > 16)
+    if ((pieces(WHITE) & pieces(BLACK))
+        || (pieces(WHITE) | pieces(BLACK)) != pieces()
+        || popcount(pieces(WHITE)) > 16
+        || popcount(pieces(BLACK)) > 16)
         assert(0 && "pos_is_ok: Bitboards");
 
     for (PieceType p1 = PAWN; p1 <= KING; ++p1)
