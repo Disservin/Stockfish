@@ -31,6 +31,30 @@
 
 namespace Stockfish {
 
+template<typename T>
+class atomic_relaxed: private std::atomic<T> {
+    static_assert(std::atomic<T>::is_always_lock_free);
+
+   public:
+    using std::atomic<T>::atomic;
+
+    T& operator=(const T& desired) noexcept {
+        this->store(desired, std::memory_order_relaxed);
+        return *this;
+    }
+
+    T operator=(const atomic_relaxed& desired) noexcept {
+        this->store(desired.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        return desired.load(std::memory_order_relaxed);
+    }
+
+    T& operator=(const atomic_relaxed& desired) noexcept {
+        this->store(desired.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        return *this;
+    }
+
+    operator T() const noexcept { return this->load(std::memory_order_relaxed); }
+};
 
 // TTEntry struct is the 10 bytes transposition table entry, defined as below:
 //
@@ -50,6 +74,8 @@ struct TTEntry {
 
     // Convert internal bitfields to external types
     TTData read() const {
+        // TTEntry entry;
+        // std::memcpy(&entry, this, sizeof(TTEntry));
         return TTData{Move(move16),           Value(value16),
                       Value(eval16),          Depth(depth8 + DEPTH_ENTRY_OFFSET),
                       Bound(genBound8 & 0x3), bool(genBound8 & 0x4)};
@@ -60,15 +86,33 @@ struct TTEntry {
     // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
     uint8_t relative_age(const uint8_t generation8) const;
 
+    TTEntry& operator=(const TTEntry& other) {
+        // std::memcpy(this, &other, sizeof(TTEntry));
+        key16     = other.key16;
+        depth8    = other.depth8;
+        genBound8 = other.genBound8;
+        move16    = other.move16;
+        value16   = other.value16;
+        eval16    = other.eval16;
+        return *this;
+    }
+
    private:
     friend class TranspositionTable;
 
-    uint16_t key16;
-    uint8_t  depth8;
-    uint8_t  genBound8;
-    Move     move16;
-    int16_t  value16;
-    int16_t  eval16;
+    // uint16_t key16;
+    // uint8_t  depth8;
+    // uint8_t  genBound8;
+    // Move     move16;
+    // int16_t  value16;
+    // int16_t  eval16;
+
+    atomic_relaxed<uint16_t> key16;
+    atomic_relaxed<uint8_t>  depth8;
+    atomic_relaxed<uint8_t>  genBound8;
+    atomic_relaxed<uint16_t> move16;
+    atomic_relaxed<int16_t>  value16;
+    atomic_relaxed<int16_t>  eval16;
 };
 
 // `genBound8` is where most of the details are. We use the following constants to manipulate 5 leading generation bits
@@ -95,7 +139,7 @@ void TTEntry::save(
 
     // Preserve the old ttmove if we don't have a new one
     if (m || uint16_t(k) != key16)
-        move16 = m;
+        move16 = m.raw();
 
     // Overwrite less valuable entries (cheapest checks first)
     if (b == BOUND_EXACT || uint16_t(k) != key16 || d - DEPTH_ENTRY_OFFSET + 2 * pv > depth8 - 4
@@ -129,14 +173,7 @@ TTWriter::TTWriter(TTEntry* tte) :
 
 void TTWriter::write(
   Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8) {
-    // entry->save(k, v, pv, b, d, m, ev, generation8);
-
-    TTEntry copy = *entry;
-
-    copy.save(k, v, pv, b, d, m, ev, generation8);
-
-    // Copy the entry to the TTEntry
-    std::memcpy(entry, &copy, sizeof(TTEntry));
+    entry->save(k, v, pv, b, d, m, ev, generation8);
 }
 
 
@@ -188,7 +225,10 @@ void TranspositionTable::clear(ThreadPool& threads) {
             const size_t start  = stride * i;
             const size_t len    = i + 1 != threadCount ? stride : clusterCount - start;
 
-            std::memset(&table[start], 0, len * sizeof(Cluster));
+            // std::memset(&table[start], 0, len * sizeof(Cluster));
+            for (size_t j = 0; j < len; ++j)
+                for (int k = 0; k < ClusterSize; ++k)
+                    table[start + j].entry[k] = TTEntry();
         });
     }
 
