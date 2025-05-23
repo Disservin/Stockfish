@@ -129,7 +129,14 @@ TTWriter::TTWriter(TTEntry* tte) :
 
 void TTWriter::write(
   Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8) {
-    entry->save(k, v, pv, b, d, m, ev, generation8);
+    // entry->save(k, v, pv, b, d, m, ev, generation8);
+
+    TTEntry copy = *entry;
+
+    copy.save(k, v, pv, b, d, m, ev, generation8);
+
+    // Copy the entry to the TTEntry
+    std::memcpy(entry, &copy, sizeof(TTEntry));
 }
 
 
