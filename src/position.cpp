@@ -866,7 +866,7 @@ DirtyPiece Position::do_move(Move                      m,
     // Update the key with the final value
     st->key = k;
     if (tt)
-        prefetch(tt->first_entry(key()));
+        tt->prefetch(key());
 
     // Set capture piece
     st->capturedPiece = captured;
@@ -1021,7 +1021,7 @@ void Position::do_null_move(StateInfo& newSt, const TranspositionTable& tt) {
     }
 
     st->key ^= Zobrist::side;
-    prefetch(tt.first_entry(key()));
+    tt.prefetch(key());
 
     st->pliesFromNull = 0;
 

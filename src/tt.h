@@ -66,15 +66,16 @@ struct TTData {
 };
 
 
-// This is used to make racy writes to the global TT.
 struct TTWriter {
    public:
     void write(Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8);
 
    private:
     friend class TranspositionTable;
-    TTEntry* entry;
-    TTWriter(TTEntry* tte);
+    std::atomic<uint16_t>* key_atomic;
+    std::atomic<uint64_t>* data_atomic;
+
+    TTWriter(std::atomic<uint16_t>* key_ptr, std::atomic<uint64_t>* data_ptr);
 };
 
 
@@ -93,8 +94,7 @@ class TranspositionTable {
     uint8_t generation() const;  // The current age, used when writing new data to the TT
     std::tuple<bool, TTData, TTWriter>
     probe(const Key key) const;  // The main method, whose retvals separate local vs global objects
-    TTEntry* first_entry(const Key key)
-      const;  // This is the hash function; its only external use is memory prefetching.
+    void prefetch(const Key key) const;
 
    private:
     friend struct TTEntry;
