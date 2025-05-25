@@ -51,6 +51,18 @@ struct TTData8 {
                       Value(eval16),          Depth(depth8 + DEPTH_ENTRY_OFFSET),
                       Bound(genBound8 & 0x3), bool(genBound8 & 0x4)};
     }
+
+    uint64_t packed() const {
+        uint64_t packed_data;
+        std::memcpy(&packed_data, this, sizeof(packed_data));
+        return packed_data;
+    }
+
+    static TTData8 unpack(uint64_t packed_data) {
+        TTData8 data;
+        std::memcpy(&data, &packed_data, sizeof(data));
+        return data;
+    }
 };
 
 // `genBound8` is where most of the details are. We use the following constants to manipulate 5 leading generation bits
@@ -125,16 +137,13 @@ void TTWriter::write(
     uint16_t current_key    = key_atomic->load(std::memory_order_relaxed);
     uint64_t current_packed = data_atomic->load(std::memory_order_relaxed);
 
-    TTData8 current_data;
-    std::memcpy(&current_data, &current_packed, sizeof(current_data));
-
-    bool update = false;
+    TTData8 current_data = TTData8::unpack(current_packed);
 
     // Preserve the old ttmove if we don't have a new one
     if (m || uint16_t(k) != current_key)
     {
-        update              = true;
         current_data.move16 = m.raw();
+        data_atomic->store(current_data.packed(), std::memory_order_relaxed);
     }
 
     // Overwrite less valuable entries (cheapest checks first)
@@ -150,21 +159,8 @@ void TTWriter::write(
         current_data.value16   = int16_t(v);
         current_data.eval16    = int16_t(ev);
 
-        uint64_t packed_new_data;
-        std::memcpy(&packed_new_data, &current_data, sizeof(packed_new_data));
-
         key_atomic->store(uint16_t(k), std::memory_order_relaxed);
-        data_atomic->store(packed_new_data, std::memory_order_relaxed);
-
-        return;
-    }
-
-    if (update)
-    {
-        uint64_t packed_new_data;
-        std::memcpy(&packed_new_data, &current_data, sizeof(packed_new_data));
-
-        data_atomic->store(packed_new_data, std::memory_order_relaxed);
+        data_atomic->store(current_data.packed(), std::memory_order_relaxed);
     }
 }
 
