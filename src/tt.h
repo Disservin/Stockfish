@@ -29,7 +29,6 @@
 namespace Stockfish {
 
 class ThreadPool;
-struct TTEntry;
 struct Cluster;
 
 template<typename T>
@@ -122,7 +121,6 @@ class TranspositionTable {
     void prefetch(const Key key) const;
 
    private:
-    friend struct TTEntry;
 
     size_t   clusterCount;
     Cluster* table = nullptr;
