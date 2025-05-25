@@ -94,39 +94,8 @@ uint8_t TTData8::relative_age(const uint8_t generation8) const {
 
 static_assert(sizeof(TTData8) == 8, "TTData8 must be exactly 8 bytes");
 
-struct TTEntry {
-    TTEntry(std::atomic<uint16_t>* key_ptr, std::atomic<uint64_t>* data_ptr) :
-        key_atomic(key_ptr),
-        data_atomic(data_ptr) {}
 
-    TTData read() const {
-        // uint16_t key         = key_atomic->load(std::memory_order_relaxed);
-        uint64_t packed_data = data_atomic->load(std::memory_order_relaxed);
-
-        TTData8 data;
-        std::memcpy(&data, &packed_data, sizeof(data));
-
-        return TTData{Move(data.move16),           Value(data.value16),
-                      Value(data.eval16),          Depth(data.depth8 + DEPTH_ENTRY_OFFSET),
-                      Bound(data.genBound8 & 0x3), bool(data.genBound8 & 0x4)};
-    }
-
-    TTData8 read_raw() const {
-        uint64_t packed_data = data_atomic->load(std::memory_order_relaxed);
-        TTData8  data;
-        std::memcpy(&data, &packed_data, sizeof(data));
-        return data;
-    }
-
-   private:
-    friend class TranspositionTable;
-
-    std::atomic<uint16_t>* key_atomic;
-    std::atomic<uint64_t>* data_atomic;
-};
-
-
-TTWriter::TTWriter(std::atomic<uint16_t>* key_ptr, std::atomic<uint64_t>* data_ptr) :
+TTWriter::TTWriter(AtomicRelaxed<uint16_t>* key_ptr, AtomicRelaxed<uint64_t>* data_ptr) :
     key_atomic(key_ptr),
     data_atomic(data_ptr) {}
 
@@ -134,8 +103,8 @@ TTWriter::TTWriter(std::atomic<uint16_t>* key_ptr, std::atomic<uint64_t>* data_p
 // overwriting an old position.
 void TTWriter::write(
   Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8) {
-    uint16_t current_key    = key_atomic->load(std::memory_order_relaxed);
-    uint64_t current_packed = data_atomic->load(std::memory_order_relaxed);
+    uint16_t current_key    = key_atomic->load();
+    uint64_t current_packed = data_atomic->load();
 
     TTData8 current_data = TTData8::unpack(current_packed);
 
@@ -143,7 +112,7 @@ void TTWriter::write(
     if (m || uint16_t(k) != current_key)
     {
         current_data.move16 = m.raw();
-        data_atomic->store(current_data.packed(), std::memory_order_relaxed);
+        data_atomic->store(current_data.packed());
     }
 
     // Overwrite less valuable entries (cheapest checks first)
@@ -159,8 +128,8 @@ void TTWriter::write(
         current_data.value16   = int16_t(v);
         current_data.eval16    = int16_t(ev);
 
-        key_atomic->store(uint16_t(k), std::memory_order_relaxed);
-        data_atomic->store(current_data.packed(), std::memory_order_relaxed);
+        key_atomic->store(uint16_t(k));
+        data_atomic->store(current_data.packed());
     }
 }
 
@@ -171,8 +140,8 @@ void TTWriter::write(
 static constexpr int ClusterSize = 3;
 
 struct Cluster {
-    std::atomic<uint16_t> keys[ClusterSize];
-    std::atomic<uint64_t> data[ClusterSize];
+    AtomicRelaxed<uint16_t> keys[ClusterSize];
+    AtomicRelaxed<uint64_t> data[ClusterSize];
 };
 
 static_assert(sizeof(Cluster) == 32, "Suboptimal Cluster size");
@@ -216,8 +185,8 @@ void TranspositionTable::clear(ThreadPool& threads) {
             {
                 for (int k = 0; k < ClusterSize; ++k)
                 {
-                    table[j].keys[k].store(0, std::memory_order_relaxed);
-                    table[j].data[k].store(0, std::memory_order_relaxed);
+                    table[j].keys[k].store(0);
+                    table[j].data[k].store(0);
                 }
             }
         });
@@ -238,7 +207,7 @@ int TranspositionTable::hashfull(int maxAge) const {
     {
         for (int j = 0; j < ClusterSize; ++j)
         {
-            TTData8 entry = (TTEntry(&table[i].keys[j], &table[i].data[j]).read_raw());
+            TTData8 entry = TTData8::unpack(table[i].data[j]);
 
             cnt += entry.is_occupied() && entry.relative_age(generation8) <= maxAgeInternal;
         }
@@ -269,12 +238,12 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
 
     for (int i = 0; i < ClusterSize; ++i)
     {
-        if (cluster->keys[i].load(std::memory_order_relaxed) == key16)
+        if (cluster->keys[i].load() == key16)
         {
             // This gap is the main place for read races.
             // After `read()` completes that copy is final, but may be self-inconsistent.
 
-            TTData8 data = TTEntry(&cluster->keys[i], &cluster->data[i]).read_raw();
+            TTData8 data = TTData8::unpack(cluster->data[i].load());
             return {data.is_occupied(), data.read(),
                     TTWriter(&cluster->keys[i], &cluster->data[i])};
         }
@@ -285,9 +254,8 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
     for (int i = 1; i < ClusterSize; ++i)
     {
 
-        TTData8 current =
-          TTEntry(&cluster->keys[replace_idx], &cluster->data[replace_idx]).read_raw();
-        TTData8 candidate = TTEntry(&cluster->keys[i], &cluster->data[i]).read_raw();
+        TTData8 current   = TTData8::unpack(cluster->data[replace_idx]);
+        TTData8 candidate = TTData8::unpack(cluster->data[i]);
 
         if (current.depth8 - current.relative_age(generation8)
             > candidate.depth8 - candidate.relative_age(generation8))

@@ -32,6 +32,31 @@ class ThreadPool;
 struct TTEntry;
 struct Cluster;
 
+template<typename T>
+class AtomicRelaxed {
+   private:
+    std::atomic<T> value;
+
+   public:
+    AtomicRelaxed() = default;
+    AtomicRelaxed(T init_value) :
+        value(init_value) {}
+
+    AtomicRelaxed(const AtomicRelaxed&)            = delete;
+    AtomicRelaxed& operator=(const AtomicRelaxed&) = delete;
+
+    T load() const { return value.load(std::memory_order_relaxed); }
+
+    void store(T new_value) { value.store(new_value, std::memory_order_relaxed); }
+
+    operator T() const { return load(); }
+
+    AtomicRelaxed& operator=(T new_value) {
+        store(new_value);
+        return *this;
+    }
+};
+
 // There is only one global hash table for the engine and all its threads. For chess in particular, we even allow racy
 // updates between threads to and from the TT, as taking the time to synchronize access would cost thinking time and
 // thus elo. As a hash table, collisions are possible and may cause chess playing issues (bizarre blunders, faulty mate
@@ -72,10 +97,10 @@ struct TTWriter {
 
    private:
     friend class TranspositionTable;
-    std::atomic<uint16_t>* key_atomic;
-    std::atomic<uint64_t>* data_atomic;
+    AtomicRelaxed<uint16_t>* key_atomic;
+    AtomicRelaxed<uint64_t>* data_atomic;
 
-    TTWriter(std::atomic<uint16_t>* key_ptr, std::atomic<uint64_t>* data_ptr);
+    TTWriter(AtomicRelaxed<uint16_t>* key_ptr, AtomicRelaxed<uint64_t>* data_ptr);
 };
 
 
