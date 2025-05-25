@@ -21,7 +21,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <tuple>
+#
 
 #include "memory.h"
 #include "types.h"
@@ -69,24 +71,68 @@ class AtomicRelaxed {
 
 
 // A copy of the data already in the entry (possibly collided). `probe` may be racy, resulting in inconsistent data.
-struct TTData {
-    Move  move;
-    Value value, eval;
-    Depth depth;
-    Bound bound;
-    bool  is_pv;
+// struct TTData {
+//     Move  move;
+//     Value value, eval;
+//     Depth depth;
+//     Bound bound;
+//     bool  is_pv;
 
-    TTData() = delete;
+//     TTData() = delete;
+
+//     // clang-format off
+//     TTData(Move m, Value v, Value ev, Depth d, Bound b, bool pv) :
+//         move(m),
+//         value(v),
+//         eval(ev),
+//         depth(d),
+//         bound(b),
+//         is_pv(pv) {};
+//     // clang-format on
+// };
+
+struct TTData8 {
+    uint8_t  depth8;
+    uint8_t  genBound8;
+    uint16_t move16;
+    int16_t  value16;
+    int16_t  eval16;
+
+    TTData8() = default;
 
     // clang-format off
-    TTData(Move m, Value v, Value ev, Depth d, Bound b, bool pv) :
-        move(m),
-        value(v),
-        eval(ev),
-        depth(d),
-        bound(b),
-        is_pv(pv) {};
+    TTData8(Move m, Value v, Value ev, Depth d, Bound b, bool pv, uint8_t generation8) :
+        depth8(uint8_t(d - DEPTH_ENTRY_OFFSET)),
+        genBound8(uint8_t(generation8  | uint8_t(pv) << 2 | b)),
+        move16(m.raw()),
+        value16(int16_t(v)),
+        eval16(int16_t(ev)) {}
     // clang-format on
+
+    bool is_occupied() const;
+
+    // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
+    uint8_t relative_age(const uint8_t generation8) const;
+
+    Move  move() const { return Move(move16); }
+    Value value() const { return Value(value16); }
+    Value eval() const { return Value(eval16); }
+    Depth depth() const { return Depth(depth8 + DEPTH_ENTRY_OFFSET); }
+    bool  is_pv() const { return bool(genBound8 & 0x4); }
+    Bound bound() const { return Bound(genBound8 & 0x3); }
+
+
+    uint64_t packed() const {
+        uint64_t packed_data;
+        std::memcpy(&packed_data, this, sizeof(packed_data));
+        return packed_data;
+    }
+
+    static TTData8 unpack(uint64_t packed_data) {
+        TTData8 data;
+        std::memcpy(&data, &packed_data, sizeof(data));
+        return data;
+    }
 };
 
 
@@ -116,12 +162,11 @@ class TranspositionTable {
     void
     new_search();  // This must be called at the beginning of each root search to track entry aging
     uint8_t generation() const;  // The current age, used when writing new data to the TT
-    std::tuple<bool, TTData, TTWriter>
+    std::tuple<bool, TTData8, TTWriter>
     probe(const Key key) const;  // The main method, whose retvals separate local vs global objects
     void prefetch(const Key key) const;
 
    private:
-
     size_t   clusterCount;
     Cluster* table = nullptr;
 

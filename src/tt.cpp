@@ -32,38 +32,6 @@
 
 namespace Stockfish {
 
-struct TTData8 {
-    uint8_t  depth8;
-    uint8_t  genBound8;
-    uint16_t move16;
-    int16_t  value16;
-    int16_t  eval16;
-
-
-    bool is_occupied() const;
-
-    // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
-    uint8_t relative_age(const uint8_t generation8) const;
-
-    // Convert internal bitfields to external types
-    TTData read() const {
-        return TTData{Move(move16),           Value(value16),
-                      Value(eval16),          Depth(depth8 + DEPTH_ENTRY_OFFSET),
-                      Bound(genBound8 & 0x3), bool(genBound8 & 0x4)};
-    }
-
-    uint64_t packed() const {
-        uint64_t packed_data;
-        std::memcpy(&packed_data, this, sizeof(packed_data));
-        return packed_data;
-    }
-
-    static TTData8 unpack(uint64_t packed_data) {
-        TTData8 data;
-        std::memcpy(&data, &packed_data, sizeof(data));
-        return data;
-    }
-};
 
 // `genBound8` is where most of the details are. We use the following constants to manipulate 5 leading generation bits
 // and 3 trailing miscellaneous bits.
@@ -232,7 +200,7 @@ uint8_t TranspositionTable::generation() const { return generation8; }
 // to be replaced later. The replace value of an entry is calculated as its depth
 // minus 8 times its relative age. TTEntry t1 is considered more valuable than
 // TTEntry t2 if its replace value is greater than that of t2.
-std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) const {
+std::tuple<bool, TTData8, TTWriter> TranspositionTable::probe(const Key key) const {
     Cluster*       cluster = &table[mul_hi64(key, clusterCount)];
     const uint16_t key16   = uint16_t(key);  // Use the low 16 bits as key inside the cluster
 
@@ -244,8 +212,7 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
             // After `read()` completes that copy is final, but may be self-inconsistent.
 
             TTData8 data = TTData8::unpack(cluster->data[i].load());
-            return {data.is_occupied(), data.read(),
-                    TTWriter(&cluster->keys[i], &cluster->data[i])};
+            return {data.is_occupied(), data, TTWriter(&cluster->keys[i], &cluster->data[i])};
         }
     }
 
@@ -265,7 +232,8 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
     }
 
     return {false,
-            TTData{Move::none(), VALUE_NONE, VALUE_NONE, DEPTH_ENTRY_OFFSET, BOUND_NONE, false},
+            TTData8{Move::none(), VALUE_NONE, VALUE_NONE, DEPTH_ENTRY_OFFSET, BOUND_NONE, false,
+                    generation8},
             TTWriter(&cluster->keys[replace_idx], &cluster->data[replace_idx])};
 }
 
