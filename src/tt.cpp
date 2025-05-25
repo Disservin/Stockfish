@@ -32,35 +32,15 @@
 
 namespace Stockfish {
 
-struct TTData8 {
-    uint8_t  depth8;
-    uint8_t  genBound8;
-    uint16_t move16;
-    int16_t  value16;
-    int16_t  eval16;
 
+struct TTData8Move {
+    uint16_t move;
 
-    bool is_occupied() const;
+    uint16_t packed() const { return move; }
 
-    // The returned age is a multiple of TranspositionTable::GENERATION_DELTA
-    uint8_t relative_age(const uint8_t generation8) const;
-
-    // Convert internal bitfields to external types
-    TTData read() const {
-        return TTData{Move(move16),           Value(value16),
-                      Value(eval16),          Depth(depth8 + DEPTH_ENTRY_OFFSET),
-                      Bound(genBound8 & 0x3), bool(genBound8 & 0x4)};
-    }
-
-    uint64_t packed() const {
-        uint64_t packed_data;
-        std::memcpy(&packed_data, this, sizeof(packed_data));
-        return packed_data;
-    }
-
-    static TTData8 unpack(uint64_t packed_data) {
-        TTData8 data;
-        std::memcpy(&data, &packed_data, sizeof(data));
+    static TTData8Move unpack(uint16_t packed_data) {
+        TTData8Move data;
+        data.move = packed_data;
         return data;
     }
 };
@@ -95,28 +75,22 @@ uint8_t TTData8::relative_age(const uint8_t generation8) const {
 static_assert(sizeof(TTData8) == 8, "TTData8 must be exactly 8 bytes");
 
 
-TTWriter::TTWriter(AtomicRelaxed<uint16_t>* key_ptr, AtomicRelaxed<uint64_t>* data_ptr) :
-    key_atomic(key_ptr),
+TTWriter::TTWriter(AtomicRelaxed<uint16_t>* move_ptr, AtomicRelaxed<uint64_t>* data_ptr) :
+    data_2_atomic(move_ptr),
     data_atomic(data_ptr) {}
 
 // Populates the TTEntry with a new node's data, possibly
 // overwriting an old position.
 void TTWriter::write(
   Key k, Value v, bool pv, Bound b, Depth d, Move m, Value ev, uint8_t generation8) {
-    uint16_t current_key    = key_atomic->load();
-    uint64_t current_packed = data_atomic->load();
-
-    TTData8 current_data = TTData8::unpack(current_packed);
+    TTData8 current_data = TTData8::unpack(data_atomic->load());
 
     // Preserve the old ttmove if we don't have a new one
-    if (m || uint16_t(k) != current_key)
-    {
-        current_data.move16 = m.raw();
-        data_atomic->store(current_data.packed());
-    }
+    if (m || uint16_t(k) != current_data.key)
+        data_2_atomic->store(m.raw());
 
     // Overwrite less valuable entries (cheapest checks first)
-    if (b == BOUND_EXACT || uint16_t(k) != current_key
+    if (b == BOUND_EXACT || uint16_t(k) != current_data.key
         || d - DEPTH_ENTRY_OFFSET + 2 * pv > current_data.depth8 - 4
         || current_data.relative_age(generation8))
     {
@@ -127,8 +101,8 @@ void TTWriter::write(
         current_data.genBound8 = uint8_t(generation8 | uint8_t(pv) << 2 | b);
         current_data.value16   = int16_t(v);
         current_data.eval16    = int16_t(ev);
+        current_data.key       = uint16_t(k);
 
-        key_atomic->store(uint16_t(k));
         data_atomic->store(current_data.packed());
     }
 }
@@ -140,8 +114,8 @@ void TTWriter::write(
 static constexpr int ClusterSize = 3;
 
 struct Cluster {
-    AtomicRelaxed<uint16_t> keys[ClusterSize];
-    AtomicRelaxed<uint64_t> data[ClusterSize];
+    AtomicRelaxed<uint64_t> d1[ClusterSize];
+    AtomicRelaxed<uint16_t> d2[ClusterSize];
 };
 
 static_assert(sizeof(Cluster) == 32, "Suboptimal Cluster size");
@@ -185,8 +159,8 @@ void TranspositionTable::clear(ThreadPool& threads) {
             {
                 for (int k = 0; k < ClusterSize; ++k)
                 {
-                    table[j].keys[k].store(0);
-                    table[j].data[k].store(0);
+                    table[j].d1[k].store(0);
+                    table[j].d2[k].store(0);
                 }
             }
         });
@@ -207,7 +181,7 @@ int TranspositionTable::hashfull(int maxAge) const {
     {
         for (int j = 0; j < ClusterSize; ++j)
         {
-            TTData8 entry = TTData8::unpack(table[i].data[j]);
+            TTData8 entry = TTData8::unpack(table[i].d2[j]);
 
             cnt += entry.is_occupied() && entry.relative_age(generation8) <= maxAgeInternal;
         }
@@ -238,14 +212,16 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
 
     for (int i = 0; i < ClusterSize; ++i)
     {
-        if (cluster->keys[i].load() == key16)
+        TTData8 data = TTData8::unpack(cluster->d1[i].load());
+
+        if (data.key == key16)
         {
             // This gap is the main place for read races.
             // After `read()` completes that copy is final, but may be self-inconsistent.
 
-            TTData8 data = TTData8::unpack(cluster->data[i].load());
-            return {data.is_occupied(), data.read(),
-                    TTWriter(&cluster->keys[i], &cluster->data[i])};
+            return {data.is_occupied(),
+                    {cluster->d2[i].load(), data},
+                    TTWriter(&cluster->d2[i], &cluster->d1[i])};
         }
     }
 
@@ -254,8 +230,8 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
     for (int i = 1; i < ClusterSize; ++i)
     {
 
-        TTData8 current   = TTData8::unpack(cluster->data[replace_idx]);
-        TTData8 candidate = TTData8::unpack(cluster->data[i]);
+        TTData8 current   = TTData8::unpack(cluster->d1[replace_idx]);
+        TTData8 candidate = TTData8::unpack(cluster->d1[i]);
 
         if (current.depth8 - current.relative_age(generation8)
             > candidate.depth8 - candidate.relative_age(generation8))
@@ -266,14 +242,14 @@ std::tuple<bool, TTData, TTWriter> TranspositionTable::probe(const Key key) cons
 
     return {false,
             TTData{Move::none(), VALUE_NONE, VALUE_NONE, DEPTH_ENTRY_OFFSET, BOUND_NONE, false},
-            TTWriter(&cluster->keys[replace_idx], &cluster->data[replace_idx])};
+            TTWriter(&cluster->d2[replace_idx], &cluster->d1[replace_idx])};
 }
 
 
 void TranspositionTable::prefetch(const Key key) const {
     Cluster* cluster = &table[mul_hi64(key, clusterCount)];
-    Stockfish::prefetch(&cluster->keys[0]);
-    Stockfish::prefetch(&cluster->data[0]);
+    Stockfish::prefetch(&cluster->d1[0]);
+    Stockfish::prefetch(&cluster->d2[0]);
 }
 
 }  // namespace Stockfish
