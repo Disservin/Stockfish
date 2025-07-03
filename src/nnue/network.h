@@ -22,13 +22,14 @@
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <optional>
+#include <stddef.h>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <utility>
 
-#include "../memory.h"
 #include "../types.h"
 #include "nnue_accumulator.h"
 #include "nnue_architecture.h"
@@ -48,6 +49,52 @@ enum class EmbeddedNNUEType {
 };
 
 using NetworkOutput = std::tuple<Value, Value>;
+
+template<int L1, int L2, int L3>
+struct Net {
+    alignas(64) int16_t FeatureWeights[FeatureSet::Dimensions * L1];
+    alignas(64) int16_t FeatureBiases[L1];
+    alignas(64) int32_t PsqtWeights[FeatureSet::Dimensions * PSQTBuckets];
+
+    struct Layers {
+        alignas(64) int8_t L1Weights[L1 * (L2 + 1)];
+        alignas(64) int32_t L1Biases[L2 + 1];
+
+        alignas(64) int8_t L2Weights[(L2 + 1) * 2 * L3];
+        alignas(64) int32_t L2Biases[L3];
+
+        alignas(64) int8_t L3Weights[L3];
+        alignas(64) int32_t L3Biases[1];
+    } Layers[8];
+
+    static constexpr size_t calculateBufferSize() {
+        constexpr size_t Alignment = 64;
+        size_t           totalSize = 0;
+
+        auto addAligned = [&totalSize](size_t dataSize) {
+            totalSize += dataSize;
+            size_t padding = (Alignment - (totalSize % Alignment)) % Alignment;
+            totalSize += padding;
+        };
+
+        addAligned(sizeof(FeatureWeights));
+        addAligned(sizeof(FeatureBiases));
+        addAligned(sizeof(PsqtWeights));
+
+        constexpr size_t LayerCount = 8;
+        for (size_t i = 0; i < LayerCount; ++i)
+        {
+            addAligned(sizeof(Layers::L1Weights));
+            addAligned(sizeof(Layers::L1Biases));
+            addAligned(sizeof(Layers::L2Weights));
+            addAligned(sizeof(Layers::L2Biases));
+            addAligned(sizeof(Layers::L3Weights));
+            addAligned(sizeof(Layers::L3Biases));
+        }
+
+        return totalSize;
+    }
+};
 
 template<typename Arch, typename Transformer>
 class Network {
@@ -84,7 +131,7 @@ class Network {
     void initialize();
 
     bool                       save(std::ostream&, const std::string&, const std::string&) const;
-    std::optional<std::string> load(std::istream&);
+    std::optional<std::string> load(std::istream&, const std::string& evalfilePath);
 
     bool read_header(std::istream&, std::uint32_t*, std::string*) const;
     bool write_header(std::ostream&, std::uint32_t, const std::string&) const;
@@ -93,13 +140,16 @@ class Network {
     bool write_parameters(std::ostream&, const std::string&) const;
 
     // Input feature converter
-    LargePagePtr<Transformer> featureTransformer;
+    Transformer featureTransformer;
 
     // Evaluation function
-    AlignedPtr<Arch[]> network;
+    Arch network[8];
 
     EvalFile         evalFile;
     EmbeddedNNUEType embeddedType;
+
+    std::unique_ptr<Net<Transformer::OutputDimensions, Arch::FC_0_OUTPUTS, Arch::FC_1_OUTPUTS>>
+      nnueParams;
 
     // Hash value of evaluation function structure
     static constexpr std::uint32_t hash = Transformer::get_hash_value() ^ Arch::get_hash_value();

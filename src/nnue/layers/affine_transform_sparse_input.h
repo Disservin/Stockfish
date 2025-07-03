@@ -193,13 +193,13 @@ class AffineTransformSparseInput {
     }
 
     // Read network parameters
-    bool read_parameters(std::istream& stream) {
-        read_little_endian<BiasType>(stream, biases, OutputDimensions);
-        for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
-            weights[get_weight_index(i)] = read_little_endian<WeightType>(stream);
+    // bool read_parameters(std::istream& stream) {
+    //     read_little_endian<BiasType>(stream, biases, OutputDimensions);
+    //     for (IndexType i = 0; i < OutputDimensions * PaddedInputDimensions; ++i)
+    //         weights[get_weight_index(i)] = read_little_endian<WeightType>(stream);
 
-        return !stream.fail();
-    }
+    //     return !stream.fail();
+    // }
 
     // Write network parameters
     bool write_parameters(std::ostream& stream) const {
@@ -279,12 +279,20 @@ class AffineTransformSparseInput {
 #endif
     }
 
+    void update(OutputType* biases_ptr, std::int8_t* weights_ptr) {
+        weights = weights_ptr;
+        biases  = biases_ptr;
+    }
+
+    void update_w(std::int8_t* weights_ptr) { weights = weights_ptr; }
+    void update_b(OutputType* biases_ptr) { biases = biases_ptr; }
+
    private:
     using BiasType   = OutputType;
     using WeightType = std::int8_t;
 
-    alignas(CacheLineSize) BiasType biases[OutputDimensions];
-    alignas(CacheLineSize) WeightType weights[OutputDimensions * PaddedInputDimensions];
+    const BiasType*   biases;
+    const WeightType* weights;
 };
 
 }  // namespace Stockfish::Eval::NNUE::Layers

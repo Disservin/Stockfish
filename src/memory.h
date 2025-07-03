@@ -20,11 +20,22 @@
 #define MEMORY_H_INCLUDED
 
 #include <algorithm>
-#include <cstddef>
+#include <cassert>
 #include <cstdint>
+#include <cstring>
+#include <errno.h>
+#include <fcntl.h>
+#include <filesystem>
+#include <iomanip>
+#include <iostream>
 #include <memory>
 #include <new>
+#include <sstream>
+#include <stdio.h>
+#include <string>
+#include <sys/mman.h>
 #include <type_traits>
+#include <unistd.h>
 #include <utility>
 
 #include "types.h"
@@ -211,6 +222,203 @@ T* align_ptr_up(T* ptr) {
       reinterpret_cast<char*>((ptrint + (Alignment - 1)) / Alignment * Alignment));
 }
 
+
+namespace fs = std::filesystem;
+
+template<typename T>
+class SharedMemoryManager {
+   private:
+    std::string name;
+    T*          mmapAddr;
+    int         fd;
+    size_t      mmapSize;
+    bool        isOwner;
+    bool        isInit;
+
+    static std::string createHashString(const std::string& input) {
+        size_t hash = std::hash<std::string>{}(input);
+
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0') << hash;
+
+        return ss.str();
+    }
+
+    static std::string build_shm_name(const std::string& username, const std::string& shaVersion) {
+        std::string baseSegment = username + "_sf-shared-net_";
+
+        // Add NUMA node info
+        char numaBuf[64] = {0};
+        int  numaNode    = 0;  // todo get numa
+        snprintf(numaBuf, sizeof(numaBuf), "numa%d", numaNode);
+
+        std::string shm_name = baseSegment + numaBuf + "_" + shaVersion + "_data";
+        std::string hash     = "/" + createHashString(shm_name);
+
+        assert(hash.size() <= 31);
+
+        return hash;
+    }
+
+
+    static bool check_exists(const std::string& username, const std::string& shaVersion) {
+        std::string name = build_shm_name(username, shaVersion);
+
+        int fd = shm_open(name.c_str(), O_RDONLY, 0);
+        if (fd == -1)
+        {
+            return false;
+        }
+
+        close(fd);
+        return true;
+    }
+
+   public:
+    SharedMemoryManager() :
+        mmapAddr(nullptr),
+        fd(-1),
+        mmapSize(0),
+        isOwner(false),
+        isInit(false) {}
+
+    ~SharedMemoryManager() { cleanup(); }
+
+    SharedMemoryManager(const SharedMemoryManager&)            = delete;
+    SharedMemoryManager& operator=(const SharedMemoryManager&) = delete;
+    SharedMemoryManager(SharedMemoryManager&&)                 = delete;
+    SharedMemoryManager& operator=(SharedMemoryManager&&)      = delete;
+
+    bool
+    open_existing(const std::string& username, const std::string& shaVersion, size_t elementCount) {
+        if (isInit)
+            return true;
+
+        name = build_shm_name(username, shaVersion);
+
+        fd = shm_open(name.c_str(), O_RDONLY, 0);
+
+        if (fd == -1)
+            return false;
+
+        close(fd);
+
+        fd = shm_open(name.c_str(), O_RDONLY, 0444);
+
+        if (fd == -1)
+            return false;
+
+        mmapSize = elementCount * sizeof(T);
+
+        mmapAddr = static_cast<T*>(mmap(nullptr, mmapSize, PROT_READ, MAP_SHARED, fd, 0));
+
+        if (mmapAddr == MAP_FAILED)
+        {
+            close(fd);
+            fd = -1;
+            return false;
+        }
+
+        isInit = true;
+        return true;
+    }
+
+    bool create(const std::string& username,
+                const std::string& shaVersion,
+                const T*           sourceArray,
+                size_t             elementCount) {
+
+        // elementCount = count;
+        mmapSize = elementCount * sizeof(T);
+        name     = build_shm_name(username, shaVersion);
+
+        bool exists = check_exists(username, shaVersion);
+
+        fd = shm_open(name.c_str(), O_RDWR | (exists ? 0 : O_CREAT), 0660);
+
+        if (fd == -1)
+            return false;
+
+        if (!exists)
+        {
+            if (ftruncate(fd, mmapSize) == -1)
+            {
+                close(fd);
+                fd = -1;
+                return false;
+            }
+
+            isOwner = true;
+        }
+
+        mmapAddr =
+          static_cast<T*>(mmap(nullptr, mmapSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0));
+
+        if (mmapAddr == MAP_FAILED)
+        {
+            close(fd);
+            fd = -1;
+            return false;
+        }
+
+        // madvise(mmapAddr, mmapSize, MADV_WILLNEED);
+        // madvise(mmapAddr, mmapSize, MADV_HUGEPAGE);
+        // mlock(mmapAddr, mmapSize);
+
+        if (isOwner && sourceArray != nullptr)
+        {
+            std::memcpy(mmapAddr, sourceArray, mmapSize);
+
+            if (msync(mmapAddr, mmapSize, MS_SYNC) == -1)
+                std::cerr << "Failed to sync shared memory: " << strerror(errno) << std::endl;
+        }
+
+        munmap(mmapAddr, mmapSize);
+
+        mmapAddr = nullptr;
+
+        if (fd != -1)
+        {
+            close(fd);
+            fd = -1;
+        }
+
+
+        return true;
+    }
+
+    T* data() const {
+        if (!isInit)
+            return nullptr;
+
+        return mmapAddr;
+    }
+
+
+    // Fully release resources and delete the shared memory if owner
+    void cleanup() {
+        if (mmapAddr != nullptr && mmapAddr != MAP_FAILED)
+        {
+            munmap(mmapAddr, mmapSize);
+            mmapAddr = nullptr;
+        }
+
+        if (fd != -1)
+        {
+            close(fd);
+            fd = -1;
+        }
+
+        isInit = false;
+
+        if (isOwner && !name.empty())
+        {
+            std::cout << "unlink" << std::endl;
+            shm_unlink(name.c_str());
+            isOwner = false;
+        }
+    }
+};
 
 }  // namespace Stockfish
 
