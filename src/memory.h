@@ -458,6 +458,7 @@ struct SharedMemoryBackend {
 
 #else
 
+
 template<typename T>
 struct SharedMemoryBackend {
     static constexpr uint32_t IS_INITIALIZED_VALUE = 1;
@@ -467,7 +468,6 @@ struct SharedMemoryBackend {
         shm_name(name),
         shm_size(total_size) {
 
-        // Create shared memory object
         shm_fd = shm_open(shm_name.c_str(), O_CREAT | O_RDWR, 0666);
         if (shm_fd == -1)
         {
@@ -483,6 +483,7 @@ struct SharedMemoryBackend {
             std::terminate();
         }
 
+        // MAP_SHARED|MADV_HUGEPAGE not working.. mmap fails
         pMap = mmap(nullptr, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
         if (pMap == MAP_FAILED)
         {
@@ -492,6 +493,7 @@ struct SharedMemoryBackend {
             std::terminate();
         }
 
+        // no effect
         // madvise(pMap, total_size, MADV_HUGEPAGE);
 
         // Create named semaphore for synchronization
@@ -591,7 +593,7 @@ struct SharedMemoryBackend {
         if (sem && sem != SEM_FAILED)
         {
             sem_close(sem);
-            // Note: We don't unlink the semaphore here as other processes might be using it
+            sem_unlink(("/" + shm_name + "_mutex").c_str());
             sem = nullptr;
         }
     }
