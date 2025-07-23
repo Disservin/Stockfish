@@ -52,10 +52,13 @@ using AdjustTokenPrivileges_t =
   bool (*)(HANDLE, BOOL, PTOKEN_PRIVILEGES, DWORD, PTOKEN_PRIVILEGES, PDWORD);
 }
 #else
+    #include <cerrno>
     #include <cstring>
     #include <fcntl.h>
+    #include <fstream>
     #include <pthread.h>
     #include <semaphore.h>
+    #include <string>
     #include <sys/mman.h>
     #include <sys/stat.h>
     #include <unistd.h>
@@ -464,14 +467,18 @@ struct SharedMemoryBackend {
     static constexpr uint32_t IS_INITIALIZED_VALUE = 1;
 
     SharedMemoryBackend() = default;
+
+    // Constructor for creating new shared memory
     SharedMemoryBackend(const std::string& name, size_t total_size, const T& value) :
         shm_name(name),
-        shm_size(total_size) {
+        shm_size(total_size),
+        is_creator(true) {
 
-        shm_fd = shm_open(shm_name.c_str(), O_CREAT | O_RDWR, 0666);
+        // Create anonymous file in memory
+        shm_fd = memfd_create(shm_name.c_str(), MFD_CLOEXEC | MFD_HUGETLB);
         if (shm_fd == -1)
         {
-            std::cerr << "Failed to create shared memory: " << strerror(errno) << std::endl;
+            std::cerr << "Failed to create memfd: " << strerror(errno) << std::endl;
             std::terminate();
         }
 
@@ -479,22 +486,28 @@ struct SharedMemoryBackend {
         {
             std::cerr << "Failed to set shared memory size: " << strerror(errno) << std::endl;
             close(shm_fd);
-            shm_unlink(shm_name.c_str());
             std::terminate();
         }
 
-        // MAP_SHARED|MADV_HUGEPAGE not working.. mmap fails
         pMap = mmap(nullptr, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
         if (pMap == MAP_FAILED)
         {
             std::cerr << "Failed to map shared memory: " << strerror(errno) << std::endl;
             close(shm_fd);
-            shm_unlink(shm_name.c_str());
             std::terminate();
         }
 
-        // no effect
-        // madvise(pMap, total_size, MADV_HUGEPAGE);
+        // Write the file descriptor to a file for other processes to read
+        std::string   fd_file = "/tmp/" + shm_name + "_fd";
+        std::ofstream fd_out(fd_file);
+        if (!fd_out)
+        {
+            std::cerr << "Failed to create fd file: " << fd_file << std::endl;
+            cleanup();
+            std::terminate();
+        }
+        fd_out << shm_fd << std::endl;
+        fd_out.close();
 
         // Create named semaphore for synchronization
         std::string sem_name = "/" + shm_name + "_mutex";
@@ -504,7 +517,6 @@ struct SharedMemoryBackend {
             std::cerr << "Failed to create semaphore: " << strerror(errno) << std::endl;
             munmap(pMap, total_size);
             close(shm_fd);
-            shm_unlink(shm_name.c_str());
             std::terminate();
         }
 
@@ -515,14 +527,13 @@ struct SharedMemoryBackend {
             std::terminate();
         }
 
-        // Crucially, we place the object first to ensure alignment.
+        // Initialize the shared memory
         volatile uint32_t* is_initialized =
           std::launder(reinterpret_cast<uint32_t*>(reinterpret_cast<char*>(pMap) + sizeof(T)));
         T* object = std::launder(reinterpret_cast<T*>(pMap));
 
         if (*is_initialized != IS_INITIALIZED_VALUE)
         {
-            // First time initialization, message for debug purposes
             std::cout << "initializing: " << shm_name << "\n";
             new (object) T{value};
             *is_initialized = IS_INITIALIZED_VALUE;
@@ -532,11 +543,52 @@ struct SharedMemoryBackend {
             std::cout << "already initialized: " << shm_name << "\n";
         }
 
-        // Release the semaphore
         if (sem_post(sem) == -1)
         {
             std::cerr << "Failed to post semaphore: " << strerror(errno) << std::endl;
             cleanup();
+            std::terminate();
+        }
+    }
+
+    // Constructor for connecting to existing shared memory
+    SharedMemoryBackend(const std::string& name, size_t total_size) :
+        shm_name(name),
+        shm_size(total_size),
+        is_creator(false) {
+
+        // Read the file descriptor from the file
+        std::string   fd_file = "/tmp/" + shm_name + "_fd";
+        std::ifstream fd_in(fd_file);
+        if (!fd_in)
+        {
+            std::cerr << "Failed to open fd file: " << fd_file << std::endl;
+            std::terminate();
+        }
+
+        fd_in >> shm_fd;
+        fd_in.close();
+
+        if (shm_fd == -1)
+        {
+            std::cerr << "Invalid file descriptor read from file" << std::endl;
+            std::terminate();
+        }
+
+        pMap = mmap(nullptr, total_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+        if (pMap == MAP_FAILED)
+        {
+            std::cerr << "Failed to map shared memory: " << strerror(errno) << std::endl;
+            std::terminate();
+        }
+
+        // Open existing semaphore
+        std::string sem_name = "/" + shm_name + "_mutex";
+        sem                  = sem_open(sem_name.c_str(), 0);
+        if (sem == SEM_FAILED)
+        {
+            std::cerr << "Failed to open semaphore: " << strerror(errno) << std::endl;
+            munmap(pMap, total_size);
             std::terminate();
         }
     }
@@ -553,27 +605,31 @@ struct SharedMemoryBackend {
         shm_fd(other.shm_fd),
         sem(other.sem),
         shm_name(std::move(other.shm_name)),
-        shm_size(other.shm_size) {
-        other.pMap     = nullptr;
-        other.shm_fd   = -1;
-        other.sem      = nullptr;
-        other.shm_size = 0;
+        shm_size(other.shm_size),
+        is_creator(other.is_creator) {
+        other.pMap       = nullptr;
+        other.shm_fd     = -1;
+        other.sem        = nullptr;
+        other.shm_size   = 0;
+        other.is_creator = false;
     }
 
     SharedMemoryBackend& operator=(SharedMemoryBackend&& other) noexcept {
         if (this != &other)
         {
             cleanup();
-            pMap     = other.pMap;
-            shm_fd   = other.shm_fd;
-            sem      = other.sem;
-            shm_name = std::move(other.shm_name);
-            shm_size = other.shm_size;
+            pMap       = other.pMap;
+            shm_fd     = other.shm_fd;
+            sem        = other.sem;
+            shm_name   = std::move(other.shm_name);
+            shm_size   = other.shm_size;
+            is_creator = other.is_creator;
 
-            other.pMap     = nullptr;
-            other.shm_fd   = -1;
-            other.sem      = nullptr;
-            other.shm_size = 0;
+            other.pMap       = nullptr;
+            other.shm_fd     = -1;
+            other.sem        = nullptr;
+            other.shm_size   = 0;
+            other.is_creator = false;
         }
         return *this;
     }
@@ -593,7 +649,13 @@ struct SharedMemoryBackend {
         if (sem && sem != SEM_FAILED)
         {
             sem_close(sem);
-            sem_unlink(("/" + shm_name + "_mutex").c_str());
+            if (is_creator)
+            {
+                sem_unlink(("/" + shm_name + "_mutex").c_str());
+                // Clean up the fd file
+                std::string fd_file = "/tmp/" + shm_name + "_fd";
+                unlink(fd_file.c_str());
+            }
             sem = nullptr;
         }
     }
@@ -602,7 +664,8 @@ struct SharedMemoryBackend {
     int         shm_fd = -1;
     sem_t*      sem    = nullptr;
     std::string shm_name;
-    size_t      shm_size = 0;
+    size_t      shm_size   = 0;
+    bool        is_creator = false;
 };
 #endif
 
