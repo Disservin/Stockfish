@@ -927,8 +927,10 @@ struct SystemWideSharedConstant {
         }
         else
         {
+
             std::cerr << "Failed to create shared memory backend: "
                       << shm_backend.get_error_message() << std::endl;
+            std::terminate();
             backend = SharedMemoryBackendFallback<T>(shm_name, value);
         }
     }
