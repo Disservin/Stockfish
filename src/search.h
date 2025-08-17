@@ -259,6 +259,22 @@ class NullSearchManager: public ISearchManager {
     void check_time(Search::Worker&) override {}
 };
 
+struct SearchData {
+    ButterflyHistory mainHistory;
+    LowPlyHistory    lowPlyHistory;
+
+    CapturePieceToHistory captureHistory;
+    ContinuationHistory   continuationHistory[2][2];
+    PawnHistory           pawnHistory;
+
+    CorrectionHistory<Pawn>         pawnCorrectionHistory;
+    CorrectionHistory<Minor>        minorPieceCorrectionHistory;
+    CorrectionHistory<NonPawn>      nonPawnCorrectionHistory;
+    CorrectionHistory<Continuation> continuationCorrectionHistory;
+
+    TTMoveHistory ttMoveHistory;
+};
+
 
 // Search::Worker is the class that does the actual search.
 // It is instantiated once per thread, and it is responsible for keeping track
@@ -280,26 +296,22 @@ class Worker {
     void ensure_network_replicated();
 
     // Public because they need to be updatable by the stats
-    ButterflyHistory mainHistory;
-    LowPlyHistory    lowPlyHistory;
+    std::vector<SearchData> searchData;
 
-    CapturePieceToHistory captureHistory;
-    ContinuationHistory   continuationHistory[2][2];
-    PawnHistory           pawnHistory;
+    SearchData& sd(int depth) { return depth == 0 ? searchData[0] : searchData[1]; }
 
-    CorrectionHistory<Pawn>         pawnCorrectionHistory;
-    CorrectionHistory<Minor>        minorPieceCorrectionHistory;
-    CorrectionHistory<NonPawn>      nonPawnCorrectionHistory;
-    CorrectionHistory<Continuation> continuationCorrectionHistory;
-
-    TTMoveHistory ttMoveHistory;
+    const SearchData& sd(int depth) const { return depth == 0 ? searchData[0] : searchData[1]; }
 
    private:
     void iterative_deepening();
 
-    void do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss);
-    void
-    do_move(Position& pos, const Move move, StateInfo& st, const bool givesCheck, Stack* const ss);
+    void do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss, int depth);
+    void do_move(Position&    pos,
+                 const Move   move,
+                 StateInfo&   st,
+                 const bool   givesCheck,
+                 Stack* const ss,
+                 const int    depth);
     void do_null_move(Position& pos, StateInfo& st);
     void undo_move(Position& pos, const Move move);
     void undo_null_move(Position& pos);
