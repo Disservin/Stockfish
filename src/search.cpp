@@ -307,6 +307,28 @@ void Search::Worker::iterative_deepening() {
         if (!threads.increaseDepth)
             searchAgainCounter++;
 
+        if (threadIdx > 0)
+        {
+            auto total = threads.size();
+            auto idx   = threadIdx;
+
+            auto remaining_threads = total - 1;
+            auto thread_idx        = idx - 1;
+            auto n                 = rootMoves.size() / remaining_threads;
+            auto remainder         = rootMoves.size() % remaining_threads;
+
+            auto start = thread_idx * n + std::min(thread_idx, remainder);
+            auto end   = start + n + (thread_idx < remainder ? 1 : 0);
+
+            auto newRootMoves =
+              std::vector<RootMove>(rootMoves.begin() + start, rootMoves.begin() + end);
+
+            if (newRootMoves.empty())
+                newRootMoves = rootMoves;
+
+            rootMoves = newRootMoves;
+        }
+
         // MultiPV loop. We perform a full root search for each PV line
         for (pvIdx = 0; pvIdx < multiPV; ++pvIdx)
         {
