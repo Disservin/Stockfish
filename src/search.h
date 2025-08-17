@@ -298,9 +298,9 @@ class Worker {
     // Public because they need to be updatable by the stats
     std::vector<SearchData> searchData;
 
-    SearchData& sd(int depth) { return depth == 0 ? searchData[0] : searchData[1]; }
+    SearchData& sd(int depth) { return depth >= 8 ? searchData[0] : searchData[1]; }
 
-    const SearchData& sd(int depth) const { return depth == 0 ? searchData[0] : searchData[1]; }
+    const SearchData& sd(int depth) const { return depth >= 8 ? searchData[0] : searchData[1]; }
 
    private:
     void iterative_deepening();
