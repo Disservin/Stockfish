@@ -88,7 +88,7 @@
         #define pext(b, m) _pext_u64(b, m)
     #elif defined(USE_SVE2)
         #include <arm_sve.h>
-        #define PEXT_SVE2(occupied, mask) \
+        #define pext(occupied, mask) \
             svlastb_u64(svptrue_b64(), svbext_u64(svdup_n_u64(occupied), svdup_n_u64(mask)))
         #define USE_PEXT
     #else
