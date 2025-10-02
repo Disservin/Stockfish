@@ -808,13 +808,14 @@ ifeq ($(neon),yes)
 	endif
 endif
 
-ifeq ($(dotprod),yes)
-	CXXFLAGS += -march=armv8.2-a+dotprod -DUSE_NEON_DOTPROD
+ifeq ($(sve2),yes)
+    CXXFLAGS += -march=armv8-a+sve2-bitperm -DUSE_SVE2 -DUSE_NEON_DOTPROD
+else 
+	ifeq ($(dotprod),yes)
+    	CXXFLAGS += -march=armv8.2-a+dotprod -DUSE_NEON_DOTPROD
+	endif
 endif
 
-ifeq ($(sve2),yes)
-	CXXFLAGS += -march=armv8-a+sve2-bitperm -DUSE_SVE2
-endif
 
 ifeq ($(lasx),yes)
 	ifeq ($(comp),$(filter $(comp),gcc clang mingw icx))
