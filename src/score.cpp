@@ -31,7 +31,7 @@ Score::Score(Value v, const Position& pos) {
 
     if (!is_decisive(v))
     {
-        score = InternalUnits{UCIEngine::to_cp(v, pos)};
+        score = InternalUnits{v};
     }
     else if (std::abs(v) <= VALUE_TB)
     {

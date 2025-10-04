@@ -29,11 +29,11 @@
 #include <tuple>
 
 #include "nnue/network.h"
+#include "nnue/nnue_accumulator.h"
 #include "nnue/nnue_misc.h"
 #include "position.h"
 #include "types.h"
 #include "uci.h"
-#include "nnue/nnue_accumulator.h"
 
 namespace Stockfish {
 
@@ -110,11 +110,11 @@ std::string Eval::trace(Position& pos, const Eval::NNUE::Networks& networks) {
     auto [psqt, positional] = networks.big.evaluate(pos, accumulators, &caches->big);
     Value v                 = psqt + positional;
     v                       = pos.side_to_move() == WHITE ? v : -v;
-    ss << "NNUE evaluation        " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)\n";
+    ss << "NNUE evaluation        " << 0.01 * v << " (white side)\n";
 
     v = evaluate(networks, pos, accumulators, *caches, VALUE_ZERO);
     v = pos.side_to_move() == WHITE ? v : -v;
-    ss << "Final evaluation       " << 0.01 * UCIEngine::to_cp(v, pos) << " (white side)";
+    ss << "Final evaluation       " << 0.01 * v << " (white side)";
     ss << " [with scaled NNUE, ...]";
     ss << "\n";
 
