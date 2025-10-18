@@ -316,8 +316,6 @@ struct AccumulatorUpdateContext {
 
 #ifdef VECTOR
         using Tiling = SIMDTiling<Dimensions, Dimensions, PSQTBuckets>;
-        vec_t      acc[Tiling::NumRegs];
-        psqt_vec_t psqt[Tiling::NumPsqtRegs];
 
         for (IndexType j = 0; j < Dimensions / Tiling::TileHeight; ++j)
         {
@@ -325,7 +323,7 @@ struct AccumulatorUpdateContext {
             auto* toTile   = reinterpret_cast<vec_t*>(&toAcc[j * Tiling::TileHeight]);
 
             for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                acc[k] = fromTile[k];
+                toTile[k] = fromTile[k];
 
             for (IndexType i = 0; i < removed.size(); ++i)
             {
@@ -335,7 +333,7 @@ struct AccumulatorUpdateContext {
                   reinterpret_cast<const vec_t*>(&featureTransformer.threatWeights[offset]);
 
                 for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                    acc[k] = vec_sub_16(acc[k], column[k]);
+                    toTile[k] = vec_sub_16(toTile[k], column[k]);
             }
 
             for (IndexType i = 0; i < added.size(); ++i)
@@ -346,11 +344,8 @@ struct AccumulatorUpdateContext {
                   reinterpret_cast<const vec_t*>(&featureTransformer.threatWeights[offset]);
 
                 for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                    acc[k] = vec_add_16(acc[k], column[k]);
+                    toTile[k] = vec_add_16(toTile[k], column[k]);
             }
-
-            for (IndexType k = 0; k < Tiling::NumRegs; k++)
-                vec_store(&toTile[k], acc[k]);
         }
 
         for (IndexType j = 0; j < PSQTBuckets / Tiling::PsqtTileHeight; ++j)
@@ -361,7 +356,7 @@ struct AccumulatorUpdateContext {
               reinterpret_cast<psqt_vec_t*>(&toPsqtAcc[j * Tiling::PsqtTileHeight]);
 
             for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
-                psqt[k] = fromTilePsqt[k];
+                toTilePsqt[k] = fromTilePsqt[k];
 
             for (IndexType i = 0; i < removed.size(); ++i)
             {
@@ -371,7 +366,7 @@ struct AccumulatorUpdateContext {
                   &featureTransformer.threatPsqtWeights[offset]);
 
                 for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                    psqt[k] = vec_sub_psqt_32(psqt[k], columnPsqt[k]);
+                    toTilePsqt[k] = vec_sub_psqt_32(toTilePsqt[k], columnPsqt[k]);
             }
 
             for (IndexType i = 0; i < added.size(); ++i)
@@ -382,11 +377,8 @@ struct AccumulatorUpdateContext {
                   &featureTransformer.threatPsqtWeights[offset]);
 
                 for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                    psqt[k] = vec_add_psqt_32(psqt[k], columnPsqt[k]);
+                    toTilePsqt[k] = vec_add_psqt_32(toTilePsqt[k], columnPsqt[k]);
             }
-
-            for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
-                vec_store_psqt(&toTilePsqt[k], psqt[k]);
         }
 
 #else
