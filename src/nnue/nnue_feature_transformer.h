@@ -273,21 +273,25 @@ class FeatureTransformer {
         const auto& accumulatorState       = accumulatorStack.latest<PSQFeatureSet>();
         const auto& threatAccumulatorState = accumulatorStack.latest<ThreatFeatureSet>();
 
-        const Color perspectives[2]  = {pos.side_to_move(), ~pos.side_to_move()};
-        const auto& psqtAccumulation = (accumulatorState.acc<HalfDimensions>()).psqtAccumulation;
-        auto        psqt =
-          (psqtAccumulation[perspectives[0]][bucket] - psqtAccumulation[perspectives[1]][bucket]);
+        const Color perspectives[2] = {pos.side_to_move(), ~pos.side_to_move()};
+        auto        psqt            = 0;
 
         if (UseThreats)
         {
             const auto& threatPsqtAccumulation =
               (threatAccumulatorState.acc<HalfDimensions>()).psqtAccumulation;
-            psqt = (psqt + threatPsqtAccumulation[perspectives[0]][bucket]
+            psqt = (threatPsqtAccumulation[perspectives[0]][bucket]
                     - threatPsqtAccumulation[perspectives[1]][bucket])
                  / 2;
         }
         else
-            psqt /= 2;
+        {
+            const auto& psqtAccumulation =
+              (accumulatorState.acc<HalfDimensions>()).psqtAccumulation;
+            psqt /= (psqtAccumulation[perspectives[0]][bucket]
+                     - psqtAccumulation[perspectives[1]][bucket])
+                  / 2;
+        }
 
         const auto& accumulation = (accumulatorState.acc<HalfDimensions>()).accumulation;
         const auto& threatAccumulation =
