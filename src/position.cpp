@@ -694,16 +694,16 @@ bool Position::gives_check(Move m) const {
 // moves should be filtered out before this function is called.
 // If a pointer to the TT table is passed, the entry for the new position
 // will be prefetched, and likewise for shared history.
-void Position::do_move(Move                      m,
-                       StateInfo&                newSt,
-                       bool                      givesCheck,
-                       DirtyPiece&               dp,
-                       DirtyThreats&             dts,
-                       const TranspositionTable* tt      = nullptr,
-                       const SharedHistories*    history = nullptr) {
+DirtyBoardData Position::do_move(Move                      m,
+                                 StateInfo&                newSt,
+                                 bool                      givesCheck,
+                                 const TranspositionTable* tt      = nullptr,
+                                 const SharedHistories*    history = nullptr) {
 
     assert(m.is_ok());
     assert(&newSt != st);
+
+    DirtyBoardData dbd;
 
     Key k = st->key ^ Zobrist::side;
 
@@ -729,13 +729,13 @@ void Position::do_move(Move                      m,
 
     bool checkEP = false;
 
-    dp.pc             = pc;
-    dp.from           = from;
-    dp.to             = to;
-    dp.add_sq         = SQ_NONE;
-    dts.us            = us;
-    dts.prevKsq       = square<KING>(us);
-    dts.threatenedSqs = dts.threateningSqs = 0;
+    dbd.dp.pc             = pc;
+    dbd.dp.from           = from;
+    dbd.dp.to             = to;
+    dbd.dp.add_sq         = SQ_NONE;
+    dbd.dts.us            = us;
+    dbd.dts.prevKsq       = square<KING>(us);
+    dbd.dts.threatenedSqs = dbd.dts.threateningSqs = 0;
 
     assert(color_of(pc) == us);
     assert(captured == NO_PIECE || color_of(captured) == (m.type_of() != CASTLING ? them : us));
@@ -747,7 +747,7 @@ void Position::do_move(Move                      m,
         assert(captured == make_piece(us, ROOK));
 
         Square rfrom, rto;
-        do_castling<true>(us, from, to, rfrom, rto, &dts, &dp);
+        do_castling<true>(us, from, to, rfrom, rto, &dbd.dts, &dbd.dp);
 
         k ^= Zobrist::psq[captured][rfrom] ^ Zobrist::psq[captured][rto];
         st->nonPawnKey[us] ^= Zobrist::psq[captured][rfrom] ^ Zobrist::psq[captured][rto];
@@ -772,7 +772,7 @@ void Position::do_move(Move                      m,
                 assert(piece_on(capsq) == make_piece(them, PAWN));
 
                 // Update board and piece lists in ep case, normal captures are updated later
-                remove_piece(capsq, &dts);
+                remove_piece(capsq, &dbd.dts);
             }
 
             st->pawnKey ^= Zobrist::psq[captured][capsq];
@@ -786,8 +786,8 @@ void Position::do_move(Move                      m,
                 st->minorPieceKey ^= Zobrist::psq[captured][capsq];
         }
 
-        dp.remove_pc = captured;
-        dp.remove_sq = capsq;
+        dbd.dp.remove_pc = captured;
+        dbd.dp.remove_sq = capsq;
 
         k ^= Zobrist::psq[captured][capsq];
         st->materialKey ^=
@@ -797,7 +797,7 @@ void Position::do_move(Move                      m,
         st->rule50 = 0;
     }
     else
-        dp.remove_sq = SQ_NONE;
+        dbd.dp.remove_sq = SQ_NONE;
 
     // Update hash key
     k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
@@ -822,11 +822,11 @@ void Position::do_move(Move                      m,
     {
         if (captured && m.type_of() != EN_PASSANT)
         {
-            remove_piece(from, &dts);
-            swap_piece(to, pc, &dts);
+            remove_piece(from, &dbd.dts);
+            swap_piece(to, pc, &dbd.dts);
         }
         else
-            move_piece(from, to, &dts);
+            move_piece(from, to, &dbd.dts);
     }
 
     // If the moving piece is a pawn do some special extra work
@@ -844,11 +844,11 @@ void Position::do_move(Move                      m,
             assert(relative_rank(us, to) == RANK_8);
             assert(type_of(promotion) >= KNIGHT && type_of(promotion) <= QUEEN);
 
-            swap_piece(to, promotion, &dts);
+            swap_piece(to, promotion, &dbd.dts);
 
-            dp.add_pc = promotion;
-            dp.add_sq = to;
-            dp.to     = SQ_NONE;
+            dbd.dp.add_pc = promotion;
+            dbd.dp.add_sq = to;
+            dbd.dp.to     = SQ_NONE;
 
             // Update hash keys
             // Zobrist::psq[pc][to] is zero, so we don't need to clear it
@@ -979,14 +979,16 @@ void Position::do_move(Move                      m,
         }
     }
 
-    dts.ksq = square<KING>(us);
+    dbd.dts.ksq = square<KING>(us);
 
     assert(pos_is_ok());
 
-    assert(dp.pc != NO_PIECE);
-    assert(!(bool(captured) || m.type_of() == CASTLING) ^ (dp.remove_sq != SQ_NONE));
-    assert(dp.from != SQ_NONE);
-    assert(!(dp.add_sq != SQ_NONE) ^ (m.type_of() == PROMOTION || m.type_of() == CASTLING));
+    assert(dbd.dp.pc != NO_PIECE);
+    assert(!(bool(captured) || m.type_of() == CASTLING) ^ (dbd.dp.remove_sq != SQ_NONE));
+    assert(dbd.dp.from != SQ_NONE);
+    assert(!(dbd.dp.add_sq != SQ_NONE) ^ (m.type_of() == PROMOTION || m.type_of() == CASTLING));
+
+    return dbd;
 }
 
 
