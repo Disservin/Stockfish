@@ -171,18 +171,18 @@ inline __m128i _mm_cvtsi64_si128(int64_t val) {
 }
     #endif
 
-#ifdef USE_SSE41
+    #ifdef USE_SSE41
 inline vec_t vec_convert8to16(vec_i8_t a) {
     return _mm_cvtepi8_epi16(_mm_cvtsi64_si128(static_cast<int64_t>(a)));
 }
-#else
+    #else
 // Credit: Yoshie2000
 inline __m128i vec_convert8to16(uint64_t x) {
     __m128i v8   = _mm_cvtsi64_si128(static_cast<int64_t>(x));
     __m128i sign = _mm_cmpgt_epi8(_mm_setzero_si128(), v8);
     return _mm_unpacklo_epi8(v8, sign);
 }
-#endif
+    #endif
 
 inline vec128_t vec128_zero16() { return _mm_setzero_si128(); }
 inline vec128_t vec128_set16(int a) { return _mm_set1_epi16(a); }
@@ -399,8 +399,8 @@ dotprod_m128_add_dpbusd_epi32(int32x4_t& acc, int8x16_t a, int8x16_t b) {
 
 struct DotProduct {
 #if defined(USE_AVX512)
-    using input_vec = __m512i;
-    using accum_vec = __m512i;
+    using input_vec                 = __m512i;
+    using accum_vec                 = __m512i;
     static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm512_set1_epi32(value); }
@@ -415,8 +415,8 @@ struct DotProduct {
 
     static int horizontal_add(accum_vec sum, int bias) { return m512_hadd(sum, bias); }
 #elif defined(USE_AVX2)
-    using input_vec = __m256i;
-    using accum_vec = __m256i;
+    using input_vec                 = __m256i;
+    using accum_vec                 = __m256i;
     static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm256_set1_epi32(value); }
@@ -432,8 +432,8 @@ struct DotProduct {
     static int horizontal_add(accum_vec sum, int bias) { return m256_hadd(sum, bias); }
 
 #elif defined(USE_SSSE3)
-    using input_vec = __m128i;
-    using accum_vec = __m128i;
+    using input_vec                 = __m128i;
+    using accum_vec                 = __m128i;
     static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm_set1_epi32(value); }
@@ -449,8 +449,8 @@ struct DotProduct {
     static int horizontal_add(accum_vec sum, int bias) { return m128_hadd(sum, bias); }
 
 #elif defined(USE_NEON_DOTPROD) || USE_NEON >= 8
-    using input_vec = int8x16_t;
-    using accum_vec = int32x4_t;
+    using input_vec                 = int8x16_t;
+    using accum_vec                 = int32x4_t;
     static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) {

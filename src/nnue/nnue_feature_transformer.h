@@ -144,6 +144,29 @@ class FeatureTransformer {
             permute<8>(threatWeights, InversePackusEpi16Order);
     }
 
+    // SIMD-friendly column views to avoid scattered reinterpret_cast at call sites
+#ifdef VECTOR
+    const vec_t* weight_column(IndexType offset) const {
+        return reinterpret_cast<const vec_t*>(&weights[offset]);
+    }
+
+    const psqt_vec_t* psqt_column(IndexType offset) const {
+        return reinterpret_cast<const psqt_vec_t*>(&psqtWeights[offset]);
+    }
+
+    const vec_t* threat_weight_column(IndexType offset) const {
+        return reinterpret_cast<const vec_t*>(&threatWeights[offset]);
+    }
+
+    const vec_i8_t* threat_weight_column_i8(IndexType offset) const {
+        return reinterpret_cast<const vec_i8_t*>(&threatWeights[offset]);
+    }
+
+    const psqt_vec_t* threat_psqt_column(IndexType offset) const {
+        return reinterpret_cast<const psqt_vec_t*>(&threatPsqtWeights[offset]);
+    }
+#endif
+
     inline void scale_weights(bool read) {
         for (IndexType j = 0; j < InputDimensions; ++j)
         {
@@ -383,10 +406,8 @@ class FeatureTransformer {
                     const vec_t acc1a = vec_add16(in1[j * 2 + 0], tin1[j * 2 + 0]);
                     const vec_t acc1b = vec_add16(in1[j * 2 + 1], tin1[j * 2 + 1]);
 
-                    const vec_t sum0a =
-                      vec_slli16(vec_max16(vec_min16(acc0a, One), Zero), shift);
-                    const vec_t sum0b =
-                      vec_slli16(vec_max16(vec_min16(acc0b, One), Zero), shift);
+                    const vec_t sum0a = vec_slli16(vec_max16(vec_min16(acc0a, One), Zero), shift);
+                    const vec_t sum0b = vec_slli16(vec_max16(vec_min16(acc0b, One), Zero), shift);
                     const vec_t sum1a = vec_min16(acc1a, One);
                     const vec_t sum1b = vec_min16(acc1b, One);
 
