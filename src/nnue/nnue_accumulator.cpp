@@ -378,13 +378,13 @@ struct AccumulatorUpdateContext {
     #ifdef USE_NEON
                 for (IndexType k = 0; k < Tiling::NumRegs; k += 2)
                 {
-                    acc[k]     = vec_sub_16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
-                    acc[k + 1] = vec_sub_16(acc[k + 1], vmovl_high_s8(column[k / 2]));
+                    acc[k]     = vec_sub16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
+                    acc[k + 1] = vec_sub16(acc[k + 1], vmovl_high_s8(column[k / 2]));
                 }
-    #else
+#else
                 for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                    acc[k] = vec_sub_16(acc[k], vec_convert_8_16(column[k]));
-    #endif
+                    acc[k] = vec_sub16(acc[k], vec_convert8to16(column[k]));
+#endif
             }
 
             for (IndexType i = 0; i < added.size(); ++i)
@@ -397,13 +397,13 @@ struct AccumulatorUpdateContext {
     #ifdef USE_NEON
                 for (IndexType k = 0; k < Tiling::NumRegs; k += 2)
                 {
-                    acc[k]     = vec_add_16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
-                    acc[k + 1] = vec_add_16(acc[k + 1], vmovl_high_s8(column[k / 2]));
+                    acc[k]     = vec_add16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
+                    acc[k + 1] = vec_add16(acc[k + 1], vmovl_high_s8(column[k / 2]));
                 }
-    #else
+#else
                 for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                    acc[k] = vec_add_16(acc[k], vec_convert_8_16(column[k]));
-    #endif
+                    acc[k] = vec_add16(acc[k], vec_convert8to16(column[k]));
+#endif
             }
 
             for (IndexType k = 0; k < Tiling::NumRegs; k++)
@@ -428,7 +428,7 @@ struct AccumulatorUpdateContext {
                   &featureTransformer.threatPsqtWeights[offset]);
 
                 for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                    psqt[k] = vec_sub_psqt_32(psqt[k], columnPsqt[k]);
+                    psqt[k] = vec_sub32(psqt[k], columnPsqt[k]);
             }
 
             for (IndexType i = 0; i < added.size(); ++i)
@@ -439,7 +439,7 @@ struct AccumulatorUpdateContext {
                   &featureTransformer.threatPsqtWeights[offset]);
 
                 for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                    psqt[k] = vec_add_psqt_32(psqt[k], columnPsqt[k]);
+                    psqt[k] = vec_add32(psqt[k], columnPsqt[k]);
             }
 
             for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
@@ -720,7 +720,7 @@ void update_accumulator_refresh_cache(Color                                 pers
             auto* column = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offset]);
 
             for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                acc[k] = vec_sub_16(acc[k], column[k]);
+                acc[k] = vec_sub16(acc[k], column[k]);
         }
         for (; i < added.size(); ++i)
         {
@@ -729,7 +729,7 @@ void update_accumulator_refresh_cache(Color                                 pers
             auto* column = reinterpret_cast<const vec_t*>(&featureTransformer.weights[offset]);
 
             for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                acc[k] = vec_add_16(acc[k], column[k]);
+                acc[k] = vec_add16(acc[k], column[k]);
         }
 
         for (IndexType k = 0; k < Tiling::NumRegs; k++)
@@ -756,7 +756,7 @@ void update_accumulator_refresh_cache(Color                                 pers
               reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offset]);
 
             for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                psqt[k] = vec_sub_psqt_32(psqt[k], columnPsqt[k]);
+                psqt[k] = vec_sub32(psqt[k], columnPsqt[k]);
         }
         for (IndexType i = 0; i < added.size(); ++i)
         {
@@ -766,7 +766,7 @@ void update_accumulator_refresh_cache(Color                                 pers
               reinterpret_cast<const psqt_vec_t*>(&featureTransformer.psqtWeights[offset]);
 
             for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                psqt[k] = vec_add_psqt_32(psqt[k], columnPsqt[k]);
+                psqt[k] = vec_add32(psqt[k], columnPsqt[k]);
         }
 
         for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
@@ -826,7 +826,7 @@ void update_threats_accumulator_full(Color                                 persp
           reinterpret_cast<vec_t*>(&accumulator.accumulation[perspective][j * Tiling::TileHeight]);
 
         for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-            acc[k] = vec_zero();
+            acc[k] = vec_zero16();
 
         IndexType i = 0;
 
@@ -840,13 +840,13 @@ void update_threats_accumulator_full(Color                                 persp
     #ifdef USE_NEON
             for (IndexType k = 0; k < Tiling::NumRegs; k += 2)
             {
-                acc[k]     = vec_add_16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
-                acc[k + 1] = vec_add_16(acc[k + 1], vmovl_high_s8(column[k / 2]));
+                acc[k]     = vec_add16(acc[k], vmovl_s8(vget_low_s8(column[k / 2])));
+                acc[k + 1] = vec_add16(acc[k + 1], vmovl_high_s8(column[k / 2]));
             }
-    #else
+#else
             for (IndexType k = 0; k < Tiling::NumRegs; ++k)
-                acc[k] = vec_add_16(acc[k], vec_convert_8_16(column[k]));
-    #endif
+                acc[k] = vec_add16(acc[k], vec_convert8to16(column[k]));
+#endif
         }
 
         for (IndexType k = 0; k < Tiling::NumRegs; k++)
@@ -859,7 +859,7 @@ void update_threats_accumulator_full(Color                                 persp
           &accumulator.psqtAccumulation[perspective][j * Tiling::PsqtTileHeight]);
 
         for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
-            psqt[k] = vec_zero_32();
+            psqt[k] = vec_zero32();
 
         for (IndexType i = 0; i < active.size(); ++i)
         {
@@ -869,7 +869,7 @@ void update_threats_accumulator_full(Color                                 persp
               reinterpret_cast<const psqt_vec_t*>(&featureTransformer.threatPsqtWeights[offset]);
 
             for (std::size_t k = 0; k < Tiling::NumPsqtRegs; ++k)
-                psqt[k] = vec_add_psqt_32(psqt[k], columnPsqt[k]);
+                psqt[k] = vec_add32(psqt[k], columnPsqt[k]);
         }
 
         for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)

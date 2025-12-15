@@ -303,8 +303,8 @@ class FeatureTransformer {
             static_assert((HalfDimensions / 2) % OutputChunkSize == 0);
             constexpr IndexType NumOutputChunks = HalfDimensions / 2 / OutputChunkSize;
 
-            const vec_t Zero = vec_zero();
-            const vec_t One  = vec_set_16(UseThreats ? 255 : 127 * 2);
+            const vec_t Zero = vec_zero16();
+            const vec_t One  = vec_set16(UseThreats ? 255 : 127 * 2);
 
             const vec_t* in0 = reinterpret_cast<const vec_t*>(&(accumulation[perspectives[p]][0]));
             const vec_t* in1 =
@@ -318,7 +318,7 @@ class FeatureTransformer {
             // one int8 vector. However, there exists a faster way.
 
             // The idea here is to use the implicit clipping from packus to
-            // save us two vec_max_16 instructions. This clipping works due
+            // save us two vec_max16 instructions. This clipping works due
             // to the fact that any int16 integer below zero will be zeroed
             // on packus.
 
@@ -378,22 +378,22 @@ class FeatureTransformer {
                   &(threatAccumulation[perspectives[p]][HalfDimensions / 2]));
                 for (IndexType j = 0; j < NumOutputChunks; ++j)
                 {
-                    const vec_t acc0a = vec_add_16(in0[j * 2 + 0], tin0[j * 2 + 0]);
-                    const vec_t acc0b = vec_add_16(in0[j * 2 + 1], tin0[j * 2 + 1]);
-                    const vec_t acc1a = vec_add_16(in1[j * 2 + 0], tin1[j * 2 + 0]);
-                    const vec_t acc1b = vec_add_16(in1[j * 2 + 1], tin1[j * 2 + 1]);
+                    const vec_t acc0a = vec_add16(in0[j * 2 + 0], tin0[j * 2 + 0]);
+                    const vec_t acc0b = vec_add16(in0[j * 2 + 1], tin0[j * 2 + 1]);
+                    const vec_t acc1a = vec_add16(in1[j * 2 + 0], tin1[j * 2 + 0]);
+                    const vec_t acc1b = vec_add16(in1[j * 2 + 1], tin1[j * 2 + 1]);
 
                     const vec_t sum0a =
-                      vec_slli_16(vec_max_16(vec_min_16(acc0a, One), Zero), shift);
+                      vec_slli16(vec_max16(vec_min16(acc0a, One), Zero), shift);
                     const vec_t sum0b =
-                      vec_slli_16(vec_max_16(vec_min_16(acc0b, One), Zero), shift);
-                    const vec_t sum1a = vec_min_16(acc1a, One);
-                    const vec_t sum1b = vec_min_16(acc1b, One);
+                      vec_slli16(vec_max16(vec_min16(acc0b, One), Zero), shift);
+                    const vec_t sum1a = vec_min16(acc1a, One);
+                    const vec_t sum1b = vec_min16(acc1b, One);
 
-                    const vec_t pa = vec_mulhi_16(sum0a, sum1a);
-                    const vec_t pb = vec_mulhi_16(sum0b, sum1b);
+                    const vec_t pa = vec_mulhi16(sum0a, sum1a);
+                    const vec_t pb = vec_mulhi16(sum0b, sum1b);
 
-                    out[j] = vec_packus_16(pa, pb);
+                    out[j] = vec_packus16(pa, pb);
                 }
             }
             else
@@ -401,16 +401,16 @@ class FeatureTransformer {
                 for (IndexType j = 0; j < NumOutputChunks; ++j)
                 {
                     const vec_t sum0a =
-                      vec_slli_16(vec_max_16(vec_min_16(in0[j * 2 + 0], One), Zero), shift);
+                      vec_slli16(vec_max16(vec_min16(in0[j * 2 + 0], One), Zero), shift);
                     const vec_t sum0b =
-                      vec_slli_16(vec_max_16(vec_min_16(in0[j * 2 + 1], One), Zero), shift);
-                    const vec_t sum1a = vec_min_16(in1[j * 2 + 0], One);
-                    const vec_t sum1b = vec_min_16(in1[j * 2 + 1], One);
+                      vec_slli16(vec_max16(vec_min16(in0[j * 2 + 1], One), Zero), shift);
+                    const vec_t sum1a = vec_min16(in1[j * 2 + 0], One);
+                    const vec_t sum1b = vec_min16(in1[j * 2 + 1], One);
 
-                    const vec_t pa = vec_mulhi_16(sum0a, sum1a);
-                    const vec_t pb = vec_mulhi_16(sum0b, sum1b);
+                    const vec_t pa = vec_mulhi16(sum0a, sum1a);
+                    const vec_t pb = vec_mulhi16(sum0b, sum1b);
 
-                    out[j] = vec_packus_16(pa, pb);
+                    out[j] = vec_packus16(pa, pb);
                 }
             }
 

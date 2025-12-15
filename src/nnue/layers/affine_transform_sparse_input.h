@@ -90,7 +90,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
     constexpr IndexType SimdWidthIn  = 16;  // 512 bits / 32 bits
     constexpr IndexType SimdWidthOut = 32;  // 512 bits / 16 bits
     constexpr IndexType NumChunks    = InputDimensions / SimdWidthOut;
-    const vec_t         increment    = vec_set_16(SimdWidthOut);
+    const vec_t         increment    = vec_set16(SimdWidthOut);
     vec_t               base = _mm512_set_epi16(  // Same permute order as _mm512_packus_epi32()
       31, 30, 29, 28, 15, 14, 13, 12, 27, 26, 25, 24, 11, 10, 9, 8, 23, 22, 21, 20, 7, 6, 5, 4, 19,
       18, 17, 16, 3, 2, 1, 0);
@@ -110,7 +110,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
         _mm512_storeu_si512(out + count, nnz);
 
         count += popcount(nnzMask);
-        base = vec_add_16(base, increment);
+        base = vec_add16(base, increment);
     }
     count_out = count;
 
@@ -118,7 +118,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
 
     constexpr IndexType SimdWidth = 16;  // 512 bits / 32 bits
     constexpr IndexType NumChunks = InputDimensions / SimdWidth;
-    const vec_t         increment = vec_set_32(SimdWidth);
+    const vec_t         increment = vec_set32(SimdWidth);
     vec_t base = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
 
     IndexType count = 0;
@@ -131,7 +131,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
         const __m512i   nnzV    = _mm512_maskz_compress_epi32(nnzMask, base);
         _mm512_mask_cvtepi32_storeu_epi16(out + count, 0xFFFF, nnzV);
         count += popcount(nnzMask);
-        base = vec_add_32(base, increment);
+        base = vec_add32(base, increment);
     }
     count_out = count;
 
@@ -146,8 +146,8 @@ void find_nnz(const std::int32_t* RESTRICT input,
 
     const auto     inputVector = reinterpret_cast<const vec_uint_t*>(input);
     IndexType      count       = 0;
-    vec128_t       base        = vec128_zero();
-    const vec128_t increment   = vec128_set_16(8);
+    vec128_t       base        = vec128_zero16();
+    const vec128_t increment   = vec128_set16(8);
     for (IndexType i = 0; i < NumChunks; ++i)
     {
         // bitmask of nonzero values in this chunk
@@ -162,9 +162,9 @@ void find_nnz(const std::int32_t* RESTRICT input,
             const unsigned lookup = (nnz >> (j * 8)) & 0xFF;
             const vec128_t offsets =
               vec128_load(reinterpret_cast<const vec128_t*>(&Lookup.offset_indices[lookup]));
-            vec128_storeu(reinterpret_cast<vec128_t*>(out + count), vec128_add(base, offsets));
+            vec128_storeu(reinterpret_cast<vec128_t*>(out + count), vec128_add16(base, offsets));
             count += popcount(lookup);
-            base = vec128_add(base, increment);
+            base = vec128_add16(base, increment);
         }
     }
     count_out = count;

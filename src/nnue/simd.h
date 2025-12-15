@@ -57,31 +57,31 @@ constexpr int MaxChunkSize     = 64;
 
 inline vec_t vec_load(const vec_t* a) { return _mm512_load_si512(a); }
 inline void  vec_store(vec_t* a, vec_t b) { _mm512_store_si512(a, b); }
-inline vec_t vec_convert_8_16(vec_i8_t a) { return _mm512_cvtepi8_epi16(a); }
-inline vec_t vec_add_16(vec_t a, vec_t b) { return _mm512_add_epi16(a, b); }
-inline vec_t vec_sub_16(vec_t a, vec_t b) { return _mm512_sub_epi16(a, b); }
-inline vec_t vec_mulhi_16(vec_t a, vec_t b) { return _mm512_mulhi_epi16(a, b); }
-inline vec_t vec_zero() { return _mm512_setzero_epi32(); }
-inline vec_t vec_set_16(int a) { return _mm512_set1_epi16(a); }
-inline vec_t vec_max_16(vec_t a, vec_t b) { return _mm512_max_epi16(a, b); }
-inline vec_t vec_min_16(vec_t a, vec_t b) { return _mm512_min_epi16(a, b); }
-inline vec_t vec_slli_16(vec_t a, int b) { return _mm512_slli_epi16(a, b); }
-inline vec_t vec_set_32(int a) { return _mm512_set1_epi32(a); }
-inline vec_t vec_add_32(vec_t a, vec_t b) { return _mm512_add_epi32(a, b); }
+inline vec_t vec_convert8to16(vec_i8_t a) { return _mm512_cvtepi8_epi16(a); }
+inline vec_t vec_add16(vec_t a, vec_t b) { return _mm512_add_epi16(a, b); }
+inline vec_t vec_sub16(vec_t a, vec_t b) { return _mm512_sub_epi16(a, b); }
+inline vec_t vec_mulhi16(vec_t a, vec_t b) { return _mm512_mulhi_epi16(a, b); }
+inline vec_t vec_zero16() { return _mm512_setzero_epi32(); }
+inline vec_t vec_set16(int a) { return _mm512_set1_epi16(a); }
+inline vec_t vec_max16(vec_t a, vec_t b) { return _mm512_max_epi16(a, b); }
+inline vec_t vec_min16(vec_t a, vec_t b) { return _mm512_min_epi16(a, b); }
+inline vec_t vec_slli16(vec_t a, int b) { return _mm512_slli_epi16(a, b); }
+inline vec_t vec_set32(int a) { return _mm512_set1_epi32(a); }
+inline vec_t vec_add32(vec_t a, vec_t b) { return _mm512_add_epi32(a, b); }
 // Inverse permuted at load time
-inline vec_t vec_packus_16(vec_t a, vec_t b) { return _mm512_packus_epi16(a, b); }
+inline vec_t vec_packus16(vec_t a, vec_t b) { return _mm512_packus_epi16(a, b); }
 
 inline psqt_vec_t vec_load_psqt(const psqt_vec_t* a) { return _mm256_load_si256(a); }
 inline void       vec_store_psqt(psqt_vec_t* a, psqt_vec_t b) { _mm256_store_si256(a, b); }
-inline psqt_vec_t vec_add_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm256_add_epi32(a, b); }
-inline psqt_vec_t vec_sub_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm256_sub_epi32(a, b); }
-inline psqt_vec_t vec_zero_32() { return _mm256_setzero_si256(); }
+inline psqt_vec_t vec_add32(psqt_vec_t a, psqt_vec_t b) { return _mm256_add_epi32(a, b); }
+inline psqt_vec_t vec_sub32(psqt_vec_t a, psqt_vec_t b) { return _mm256_sub_epi32(a, b); }
+inline psqt_vec_t vec_zero32() { return _mm256_setzero_si256(); }
 
-inline vec128_t vec128_zero() { return _mm_setzero_si128(); }
-inline vec128_t vec128_set_16(int a) { return _mm_set1_epi16(a); }
+inline vec128_t vec128_zero16() { return _mm_setzero_si128(); }
+inline vec128_t vec128_set16(int a) { return _mm_set1_epi16(a); }
 inline vec128_t vec128_load(const vec128_t* a) { return _mm_load_si128(a); }
 inline void     vec128_storeu(vec128_t* a, vec128_t b) { _mm_storeu_si128(a, b); }
-inline vec128_t vec128_add(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
+inline vec128_t vec128_add16(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
 
 inline auto vec_nnz(vec_uint_t a) { return _mm512_cmpgt_epi32_mask(a, _mm512_setzero_si512()); }
 
@@ -97,31 +97,31 @@ constexpr int MaxChunkSize     = 32;
 
 inline vec_t vec_load(const vec_t* a) { return _mm256_load_si256(a); }
 inline void  vec_store(vec_t* a, vec_t b) { _mm256_store_si256(a, b); }
-inline vec_t vec_convert_8_16(vec_i8_t a) { return _mm256_cvtepi8_epi16(a); }
-inline vec_t vec_add_16(vec_t a, vec_t b) { return _mm256_add_epi16(a, b); }
-inline vec_t vec_sub_16(vec_t a, vec_t b) { return _mm256_sub_epi16(a, b); }
-inline vec_t vec_mulhi_16(vec_t a, vec_t b) { return _mm256_mulhi_epi16(a, b); }
-inline vec_t vec_zero() { return _mm256_setzero_si256(); }
-inline vec_t vec_set_16(int a) { return _mm256_set1_epi16(a); }
-inline vec_t vec_max_16(vec_t a, vec_t b) { return _mm256_max_epi16(a, b); }
-inline vec_t vec_min_16(vec_t a, vec_t b) { return _mm256_min_epi16(a, b); }
-inline vec_t vec_slli_16(vec_t a, int b) { return _mm256_slli_epi16(a, b); }
-inline vec_t vec_set_32(int a) { return _mm256_set1_epi32(a); }
-inline vec_t vec_add_32(vec_t a, vec_t b) { return _mm256_add_epi32(a, b); }
+inline vec_t vec_convert8to16(vec_i8_t a) { return _mm256_cvtepi8_epi16(a); }
+inline vec_t vec_add16(vec_t a, vec_t b) { return _mm256_add_epi16(a, b); }
+inline vec_t vec_sub16(vec_t a, vec_t b) { return _mm256_sub_epi16(a, b); }
+inline vec_t vec_mulhi16(vec_t a, vec_t b) { return _mm256_mulhi_epi16(a, b); }
+inline vec_t vec_zero16() { return _mm256_setzero_si256(); }
+inline vec_t vec_set16(int a) { return _mm256_set1_epi16(a); }
+inline vec_t vec_max16(vec_t a, vec_t b) { return _mm256_max_epi16(a, b); }
+inline vec_t vec_min16(vec_t a, vec_t b) { return _mm256_min_epi16(a, b); }
+inline vec_t vec_slli16(vec_t a, int b) { return _mm256_slli_epi16(a, b); }
+inline vec_t vec_set32(int a) { return _mm256_set1_epi32(a); }
+inline vec_t vec_add32(vec_t a, vec_t b) { return _mm256_add_epi32(a, b); }
 // Inverse permuted at load time
-inline vec_t vec_packus_16(vec_t a, vec_t b) { return _mm256_packus_epi16(a, b); }
+inline vec_t vec_packus16(vec_t a, vec_t b) { return _mm256_packus_epi16(a, b); }
 
 inline psqt_vec_t vec_load_psqt(const psqt_vec_t* a) { return _mm256_load_si256(a); }
 inline void       vec_store_psqt(psqt_vec_t* a, psqt_vec_t b) { _mm256_store_si256(a, b); }
-inline psqt_vec_t vec_add_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm256_add_epi32(a, b); }
-inline psqt_vec_t vec_sub_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm256_sub_epi32(a, b); }
-inline psqt_vec_t vec_zero_32() { return _mm256_setzero_si256(); }
+inline psqt_vec_t vec_add32(psqt_vec_t a, psqt_vec_t b) { return _mm256_add_epi32(a, b); }
+inline psqt_vec_t vec_sub32(psqt_vec_t a, psqt_vec_t b) { return _mm256_sub_epi32(a, b); }
+inline psqt_vec_t vec_zero32() { return _mm256_setzero_si256(); }
 
-inline vec128_t vec128_zero() { return _mm_setzero_si128(); }
-inline vec128_t vec128_set_16(int a) { return _mm_set1_epi16(a); }
+inline vec128_t vec128_zero16() { return _mm_setzero_si128(); }
+inline vec128_t vec128_set16(int a) { return _mm_set1_epi16(a); }
 inline vec128_t vec128_load(const vec128_t* a) { return _mm_load_si128(a); }
 inline void     vec128_storeu(vec128_t* a, vec128_t b) { _mm_storeu_si128(a, b); }
-inline vec128_t vec128_add(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
+inline vec128_t vec128_add16(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
 
 inline auto vec_nnz(vec_uint_t a) {
     #if defined(USE_VNNI) && !defined(USE_AVXVNNI)
@@ -142,23 +142,23 @@ constexpr int MaxChunkSize     = 16;
 
 inline vec_t vec_load(const vec_t* a) { return *a; }
 inline void  vec_store(vec_t* a, vec_t b) { *a = b; }
-inline vec_t vec_add_16(vec_t a, vec_t b) { return _mm_add_epi16(a, b); }
-inline vec_t vec_sub_16(vec_t a, vec_t b) { return _mm_sub_epi16(a, b); }
-inline vec_t vec_mulhi_16(vec_t a, vec_t b) { return _mm_mulhi_epi16(a, b); }
-inline vec_t vec_zero() { return _mm_setzero_si128(); }
-inline vec_t vec_set_16(int a) { return _mm_set1_epi16(a); }
-inline vec_t vec_max_16(vec_t a, vec_t b) { return _mm_max_epi16(a, b); }
-inline vec_t vec_min_16(vec_t a, vec_t b) { return _mm_min_epi16(a, b); }
-inline vec_t vec_slli_16(vec_t a, int b) { return _mm_slli_epi16(a, b); }
-inline vec_t vec_set_32(int a) { return _mm_set1_epi32(a); }
-inline vec_t vec_add_32(vec_t a, vec_t b) { return _mm_add_epi32(a, b); }
-inline vec_t vec_packus_16(vec_t a, vec_t b) { return _mm_packus_epi16(a, b); }
+inline vec_t vec_add16(vec_t a, vec_t b) { return _mm_add_epi16(a, b); }
+inline vec_t vec_sub16(vec_t a, vec_t b) { return _mm_sub_epi16(a, b); }
+inline vec_t vec_mulhi16(vec_t a, vec_t b) { return _mm_mulhi_epi16(a, b); }
+inline vec_t vec_zero16() { return _mm_setzero_si128(); }
+inline vec_t vec_set16(int a) { return _mm_set1_epi16(a); }
+inline vec_t vec_max16(vec_t a, vec_t b) { return _mm_max_epi16(a, b); }
+inline vec_t vec_min16(vec_t a, vec_t b) { return _mm_min_epi16(a, b); }
+inline vec_t vec_slli16(vec_t a, int b) { return _mm_slli_epi16(a, b); }
+inline vec_t vec_set32(int a) { return _mm_set1_epi32(a); }
+inline vec_t vec_add32(vec_t a, vec_t b) { return _mm_add_epi32(a, b); }
+inline vec_t vec_packus16(vec_t a, vec_t b) { return _mm_packus_epi16(a, b); }
 
 inline psqt_vec_t vec_load_psqt(const psqt_vec_t* a) { return *a; }
 inline void       vec_store_psqt(psqt_vec_t* a, psqt_vec_t b) { *a = b; }
-inline psqt_vec_t vec_add_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm_add_epi32(a, b); }
-inline psqt_vec_t vec_sub_psqt_32(psqt_vec_t a, psqt_vec_t b) { return _mm_sub_epi32(a, b); }
-inline psqt_vec_t vec_zero_32() { return _mm_setzero_si128(); }
+inline psqt_vec_t vec_add32(psqt_vec_t a, psqt_vec_t b) { return _mm_add_epi32(a, b); }
+inline psqt_vec_t vec_sub32(psqt_vec_t a, psqt_vec_t b) { return _mm_sub_epi32(a, b); }
+inline psqt_vec_t vec_zero32() { return _mm_setzero_si128(); }
 
 inline unsigned vec_nnz(vec_uint_t a) {
     return static_cast<unsigned>(
@@ -171,24 +171,24 @@ inline __m128i _mm_cvtsi64_si128(int64_t val) {
 }
     #endif
 
-    #ifdef USE_SSE41
-inline vec_t vec_convert_8_16(vec_i8_t a) {
+#ifdef USE_SSE41
+inline vec_t vec_convert8to16(vec_i8_t a) {
     return _mm_cvtepi8_epi16(_mm_cvtsi64_si128(static_cast<int64_t>(a)));
 }
-    #else
+#else
 // Credit: Yoshie2000
-inline __m128i vec_convert_8_16(uint64_t x) {
+inline __m128i vec_convert8to16(uint64_t x) {
     __m128i v8   = _mm_cvtsi64_si128(static_cast<int64_t>(x));
     __m128i sign = _mm_cmpgt_epi8(_mm_setzero_si128(), v8);
     return _mm_unpacklo_epi8(v8, sign);
 }
-    #endif
+#endif
 
-inline vec128_t vec128_zero() { return _mm_setzero_si128(); }
-inline vec128_t vec128_set_16(int a) { return _mm_set1_epi16(a); }
+inline vec128_t vec128_zero16() { return _mm_setzero_si128(); }
+inline vec128_t vec128_set16(int a) { return _mm_set1_epi16(a); }
 inline vec128_t vec128_load(const vec128_t* a) { return _mm_load_si128(a); }
 inline void     vec128_storeu(vec128_t* a, vec128_t b) { _mm_storeu_si128(a, b); }
-inline vec128_t vec128_add(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
+inline vec128_t vec128_add16(vec128_t a, vec128_t b) { return _mm_add_epi16(a, b); }
 
 #elif USE_NEON
 using vec_t      = int16x8_t;
@@ -202,38 +202,38 @@ constexpr int MaxChunkSize     = 16;
 
 inline vec_t vec_load(const vec_t* a) { return *a; }
 inline void  vec_store(vec_t* a, vec_t b) { *a = b; }
-inline vec_t vec_add_16(vec_t a, vec_t b) { return vaddq_s16(a, b); }
-inline vec_t vec_sub_16(vec_t a, vec_t b) { return vsubq_s16(a, b); }
-inline vec_t vec_mulhi_16(vec_t a, vec_t b) { return vqdmulhq_s16(a, b); }
-inline vec_t vec_zero() { return vdupq_n_s16(0); }
-inline vec_t vec_set_16(int a) { return vdupq_n_s16(a); }
-inline vec_t vec_max_16(vec_t a, vec_t b) { return vmaxq_s16(a, b); }
-inline vec_t vec_min_16(vec_t a, vec_t b) { return vminq_s16(a, b); }
-inline vec_t vec_slli_16(vec_t a, int b) { return vshlq_s16(a, vec_set_16(b)); }
-inline vec_t vec_packus_16(vec_t a, vec_t b) {
+inline vec_t vec_add16(vec_t a, vec_t b) { return vaddq_s16(a, b); }
+inline vec_t vec_sub16(vec_t a, vec_t b) { return vsubq_s16(a, b); }
+inline vec_t vec_mulhi16(vec_t a, vec_t b) { return vqdmulhq_s16(a, b); }
+inline vec_t vec_zero16() { return vdupq_n_s16(0); }
+inline vec_t vec_set16(int a) { return vdupq_n_s16(a); }
+inline vec_t vec_max16(vec_t a, vec_t b) { return vmaxq_s16(a, b); }
+inline vec_t vec_min16(vec_t a, vec_t b) { return vminq_s16(a, b); }
+inline vec_t vec_slli16(vec_t a, int b) { return vshlq_s16(a, vec_set16(b)); }
+inline vec_t vec_packus16(vec_t a, vec_t b) {
     return reinterpret_cast<vec_t>(vcombine_u8(vqmovun_s16(a), vqmovun_s16(b)));
 }
 
 inline psqt_vec_t vec_load_psqt(const psqt_vec_t* a) { return *a; }
 inline void       vec_store_psqt(psqt_vec_t* a, psqt_vec_t b) { *a = b; }
-inline psqt_vec_t vec_add_psqt_32(psqt_vec_t a, psqt_vec_t b) { return vaddq_s32(a, b); }
-inline psqt_vec_t vec_sub_psqt_32(psqt_vec_t a, psqt_vec_t b) { return vsubq_s32(a, b); }
-inline psqt_vec_t vec_zero_32() { return vdupq_n_s32(0); }
+inline psqt_vec_t vec_add32(psqt_vec_t a, psqt_vec_t b) { return vaddq_s32(a, b); }
+inline psqt_vec_t vec_sub32(psqt_vec_t a, psqt_vec_t b) { return vsubq_s32(a, b); }
+inline psqt_vec_t vec_zero32() { return vdupq_n_s32(0); }
 
 static constexpr std::uint32_t Mask[4] = {1, 2, 4, 8};
 inline std::uint32_t           vec_nnz(vec_uint_t a) {
     return vaddvq_u32(vandq_u32(vtstq_u32(a, a), vld1q_u32(Mask)));
 }
 
-inline vec128_t vec128_zero() { return vdupq_n_u16(0); }
-inline vec128_t vec128_set_16(int a) { return vdupq_n_u16(a); }
+inline vec128_t vec128_zero16() { return vdupq_n_u16(0); }
+inline vec128_t vec128_set16(int a) { return vdupq_n_u16(a); }
 inline vec128_t vec128_load(const vec128_t* a) {
     return vld1q_u16(reinterpret_cast<const std::uint16_t*>(a));
 }
 inline void vec128_storeu(vec128_t* a, vec128_t b) {
     vst1q_u16(reinterpret_cast<std::uint16_t*>(a), b);
 }
-inline vec128_t vec128_add(vec128_t a, vec128_t b) { return vaddq_u16(a, b); }
+inline vec128_t vec128_add16(vec128_t a, vec128_t b) { return vaddq_u16(a, b); }
 
     #ifndef __aarch64__
 // Single instruction doesn't exist on 32-bit ARM
@@ -248,8 +248,8 @@ inline int8x16_t vmovl_high_s8(int8x16_t val) { return vmovl_s8(vget_high_s8(val
 struct Vec16Wrapper {
 #ifdef VECTOR
     using type = vec_t;
-    static type add(const type& lhs, const type& rhs) { return vec_add_16(lhs, rhs); }
-    static type sub(const type& lhs, const type& rhs) { return vec_sub_16(lhs, rhs); }
+    static type add(const type& lhs, const type& rhs) { return vec_add16(lhs, rhs); }
+    static type sub(const type& lhs, const type& rhs) { return vec_sub16(lhs, rhs); }
 #else
     using type = BiasType;
     static type add(const type& lhs, const type& rhs) { return lhs + rhs; }
@@ -260,8 +260,8 @@ struct Vec16Wrapper {
 struct Vec32Wrapper {
 #ifdef VECTOR
     using type = psqt_vec_t;
-    static type add(const type& lhs, const type& rhs) { return vec_add_psqt_32(lhs, rhs); }
-    static type sub(const type& lhs, const type& rhs) { return vec_sub_psqt_32(lhs, rhs); }
+    static type add(const type& lhs, const type& rhs) { return vec_add32(lhs, rhs); }
+    static type sub(const type& lhs, const type& rhs) { return vec_sub32(lhs, rhs); }
 #else
     using type = PSQTWeightType;
     static type add(const type& lhs, const type& rhs) { return lhs + rhs; }
