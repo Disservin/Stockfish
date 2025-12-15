@@ -111,24 +111,19 @@ struct AccumulatorStateSimple {
     Accumulator<Dimensions>       accumulator;
     typename FeatureSet::DiffType diff;
 
-    auto& acc() noexcept { return accumulator; }
-
-    const auto& acc() const noexcept { return accumulator; }
-
     void reset(const typename FeatureSet::DiffType& dp) noexcept {
         diff = dp;
         accumulator.computed.fill(false);
     }
-
-    typename FeatureSet::DiffType& reset() noexcept {
-        accumulator.computed.fill(false);
-        return diff;
-    }
 };
 
-template<IndexType Dimensions>
-struct UpdateThreats {
+template<typename FeatureSet, IndexType Dimensions, std::size_t Size>
+using AccumulatorArray = std::array<AccumulatorStateSimple<FeatureSet, Dimensions>, Size>;
+
+template<typename FeatureSet, IndexType Dimensions>
+struct BaseUpdater {
     static constexpr std::size_t MaxSize = MAX_PLY + 1;
+    std::size_t                  size    = 1;
 
     auto&       latest() noexcept { return acc[size - 1]; }
     const auto& latest() const noexcept { return acc[size - 1]; }
@@ -149,58 +144,45 @@ struct UpdateThreats {
         size--;
     }
 
-    std::size_t find_last_usable_accumulator(Color perspective) const noexcept;
-    void        forward_update_incremental(
-             Color                                 perspective,
-             const Position&                       pos,
-             const FeatureTransformer<Dimensions>& featureTransformer,
-             const std::array<AccumulatorStateSimple<PSQFeatureSet, Dimensions>, MaxSize>& psqtAcc,
-             const std::size_t                                                             begin) noexcept;
-    void backward_update_incremental(Color                                 perspective,
-                                     const Position&                       pos,
-                                     const FeatureTransformer<Dimensions>& featureTransformer,
-                                     const std::size_t                     end) noexcept;
-
-    std::size_t                                                               size = 1;
-    std::array<AccumulatorStateSimple<ThreatFeatureSet, Dimensions>, MaxSize> acc;
+    AccumulatorArray<FeatureSet, Dimensions, MaxSize> acc;
 };
 
 template<IndexType Dimensions>
-struct UpdateHalfka {
-    static constexpr std::size_t MaxSize = MAX_PLY + 1;
-
-    auto&       latest() noexcept { return acc[size - 1]; }
-    const auto& latest() const noexcept { return acc[size - 1]; }
-
-    void reset_empty() {
-        acc[0].reset({});
-        size = 1;
-    }
-
-    auto& reset() {
-        assert(size < MaxSize);
-        acc[size].reset({});
-        return acc[size++];
-    }
-
-    void pop() {
-        assert(size > 1);
-        size--;
-    }
+struct UpdateThreats: public BaseUpdater<ThreatFeatureSet, Dimensions> {
+    using FeatureSet = ThreatFeatureSet;
+    using BaseUpdater<ThreatFeatureSet, Dimensions>::MaxSize;
 
     std::size_t find_last_usable_accumulator(Color perspective) const noexcept;
-    void        forward_update_incremental(Color                                 perspective,
-                                           const Position&                       pos,
-                                           const FeatureTransformer<Dimensions>& featureTransformer,
-                                           const std::size_t                     begin) noexcept;
+
+    void
+    forward_update_incremental(Color                                 perspective,
+                               const Position&                       pos,
+                               const FeatureTransformer<Dimensions>& featureTransformer,
+                               const AccumulatorArray<PSQFeatureSet, Dimensions, MaxSize>& psqtAcc,
+                               const std::size_t begin) noexcept;
 
     void backward_update_incremental(Color                                 perspective,
                                      const Position&                       pos,
                                      const FeatureTransformer<Dimensions>& featureTransformer,
                                      const std::size_t                     end) noexcept;
+};
 
-    std::size_t                                                            size = 1;
-    std::array<AccumulatorStateSimple<PSQFeatureSet, Dimensions>, MaxSize> acc;
+template<IndexType Dimensions>
+struct UpdateHalfka: public BaseUpdater<PSQFeatureSet, Dimensions> {
+    using FeatureSet = PSQFeatureSet;
+    using BaseUpdater<PSQFeatureSet, Dimensions>::MaxSize;
+
+    std::size_t find_last_usable_accumulator(Color perspective) const noexcept;
+
+    void forward_update_incremental(Color                                 perspective,
+                                    const Position&                       pos,
+                                    const FeatureTransformer<Dimensions>& featureTransformer,
+                                    const std::size_t                     begin) noexcept;
+
+    void backward_update_incremental(Color                                 perspective,
+                                     const Position&                       pos,
+                                     const FeatureTransformer<Dimensions>& featureTransformer,
+                                     const std::size_t                     end) noexcept;
 };
 
 struct BigNetworkAccumulator {
