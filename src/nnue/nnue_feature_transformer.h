@@ -237,7 +237,7 @@ class FeatureTransformer {
         const auto& accumulatorState = accumulatorStack.get<HalfDimensions>().psqt;
 
         const Color perspectives[2]  = {pos.side_to_move(), ~pos.side_to_move()};
-        const auto& psqtAccumulation = (accumulatorState.latest().acc()).psqtAccumulation;
+        const auto& psqtAccumulation = (accumulatorState.latest().accumulator).psqtAccumulation;
         auto        psqt =
           (psqtAccumulation[perspectives[0]][bucket] - psqtAccumulation[perspectives[1]][bucket]);
 
@@ -247,10 +247,10 @@ class FeatureTransformer {
         {
 
             const auto& threatAccumulatorState = accumulatorStack.get<HalfDimensions>().threat;
-            threatAccumulation = &(threatAccumulatorState.latest().acc()).accumulation;
+            threatAccumulation = &(threatAccumulatorState.latest().accumulator).accumulation;
 
             const auto& threatPsqtAccumulation =
-              (threatAccumulatorState.latest().acc()).psqtAccumulation;
+              (threatAccumulatorState.latest().accumulator).psqtAccumulation;
             psqt = (psqt + threatPsqtAccumulation[perspectives[0]][bucket]
                     - threatPsqtAccumulation[perspectives[1]][bucket])
                  / 2;
@@ -258,7 +258,7 @@ class FeatureTransformer {
         else
             psqt /= 2;
 
-        const auto& accumulation = (accumulatorState.latest().acc()).accumulation;
+        const auto& accumulation = (accumulatorState.latest().accumulator).accumulation;
 
         for (IndexType p = 0; p < 2; ++p)
         {

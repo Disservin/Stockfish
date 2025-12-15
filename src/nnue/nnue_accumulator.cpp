@@ -83,21 +83,21 @@ struct AccumulatorUpdateContext {
         };
 
         fused_row_reduce<Vec16Wrapper, Dimensions, ops...>(
-          from.acc().accumulation[perspective].data(), to.acc().accumulation[perspective].data(),
-          to_weight_vector(indices)...);
+          from.accumulator.accumulation[perspective].data(),
+          to.accumulator.accumulation[perspective].data(), to_weight_vector(indices)...);
 
         fused_row_reduce<Vec32Wrapper, PSQTBuckets, ops...>(
-          from.acc().psqtAccumulation[perspective].data(),
-          to.acc().psqtAccumulation[perspective].data(), to_psqt_weight_vector(indices)...);
+          from.accumulator.psqtAccumulation[perspective].data(),
+          to.accumulator.psqtAccumulation[perspective].data(), to_psqt_weight_vector(indices)...);
     }
 
     void apply(const typename FeatureSet::IndexList& added,
                const typename FeatureSet::IndexList& removed) {
-        const auto& fromAcc = from.acc().accumulation[perspective];
-        auto&       toAcc   = to.acc().accumulation[perspective];
+        const auto& fromAcc = from.accumulator.accumulation[perspective];
+        auto&       toAcc   = to.accumulator.accumulation[perspective];
 
-        const auto& fromPsqtAcc = from.acc().psqtAccumulation[perspective];
-        auto&       toPsqtAcc   = to.acc().psqtAccumulation[perspective];
+        const auto& fromPsqtAcc = from.accumulator.psqtAccumulation[perspective];
+        auto&       toPsqtAcc   = to.accumulator.psqtAccumulation[perspective];
 
 #ifdef VECTOR
         using Tiling = SIMDTiling<Dimensions, Dimensions, PSQTBuckets>;
@@ -241,9 +241,9 @@ void double_inc_update(Color                                                    
                        AccumulatorStateSimple<PSQFeatureSet, Dimensions>&       target_state,
                        const AccumulatorStateSimple<PSQFeatureSet, Dimensions>& computed) {
 
-    assert(computed.acc().computed[perspective]);
-    assert(!middle_state.acc().computed[perspective]);
-    assert(!target_state.acc().computed[perspective]);
+    assert(computed.accumulator.computed[perspective]);
+    assert(!middle_state.accumulator.computed[perspective]);
+    assert(!target_state.accumulator.computed[perspective]);
 
     PSQFeatureSet::IndexList removed, added;
     PSQFeatureSet::append_changed_indices(perspective, ksq, middle_state.diff, removed, added);
@@ -269,7 +269,7 @@ void double_inc_update(Color                                                    
                                                          removed[2]);
     }
 
-    target_state.acc().computed[perspective] = true;
+    target_state.accumulator.computed[perspective] = true;
 }
 
 template<IndexType Dimensions>
@@ -281,9 +281,9 @@ void double_inc_update(Color                                                 per
                        const AccumulatorStateSimple<ThreatFeatureSet, Dimensions>& computed,
                        const DirtyPiece&                                           dp2) {
 
-    assert(computed.acc().computed[perspective]);
-    assert(!middle_state.acc().computed[perspective]);
-    assert(!target_state.acc().computed[perspective]);
+    assert(computed.accumulator.computed[perspective]);
+    assert(!middle_state.accumulator.computed[perspective]);
+    assert(!target_state.accumulator.computed[perspective]);
 
     ThreatFeatureSet::FusedUpdateData fusedData;
     fusedData.dp2removed = dp2.remove_sq;
@@ -299,7 +299,7 @@ void double_inc_update(Color                                                 per
 
     updateContext.apply(added, removed);
 
-    target_state.acc().computed[perspective] = true;
+    target_state.accumulator.computed[perspective] = true;
 }
 
 template<bool Forward, typename FeatureSet, IndexType Dimensions>
@@ -310,8 +310,8 @@ void update_accumulator_incremental(
   AccumulatorStateSimple<FeatureSet, Dimensions>&       target_state,
   const AccumulatorStateSimple<FeatureSet, Dimensions>& computed) {
 
-    assert(computed.acc().computed[perspective]);
-    assert(!target_state.acc().computed[perspective]);
+    assert(computed.accumulator.computed[perspective]);
+    assert(!target_state.accumulator.computed[perspective]);
 
     typename FeatureSet::IndexList removed, added;
     if constexpr (Forward)
@@ -357,7 +357,7 @@ void update_accumulator_incremental(
         }
     }
 
-    target_state.acc().computed[perspective] = true;
+    target_state.accumulator.computed[perspective] = true;
 }
 
 }  // namespace
@@ -366,12 +366,12 @@ template<IndexType Dimensions>
 std::size_t
 UpdateHalfka<Dimensions>::find_last_usable_accumulator(Color perspective) const noexcept {
 
-    for (std::size_t curr_idx = size - 1; curr_idx > 0; curr_idx--)
+    for (std::size_t curr_idx = this->size - 1; curr_idx > 0; curr_idx--)
     {
-        if (acc[curr_idx].acc().computed[perspective])
+        if (this->acc[curr_idx].accumulator.computed[perspective])
             return curr_idx;
 
-        if (PSQFeatureSet::requires_refresh(acc[curr_idx].diff, perspective))
+        if (PSQFeatureSet::requires_refresh(this->acc[curr_idx].diff, perspective))
             return curr_idx;
     }
 
@@ -382,12 +382,12 @@ template<IndexType Dimensions>
 std::size_t
 UpdateThreats<Dimensions>::find_last_usable_accumulator(Color perspective) const noexcept {
 
-    for (std::size_t curr_idx = size - 1; curr_idx > 0; curr_idx--)
+    for (std::size_t curr_idx = this->size - 1; curr_idx > 0; curr_idx--)
     {
-        if (acc[curr_idx].acc().computed[perspective])
+        if (this->acc[curr_idx].accumulator.computed[perspective])
             return curr_idx;
 
-        if (ThreatFeatureSet::requires_refresh(acc[curr_idx].diff, perspective))
+        if (ThreatFeatureSet::requires_refresh(this->acc[curr_idx].diff, perspective))
             return curr_idx;
     }
 
@@ -401,24 +401,24 @@ void UpdateHalfka<Dimensions>::forward_update_incremental(
   const FeatureTransformer<Dimensions>& featureTransformer,
   const std::size_t                     begin) noexcept {
 
-    assert(begin < acc.size());
-    assert(acc[begin].acc().computed[perspective]);
+    assert(begin < this->acc.size());
+    assert(this->acc[begin].accumulator.computed[perspective]);
 
     const Square ksq = pos.square<KING>(perspective);
 
-    for (std::size_t next = begin + 1; next < size; next++)
+    for (std::size_t next = begin + 1; next < this->size; next++)
     {
-        if (next + 1 < size)
+        if (next + 1 < this->size)
         {
-            DirtyPiece& dp1 = acc[next].diff;
-            DirtyPiece& dp2 = acc[next + 1].diff;
+            DirtyPiece& dp1 = this->acc[next].diff;
+            DirtyPiece& dp2 = this->acc[next + 1].diff;
 
             if (dp1.to != SQ_NONE && dp1.to == dp2.remove_sq)
             {
                 const Square captureSq = dp1.to;
                 dp1.to = dp2.remove_sq = SQ_NONE;
-                double_inc_update(perspective, featureTransformer, ksq, acc[next], acc[next + 1],
-                                  acc[next - 1]);
+                double_inc_update(perspective, featureTransformer, ksq, this->acc[next],
+                                  this->acc[next + 1], this->acc[next - 1]);
                 dp1.to = dp2.remove_sq = captureSq;
                 next++;
                 continue;
@@ -426,46 +426,46 @@ void UpdateHalfka<Dimensions>::forward_update_incremental(
         }
 
         update_accumulator_incremental<true, PSQFeatureSet>(perspective, featureTransformer, ksq,
-                                                            acc[next], acc[next - 1]);
+                                                            this->acc[next], this->acc[next - 1]);
     }
 
-    assert(acc[size - 1].acc().computed[perspective]);
+    assert(this->acc[this->size - 1].accumulator.computed[perspective]);
 }
 
 template<IndexType Dimensions>
 void UpdateThreats<Dimensions>::forward_update_incremental(
-  Color                                                                         perspective,
-  const Position&                                                               pos,
-  const FeatureTransformer<Dimensions>&                                         featureTransformer,
-  const std::array<AccumulatorStateSimple<PSQFeatureSet, Dimensions>, MaxSize>& psqtAcc,
-  const std::size_t                                                             begin) noexcept {
+  Color                                                       perspective,
+  const Position&                                             pos,
+  const FeatureTransformer<Dimensions>&                       featureTransformer,
+  const AccumulatorArray<PSQFeatureSet, Dimensions, MaxSize>& psqtAcc,
+  const std::size_t                                           begin) noexcept {
 
-    assert(begin < acc.size());
-    assert(acc[begin].acc().computed[perspective]);
+    assert(begin < this->acc.size());
+    assert(this->acc[begin].accumulator.computed[perspective]);
 
     const Square ksq = pos.square<KING>(perspective);
 
-    for (std::size_t next = begin + 1; next < size; next++)
+    for (std::size_t next = begin + 1; next < this->size; next++)
     {
-        if (next + 1 < size)
+        if (next + 1 < this->size)
         {
             const DirtyPiece& dp2 = psqtAcc[next + 1].diff;
 
             if (dp2.remove_sq != SQ_NONE
-                && (acc[next].diff.threateningSqs & square_bb(dp2.remove_sq)))
+                && (this->acc[next].diff.threateningSqs & square_bb(dp2.remove_sq)))
             {
-                double_inc_update(perspective, featureTransformer, ksq, acc[next], acc[next + 1],
-                                  acc[next - 1], dp2);
+                double_inc_update(perspective, featureTransformer, ksq, this->acc[next],
+                                  this->acc[next + 1], this->acc[next - 1], dp2);
                 next++;
                 continue;
             }
         }
 
-        update_accumulator_incremental<true, ThreatFeatureSet>(perspective, featureTransformer, ksq,
-                                                               acc[next], acc[next - 1]);
+        update_accumulator_incremental<true, ThreatFeatureSet>(
+          perspective, featureTransformer, ksq, this->acc[next], this->acc[next - 1]);
     }
 
-    assert(acc[size - 1].acc().computed[perspective]);
+    assert(this->acc[this->size - 1].accumulator.computed[perspective]);
 }
 
 template<IndexType Dimensions>
@@ -475,17 +475,17 @@ void UpdateHalfka<Dimensions>::backward_update_incremental(
   const FeatureTransformer<Dimensions>& featureTransformer,
   const std::size_t                     end) noexcept {
 
-    assert(end < acc.size());
-    assert(end < size);
-    assert(latest().acc().computed[perspective]);
+    assert(end < this->acc.size());
+    assert(end < this->size);
+    assert(this->latest().accumulator.computed[perspective]);
 
     const Square ksq = pos.square<KING>(perspective);
 
-    for (std::int64_t next = std::int64_t(size) - 2; next >= std::int64_t(end); next--)
+    for (std::int64_t next = std::int64_t(this->size) - 2; next >= std::int64_t(end); next--)
         update_accumulator_incremental<false, PSQFeatureSet>(perspective, featureTransformer, ksq,
-                                                             acc[next], acc[next + 1]);
+                                                             this->acc[next], this->acc[next + 1]);
 
-    assert(acc[end].acc().computed[perspective]);
+    assert(this->acc[end].accumulator.computed[perspective]);
 }
 
 template<IndexType Dimensions>
@@ -495,17 +495,17 @@ void UpdateThreats<Dimensions>::backward_update_incremental(
   const FeatureTransformer<Dimensions>& featureTransformer,
   const std::size_t                     end) noexcept {
 
-    assert(end < acc.size());
-    assert(end < size);
-    assert(latest().acc().computed[perspective]);
+    assert(end < this->acc.size());
+    assert(end < this->size);
+    assert(this->latest().accumulator.computed[perspective]);
 
     const Square ksq = pos.square<KING>(perspective);
 
-    for (std::int64_t next = std::int64_t(size) - 2; next >= std::int64_t(end); next--)
-        update_accumulator_incremental<false, ThreatFeatureSet>(perspective, featureTransformer,
-                                                                ksq, acc[next], acc[next + 1]);
+    for (std::int64_t next = std::int64_t(this->size) - 2; next >= std::int64_t(end); next--)
+        update_accumulator_incremental<false, ThreatFeatureSet>(
+          perspective, featureTransformer, ksq, this->acc[next], this->acc[next + 1]);
 
-    assert(acc[end].acc().computed[perspective]);
+    assert(this->acc[end].accumulator.computed[perspective]);
 }
 
 // Explicit template instantiations for the currently supported dimensions.
@@ -584,7 +584,7 @@ void update_accumulator_refresh_cache(
     entry.pieceBB = pos.pieces();
     entry.pieces  = pos.piece_array();
 
-    auto& accumulator                 = accumulatorState.acc();
+    auto& accumulator                 = accumulatorState.accumulator;
     accumulator.computed[perspective] = true;
 
 #ifdef VECTOR
@@ -716,7 +716,7 @@ void update_threats_accumulator_full(
     ThreatFeatureSet::IndexList active;
     ThreatFeatureSet::append_active_indices(perspective, pos, active);
 
-    auto& accumulator                 = accumulatorState.acc();
+    auto& accumulator                 = accumulatorState.accumulator;
     accumulator.computed[perspective] = true;
 
 #ifdef VECTOR
@@ -815,7 +815,7 @@ void evaluate_psqt_side(UpdateHalfka<Dimensions>&             halfka,
 
     const auto last = halfka.find_last_usable_accumulator(perspective);
 
-    if (halfka.acc[last].acc().computed[perspective])
+    if (halfka.acc[last].accumulator.computed[perspective])
         halfka.forward_update_incremental(perspective, pos, featureTransformer, last);
     else
     {
@@ -834,7 +834,7 @@ void evaluate_threats_side(UpdateThreats<Dimensions>&            threats,
 
     const auto last = threats.find_last_usable_accumulator(perspective);
 
-    if (threats.acc[last].acc().computed[perspective])
+    if (threats.acc[last].accumulator.computed[perspective])
         threats.forward_update_incremental(perspective, pos, featureTransformer, psqt.acc, last);
     else
     {
