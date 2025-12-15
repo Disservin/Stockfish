@@ -201,7 +201,7 @@ class AffineTransform {
             using vec_t   = typename Dp::accum_vec;
             using input_t = typename Dp::input_vec;
 
-            static constexpr IndexType OutputSimdWidth = sizeof(vec_t) / sizeof(OutputType);
+            static constexpr IndexType OutputSimdWidth = Dp::simd_width;
 
             static_assert(OutputDimensions % OutputSimdWidth == 0);
 
@@ -239,7 +239,7 @@ class AffineTransform {
 
             const auto inputVector = reinterpret_cast<const input_t*>(input);
 
-            static constexpr IndexType InputSimdWidth = sizeof(input_t) / sizeof(InputType);
+            static constexpr IndexType InputSimdWidth = Dp::simd_width;
 
             static_assert(PaddedInputDimensions % InputSimdWidth == 0);
 

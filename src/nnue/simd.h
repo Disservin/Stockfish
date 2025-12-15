@@ -401,6 +401,7 @@ struct DotProduct {
 #if defined(USE_AVX512)
     using input_vec = __m512i;
     using accum_vec = __m512i;
+    static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm512_set1_epi32(value); }
 
@@ -416,6 +417,7 @@ struct DotProduct {
 #elif defined(USE_AVX2)
     using input_vec = __m256i;
     using accum_vec = __m256i;
+    static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm256_set1_epi32(value); }
 
@@ -432,6 +434,7 @@ struct DotProduct {
 #elif defined(USE_SSSE3)
     using input_vec = __m128i;
     using accum_vec = __m128i;
+    static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) { return _mm_set1_epi32(value); }
 
@@ -448,6 +451,7 @@ struct DotProduct {
 #elif defined(USE_NEON_DOTPROD) || USE_NEON >= 8
     using input_vec = int8x16_t;
     using accum_vec = int32x4_t;
+    static constexpr int simd_width = sizeof(accum_vec) / sizeof(std::int32_t);
 
     static input_vec splat(int value) {
         return vreinterpretq_s8_u32(vdupq_n_u32(static_cast<std::uint32_t>(value)));

@@ -258,7 +258,7 @@ class AffineTransformSparseInput {
         using invec_t  = typename Dp::input_vec;
         using outvec_t = typename Dp::accum_vec;
 
-        constexpr IndexType OutputSimdWidth = sizeof(outvec_t) / sizeof(OutputType);
+        constexpr IndexType OutputSimdWidth = Dp::simd_width;
         constexpr IndexType NumChunks = ceil_to_multiple<IndexType>(InputDimensions, 8) / ChunkSize;
         constexpr IndexType NumAccums = OutputDimensions / OutputSimdWidth;
         // If we're using high-latency dot product instructions, split the accumulators
