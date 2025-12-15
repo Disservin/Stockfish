@@ -197,25 +197,9 @@ class AffineTransform {
 
         if constexpr (OutputDimensions > 1)
         {
-    #if defined(USE_AVX512)
-            using vec_t = __m512i;
-        #define vec_set_32 _mm512_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m512_add_dpbusd_epi32
-    #elif defined(USE_AVX2)
-            using vec_t = __m256i;
-        #define vec_set_32 _mm256_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m256_add_dpbusd_epi32
-    #elif defined(USE_SSSE3)
-            using vec_t = __m128i;
-        #define vec_set_32 _mm_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m128_add_dpbusd_epi32
-    #elif defined(USE_NEON_DOTPROD)
-            using vec_t = int32x4_t;
-        #define vec_set_32 vdupq_n_s32
-        #define vec_add_dpbusd_32(acc, a, b) \
-            SIMD::dotprod_m128_add_dpbusd_epi32(acc, vreinterpretq_s8_s32(a), \
-                                                vreinterpretq_s8_s32(b))
-    #endif
+            using Dp      = SIMD::DotProduct;
+            using vec_t   = typename Dp::accum_vec;
+            using input_t = typename Dp::input_vec;
 
             static constexpr IndexType OutputSimdWidth = sizeof(vec_t) / sizeof(OutputType);
 
@@ -232,64 +216,45 @@ class AffineTransform {
 
             for (IndexType i = 0; i < NumChunks; ++i)
             {
-                const vec_t in0 = vec_set_32(input32[i]);
-                const auto  col0 =
-                  reinterpret_cast<const vec_t*>(&weights[i * OutputDimensions * 4]);
+                const input_t in0 = Dp::splat(input32[i]);
+                const auto    col0 =
+                  reinterpret_cast<const input_t*>(&weights[i * OutputDimensions * 4]);
 
                 for (IndexType k = 0; k < NumRegs; ++k)
-                    vec_add_dpbusd_32(acc[k], in0, col0[k]);
+                    Dp::madd(acc[k], in0, col0[k]);
             }
 
-            vec_t* outptr = reinterpret_cast<vec_t*>(output);
+            auto* outptr = reinterpret_cast<vec_t*>(output);
             for (IndexType k = 0; k < NumRegs; ++k)
                 outptr[k] = acc[k];
-
-    #undef vec_set_32
-    #undef vec_add_dpbusd_32
         }
         else if constexpr (OutputDimensions == 1)
         {
     // We cannot use AVX512 for the last layer because there are only 32 inputs
     // and the buffer is not padded to 64 elements.
-    #if defined(USE_AVX2)
-            using vec_t = __m256i;
-        #define vec_setzero() _mm256_setzero_si256()
-        #define vec_add_dpbusd_32 SIMD::m256_add_dpbusd_epi32
-        #define vec_hadd SIMD::m256_hadd
-    #elif defined(USE_SSSE3)
-            using vec_t = __m128i;
-        #define vec_setzero() _mm_setzero_si128()
-        #define vec_add_dpbusd_32 SIMD::m128_add_dpbusd_epi32
-        #define vec_hadd SIMD::m128_hadd
-    #elif defined(USE_NEON_DOTPROD)
-            using vec_t = int32x4_t;
-        #define vec_setzero() vdupq_n_s32(0)
-        #define vec_add_dpbusd_32(acc, a, b) \
-            SIMD::dotprod_m128_add_dpbusd_epi32(acc, vreinterpretq_s8_s32(a), \
-                                                vreinterpretq_s8_s32(b))
-        #define vec_hadd SIMD::neon_m128_hadd
-    #endif
+    #if defined(USE_AVX2) || defined(USE_SSSE3) || defined(USE_NEON_DOTPROD)
+            using Dp      = SIMD::DotProduct;
+            using vec_t   = typename Dp::accum_vec;
+            using input_t = typename Dp::input_vec;
 
-            const auto inputVector = reinterpret_cast<const vec_t*>(input);
+            const auto inputVector = reinterpret_cast<const input_t*>(input);
 
-            static constexpr IndexType InputSimdWidth = sizeof(vec_t) / sizeof(InputType);
+            static constexpr IndexType InputSimdWidth = sizeof(input_t) / sizeof(InputType);
 
             static_assert(PaddedInputDimensions % InputSimdWidth == 0);
 
             constexpr IndexType NumChunks = PaddedInputDimensions / InputSimdWidth;
-            vec_t               sum0      = vec_setzero();
-            const auto          row0      = reinterpret_cast<const vec_t*>(&weights[0]);
+            vec_t               sum0      = Dp::zero();
+            const auto          row0      = reinterpret_cast<const input_t*>(&weights[0]);
 
             for (int j = 0; j < int(NumChunks); ++j)
             {
-                const vec_t in = inputVector[j];
-                vec_add_dpbusd_32(sum0, in, row0[j]);
+                const input_t in = inputVector[j];
+                Dp::madd(sum0, in, row0[j]);
             }
-            output[0] = vec_hadd(sum0, biases[0]);
 
-    #undef vec_setzero
-    #undef vec_add_dpbusd_32
-    #undef vec_hadd
+            output[0] = Dp::horizontal_add(sum0, biases[0]);
+    #endif
         }
 #else
         // Use old implementation for the other architectures.

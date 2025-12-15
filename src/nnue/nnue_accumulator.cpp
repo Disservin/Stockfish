@@ -859,7 +859,7 @@ void update_threats_accumulator_full(Color                                 persp
           &accumulator.psqtAccumulation[perspective][j * Tiling::PsqtTileHeight]);
 
         for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
-            psqt[k] = vec_zero_psqt();
+            psqt[k] = vec_zero_32();
 
         for (IndexType i = 0; i < active.size(); ++i)
         {

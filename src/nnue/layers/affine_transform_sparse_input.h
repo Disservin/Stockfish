@@ -83,21 +83,23 @@ void find_nnz(const std::int32_t* RESTRICT input,
               std::uint16_t* RESTRICT      out,
               IndexType&                   count_out) {
 
+    using namespace SIMD;
+
     #if defined(USE_AVX512ICL)
 
     constexpr IndexType SimdWidthIn  = 16;  // 512 bits / 32 bits
     constexpr IndexType SimdWidthOut = 32;  // 512 bits / 16 bits
     constexpr IndexType NumChunks    = InputDimensions / SimdWidthOut;
-    const __m512i       increment    = _mm512_set1_epi16(SimdWidthOut);
-    __m512i             base = _mm512_set_epi16(  // Same permute order as _mm512_packus_epi32()
+    const vec_t         increment    = vec_set_16(SimdWidthOut);
+    vec_t               base = _mm512_set_epi16(  // Same permute order as _mm512_packus_epi32()
       31, 30, 29, 28, 15, 14, 13, 12, 27, 26, 25, 24, 11, 10, 9, 8, 23, 22, 21, 20, 7, 6, 5, 4, 19,
       18, 17, 16, 3, 2, 1, 0);
 
     IndexType count = 0;
     for (IndexType i = 0; i < NumChunks; ++i)
     {
-        const __m512i inputV0 = _mm512_load_si512(input + i * 2 * SimdWidthIn);
-        const __m512i inputV1 = _mm512_load_si512(input + i * 2 * SimdWidthIn + SimdWidthIn);
+        const vec_t inputV0 = vec_load(input + i * 2 * SimdWidthIn);
+        const vec_t inputV1 = vec_load(input + i * 2 * SimdWidthIn + SimdWidthIn);
 
         // Get a bitmask and gather non zero indices
         const __m512i   inputV01 = _mm512_packus_epi32(inputV0, inputV1);
@@ -108,7 +110,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
         _mm512_storeu_si512(out + count, nnz);
 
         count += popcount(nnzMask);
-        base = _mm512_add_epi16(base, increment);
+        base = vec_add_16(base, increment);
     }
     count_out = count;
 
@@ -116,26 +118,24 @@ void find_nnz(const std::int32_t* RESTRICT input,
 
     constexpr IndexType SimdWidth = 16;  // 512 bits / 32 bits
     constexpr IndexType NumChunks = InputDimensions / SimdWidth;
-    const __m512i       increment = _mm512_set1_epi32(SimdWidth);
-    __m512i base = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
+    const vec_t         increment = vec_set_32(SimdWidth);
+    vec_t base = _mm512_set_epi32(15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0);
 
     IndexType count = 0;
     for (IndexType i = 0; i < NumChunks; ++i)
     {
-        const __m512i inputV = _mm512_load_si512(input + i * SimdWidth);
+        const vec_t inputV = vec_load(reinterpret_cast<const vec_t*>(input + i * SimdWidth));
 
         // Get a bitmask and gather non zero indices
         const __mmask16 nnzMask = _mm512_test_epi32_mask(inputV, inputV);
         const __m512i   nnzV    = _mm512_maskz_compress_epi32(nnzMask, base);
         _mm512_mask_cvtepi32_storeu_epi16(out + count, 0xFFFF, nnzV);
         count += popcount(nnzMask);
-        base = _mm512_add_epi32(base, increment);
+        base = vec_add_32(base, increment);
     }
     count_out = count;
 
     #else
-
-    using namespace SIMD;
 
     constexpr IndexType InputSimdWidth = sizeof(vec_uint_t) / sizeof(std::int32_t);
     // Inputs are processed InputSimdWidth at a time and outputs are processed 8 at a time so we process in chunks of max(InputSimdWidth, 8)
@@ -146,7 +146,7 @@ void find_nnz(const std::int32_t* RESTRICT input,
 
     const auto     inputVector = reinterpret_cast<const vec_uint_t*>(input);
     IndexType      count       = 0;
-    vec128_t       base        = vec128_zero;
+    vec128_t       base        = vec128_zero();
     const vec128_t increment   = vec128_set_16(8);
     for (IndexType i = 0; i < NumChunks; ++i)
     {
@@ -254,34 +254,10 @@ class AffineTransformSparseInput {
     void propagate(const InputType* input, OutputType* output) const {
 
 #if (USE_SSSE3 | (USE_NEON >= 8))
-    #if defined(USE_AVX512)
-        using invec_t  = __m512i;
-        using outvec_t = __m512i;
-        #define vec_add_32 _mm512_add_epi32
-        #define vec_set_32 _mm512_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m512_add_dpbusd_epi32
-    #elif defined(USE_AVX2)
-        using invec_t  = __m256i;
-        using outvec_t = __m256i;
-        #define vec_add_32 _mm256_add_epi32
-        #define vec_set_32 _mm256_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m256_add_dpbusd_epi32
-    #elif defined(USE_SSSE3)
-        using invec_t  = __m128i;
-        using outvec_t = __m128i;
-        #define vec_set_32 _mm_set1_epi32
-        #define vec_add_dpbusd_32 SIMD::m128_add_dpbusd_epi32
-    #elif defined(USE_NEON_DOTPROD)
-        using invec_t  = int8x16_t;
-        using outvec_t = int32x4_t;
-        #define vec_set_32(a) vreinterpretq_s8_u32(vdupq_n_u32(a))
-        #define vec_add_dpbusd_32 SIMD::dotprod_m128_add_dpbusd_epi32
-    #elif defined(USE_NEON)
-        using invec_t  = int8x16_t;
-        using outvec_t = int32x4_t;
-        #define vec_set_32(a) vreinterpretq_s8_u32(vdupq_n_u32(a))
-        #define vec_add_dpbusd_32 SIMD::neon_m128_add_dpbusd_epi32
-    #endif
+        using Dp       = SIMD::DotProduct;
+        using invec_t  = typename Dp::input_vec;
+        using outvec_t = typename Dp::accum_vec;
+
         constexpr IndexType OutputSimdWidth = sizeof(outvec_t) / sizeof(OutputType);
         constexpr IndexType NumChunks = ceil_to_multiple<IndexType>(InputDimensions, 8) / ChunkSize;
         constexpr IndexType NumAccums = OutputDimensions / OutputSimdWidth;
@@ -313,16 +289,16 @@ class AffineTransformSparseInput {
         const std::int8_t* weights_cp = weights;
     #if defined(USE_VNNI)
         for (IndexType k = NumAccums; k < NumRegs; ++k)
-            acc[k] = vec_zero();
+            acc[k] = Dp::zero();
 
         while (start < end - 2)
         {
             const std::ptrdiff_t i0  = *start++;
             const std::ptrdiff_t i1  = *start++;
             const std::ptrdiff_t i2  = *start++;
-            const invec_t        in0 = vec_set_32(input32[i0]);
-            const invec_t        in1 = vec_set_32(input32[i1]);
-            const invec_t        in2 = vec_set_32(input32[i2]);
+            const invec_t        in0 = Dp::splat(input32[i0]);
+            const invec_t        in1 = Dp::splat(input32[i1]);
+            const invec_t        in2 = Dp::splat(input32[i2]);
             const auto           col0 =
               reinterpret_cast<const invec_t*>(&weights_cp[i0 * OutputDimensions * ChunkSize]);
             const auto col1 =
@@ -331,33 +307,27 @@ class AffineTransformSparseInput {
               reinterpret_cast<const invec_t*>(&weights_cp[i2 * OutputDimensions * ChunkSize]);
             for (IndexType k = 0; k < NumAccums; ++k)
             {
-                vec_add_dpbusd_32(acc[k], in0, col0[k]);
-                vec_add_dpbusd_32(acc[k + NumAccums], in1, col1[k]);
-                vec_add_dpbusd_32(acc[k + 2 * NumAccums], in2, col2[k]);
+                Dp::madd(acc[k], in0, col0[k]);
+                Dp::madd(acc[k + NumAccums], in1, col1[k]);
+                Dp::madd(acc[k + 2 * NumAccums], in2, col2[k]);
             }
         }
         for (IndexType k = 0; k < NumAccums; ++k)
-            acc[k] = vec_add_32(vec_add_32(acc[k], acc[k + NumAccums]), acc[k + 2 * NumAccums]);
+            acc[k] = Dp::add(Dp::add(acc[k], acc[k + NumAccums]), acc[k + 2 * NumAccums]);
     #endif
         while (start < end)
         {
             const std::ptrdiff_t i  = *start++;
-            const invec_t        in = vec_set_32(input32[i]);
+            const invec_t        in = Dp::splat(input32[i]);
             const auto           col =
               reinterpret_cast<const invec_t*>(&weights_cp[i * OutputDimensions * ChunkSize]);
             for (IndexType k = 0; k < NumAccums; ++k)
-                vec_add_dpbusd_32(acc[k], in, col[k]);
+                Dp::madd(acc[k], in, col[k]);
         }
 
         outvec_t* outptr = reinterpret_cast<outvec_t*>(output);
         for (IndexType k = 0; k < NumAccums; ++k)
             outptr[k] = acc[k];
-
-    #undef vec_set_32
-    #undef vec_add_dpbusd_32
-    #ifdef vec_add_32
-        #undef vec_add_32
-    #endif
 #else
         // Use dense implementation for the other architectures.
         affine_transform_non_ssse3<InputDimensions, PaddedInputDimensions, OutputDimensions>(
