@@ -270,18 +270,23 @@ class FeatureTransformer {
 
         using namespace SIMD;
         accumulatorStack.evaluate(pos, *this, cache);
-        const auto& accumulatorState       = accumulatorStack.latest<PSQFeatureSet>();
-        const auto& threatAccumulatorState = accumulatorStack.latest<ThreatFeatureSet>();
+        const auto& accumulatorState = accumulatorStack.get<HalfDimensions>().psqt;
 
         const Color perspectives[2]  = {pos.side_to_move(), ~pos.side_to_move()};
-        const auto& psqtAccumulation = (accumulatorState.acc<HalfDimensions>()).psqtAccumulation;
+        const auto& psqtAccumulation = (accumulatorState.latest().acc()).psqtAccumulation;
         auto        psqt =
           (psqtAccumulation[perspectives[0]][bucket] - psqtAccumulation[perspectives[1]][bucket]);
 
-        if (UseThreats)
+        const decltype(Accumulator<HalfDimensions>().accumulation)* threatAccumulation;
+
+        if constexpr (UseThreats)
         {
+
+            const auto& threatAccumulatorState = accumulatorStack.get<HalfDimensions>().threat;
+            threatAccumulation = &(threatAccumulatorState.latest().acc()).accumulation;
+
             const auto& threatPsqtAccumulation =
-              (threatAccumulatorState.acc<HalfDimensions>()).psqtAccumulation;
+              (threatAccumulatorState.latest().acc()).psqtAccumulation;
             psqt = (psqt + threatPsqtAccumulation[perspectives[0]][bucket]
                     - threatPsqtAccumulation[perspectives[1]][bucket])
                  / 2;
@@ -289,9 +294,7 @@ class FeatureTransformer {
         else
             psqt /= 2;
 
-        const auto& accumulation = (accumulatorState.acc<HalfDimensions>()).accumulation;
-        const auto& threatAccumulation =
-          (threatAccumulatorState.acc<HalfDimensions>()).accumulation;
+        const auto& accumulation = (accumulatorState.latest().acc()).accumulation;
 
         for (IndexType p = 0; p < 2; ++p)
         {
@@ -370,12 +373,11 @@ class FeatureTransformer {
     #else
               6;
     #endif
-            if (UseThreats)
+            if constexpr (UseThreats)
             {
-                const vec_t* tin0 =
-                  reinterpret_cast<const vec_t*>(&(threatAccumulation[perspectives[p]][0]));
-                const vec_t* tin1 = reinterpret_cast<const vec_t*>(
-                  &(threatAccumulation[perspectives[p]][HalfDimensions / 2]));
+                const auto&  t1   = (*threatAccumulation)[perspectives[p]];
+                const vec_t* tin0 = reinterpret_cast<const vec_t*>(&(t1[0]));
+                const vec_t* tin1 = reinterpret_cast<const vec_t*>(&(t1[HalfDimensions / 2]));
                 for (IndexType j = 0; j < NumOutputChunks; ++j)
                 {
                     const vec_t acc0a = vec_add_16(in0[j * 2 + 0], tin0[j * 2 + 0]);
@@ -413,6 +415,7 @@ class FeatureTransformer {
                     out[j] = vec_packus_16(pa, pb);
                 }
             }
+
 
 #else
 
