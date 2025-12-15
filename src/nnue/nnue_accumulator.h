@@ -59,10 +59,16 @@ class AccumulatorStack {
         small.reset();
     }
 
-    void push(const DirtyBoardData& dirtyBoardData) noexcept {
-        big.push(dirtyBoardData);
-        small.push(dirtyBoardData.dp);
+    std::pair<DirtyPiece&, DirtyThreats&> get_diff_type() noexcept {
+        auto& dts = big.threat.reset().diff;
+        auto& dp  = big.psqt.reset().diff;
+
+        new (&dts) DirtyThreats;
+
+        return {dp, dts};
     }
+
+    void propagate_changes() noexcept { small.psqt.reset().diff = big.psqt.latest().diff; }
 
     void pop() noexcept {
         big.pop();

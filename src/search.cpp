@@ -544,15 +544,15 @@ void Search::Worker::do_move(
     // Preferable over fetch_add to avoid locking instructions
     nodes.store(nodes.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 
-    auto dbd = pos.do_move(move, st, givesCheck, &tt);
-    accumulatorStack.push(dbd);
+    auto [dp, dts] = accumulatorStack.get_diff_type();
+    pos.do_move(move, st, givesCheck, dp, dts, &tt);
+    accumulatorStack.propagate_changes();
 
     if (ss != nullptr)
     {
-        ss->currentMove = move;
-        ss->continuationHistory =
-          &continuationHistory[ss->inCheck][capture][dbd.dp.pc][move.to_sq()];
-        ss->continuationCorrectionHistory = &continuationCorrectionHistory[dbd.dp.pc][move.to_sq()];
+        ss->currentMove         = move;
+        ss->continuationHistory = &continuationHistory[ss->inCheck][capture][dp.pc][move.to_sq()];
+        ss->continuationCorrectionHistory = &continuationCorrectionHistory[dp.pc][move.to_sq()];
     }
 }
 
