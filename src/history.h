@@ -64,10 +64,11 @@ struct StatsEntry {
 
     StatsEntry& operator=(const T& v) {
 #ifdef __GNUC__
-if constexpr (Atomic) {
-	__atomic_store_n(&entry, v, __ATOMIC_RELAXED);
-	return *this;
-}
+        if constexpr (Atomic)
+        {
+            __atomic_store_n(&entry, v, __ATOMIC_RELAXED);
+            return *this;
+        }
 #endif
         entry = v;
         return *this;
@@ -75,18 +76,19 @@ if constexpr (Atomic) {
 
     operator T() const {
 #ifdef __GNUC__
-if constexpr (Atomic) {
-	return __atomic_load_n(&entry, __ATOMIC_RELAXED);
-}
+        if constexpr (Atomic)
+        {
+            return __atomic_load_n(&entry, __ATOMIC_RELAXED);
+        }
 #endif
-		return entry;
-	}
+        return entry;
+    }
 
     void operator<<(int bonus) {
         // Make sure that bonus is in range [-D, D]
         int clampedBonus = std::clamp(bonus, -D, D);
-		T val = *this;
-        *this = val + clampedBonus - val * std::abs(clampedBonus) / D;
+        T   val          = *this;
+        *this            = val + clampedBonus - val * std::abs(clampedBonus) / D;
 
         assert(std::abs(T(*this)) <= D);
     }
