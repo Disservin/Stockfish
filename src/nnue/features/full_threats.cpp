@@ -212,8 +212,6 @@ inline sf_always_inline IndexType FullThreats::make_index(
     unsigned    attacker_oriented = attacker ^ swap;
     unsigned    attacked_oriented = attacked ^ swap;
 
-    // std::cout << "attacker_oriented" << attacker_oriented << std::endl;
-
     const auto piecePairData = index_lut1[attacker_oriented][attacked_oriented];
 
     const bool less_than = from_oriented < to_oriented;
@@ -222,8 +220,8 @@ inline sf_always_inline IndexType FullThreats::make_index(
 
     uint8_t lut_index;
 
-    if (type_of(attacked) == PAWN)
-        lut_index = index_lut2[attacked][from_oriented][to_oriented];
+    if (type_of(Piece(attacker_oriented)) == PAWN)
+        lut_index = index_lut2[attacker_oriented][from_oriented][to_oriented];
     else
         lut_index = index_lut2[type_of(Piece(attacker_oriented))][from_oriented][to_oriented];
 
