@@ -116,25 +116,17 @@ constexpr auto index_lut2_array() {
     constexpr auto QUEEN_ATTACKS  = make_piece_indices_type<PieceType::QUEEN>();
     constexpr auto KING_ATTACKS   = make_piece_indices_type<PieceType::KING>();
 
-    std::array<std::array<std::array<uint8_t, SQUARE_NB>, SQUARE_NB>, PIECE_NB> indices{};
+    // B_PAWN highest index
+    std::array<std::array<std::array<uint8_t, SQUARE_NB>, SQUARE_NB>, 10> indices{};
 
     indices[W_PAWN] = make_piece_indices_piece<W_PAWN>();
     indices[B_PAWN] = make_piece_indices_piece<B_PAWN>();
 
-    indices[W_KNIGHT] = KNIGHT_ATTACKS;
-    indices[B_KNIGHT] = KNIGHT_ATTACKS;
-
-    indices[W_BISHOP] = BISHOP_ATTACKS;
-    indices[B_BISHOP] = BISHOP_ATTACKS;
-
-    indices[W_ROOK] = ROOK_ATTACKS;
-    indices[B_ROOK] = ROOK_ATTACKS;
-
-    indices[W_QUEEN] = QUEEN_ATTACKS;
-    indices[B_QUEEN] = QUEEN_ATTACKS;
-
-    indices[W_KING] = KING_ATTACKS;
-    indices[B_KING] = KING_ATTACKS;
+    indices[KNIGHT] = KNIGHT_ATTACKS;
+    indices[BISHOP] = BISHOP_ATTACKS;
+    indices[ROOK] = ROOK_ATTACKS;
+    indices[QUEEN] = QUEEN_ATTACKS;
+    indices[KING] = KING_ATTACKS;
 
     return indices;
 }
@@ -220,15 +212,24 @@ inline sf_always_inline IndexType FullThreats::make_index(
     unsigned    attacker_oriented = attacker ^ swap;
     unsigned    attacked_oriented = attacked ^ swap;
 
+    // std::cout << "attacker_oriented" << attacker_oriented << std::endl;
+
     const auto piecePairData = index_lut1[attacker_oriented][attacked_oriented];
 
     const bool less_than = from_oriented < to_oriented;
     if ((piecePairData.excluded_pair_info() + less_than) & 2)
         return FullThreats::Dimensions;
 
-    const IndexType index = piecePairData.feature_index_base()
-                          + offsets[attacker_oriented][from_oriented]
-                          + index_lut2[attacker_oriented][from_oriented][to_oriented];
+    uint8_t lut_index;
+
+    if (type_of(attacked) == PAWN)
+        lut_index = index_lut2[attacked][from_oriented][to_oriented];
+    else
+        lut_index = index_lut2[type_of(Piece(attacker_oriented))][from_oriented][to_oriented];
+
+    const IndexType index =
+      piecePairData.feature_index_base() + offsets[attacker_oriented][from_oriented] + lut_index;
+
     sf_assume(index < Dimensions);
     return index;
 }
