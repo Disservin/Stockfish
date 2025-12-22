@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     Bitboards::init();
     Position::init();
-    Eval::NNUE::Features::init_threat_offsets();
+    // Eval::NNUE::Features::init_threat_offsets();
 
     auto uci = std::make_unique<UCIEngine>(argc, argv);
 
