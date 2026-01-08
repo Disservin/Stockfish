@@ -56,7 +56,15 @@ jobs:
       - name: Set up Clang
         if: ${{ matrix.is_clang && matrix.image == 'ubuntu:rolling' }}
         run: |
-          apt-get install -y clang-${{ matrix.ver }}
+          if [ "${{ matrix.ver }}" -le 20 ]; then
+            apt-get install -y clang-${{ matrix.ver }}
+          else
+            apt-get install -y \
+              clang-${{ matrix.ver }} \
+              llvm-${{ matrix.ver }}-dev \
+              llvm-${{ matrix.ver }}-linker-tools \
+              lld-${{ matrix.ver }}
+          fi
 
       - name: Download network
         working-directory: src
