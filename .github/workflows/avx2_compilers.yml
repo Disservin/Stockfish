@@ -15,43 +15,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: gcc-10
-            comp: gcc
-            cxx: g++
-            image: gcc:10
-          - name: gcc-11
-            comp: gcc
-            cxx: g++
-            image: gcc:11
-          - name: gcc-12
-            comp: gcc
-            cxx: g++
-            image: gcc:12
-          - name: gcc-13
-            comp: gcc
-            cxx: g++
-            image: gcc:13
-          - name: gcc-14
-            comp: gcc
-            cxx: g++
-            image: gcc:14
-          - name: gcc-15
-            comp: gcc
-            cxx: g++
-            image: gcc:15
+          - { name: gcc-10, comp: gcc, cxx: g++, image: "gcc:10" }
+          - { name: gcc-11, comp: gcc, cxx: g++, image: "gcc:11" }
+          - { name: gcc-12, comp: gcc, cxx: g++, image: "gcc:12" }
+          - { name: gcc-13, comp: gcc, cxx: g++, image: "gcc:13" }
+          - { name: gcc-14, comp: gcc, cxx: g++, image: "gcc:14" }
+          - { name: gcc-15, comp: gcc, cxx: g++, image: "gcc:15" }
 
-          - { name: clang-10, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "10" }
-          - { name: clang-11, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "11" }
-          - { name: clang-12, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "12" }
-          - { name: clang-13, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "13" }
-          - { name: clang-14, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "14" }
-          - { name: clang-15, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "15" }
-          - { name: clang-16, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "16" }
-          - { name: clang-17, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "17" }
-          - { name: clang-18, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "18" }
-          - { name: clang-19, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "19" }
-          - { name: clang-20, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "20" }
-          - { name: clang-21, comp: clang, cxx: clang++, image: "ubuntu:24.04", is_clang: true, ver: "21" }
+          - { name: clang-10, comp: clang-10, cxx: clang++-10, image: "debian:bookworm", is_clang: true, ver: "10" }
+          - { name: clang-11, comp: clang-11, cxx: clang++-11, image: "debian:bookworm", is_clang: true, ver: "11" }
+          - { name: clang-12, comp: clang-12, cxx: clang++-12, image: "debian:bookworm", is_clang: true, ver: "12" }
+          - { name: clang-13, comp: clang-13, cxx: clang++-13, image: "debian:bookworm", is_clang: true, ver: "13" }
+          - { name: clang-14, comp: clang-14, cxx: clang++-14, image: "debian:bookworm", is_clang: true, ver: "14" }
+          - { name: clang-15, comp: clang-15, cxx: clang++-15, image: "debian:bookworm", is_clang: true, ver: "15" }
+          - { name: clang-16, comp: clang-16, cxx: clang++-16, image: "debian:bookworm", is_clang: true, ver: "16" }
+          - { name: clang-17, comp: clang-17, cxx: clang++-17, image: "debian:bookworm", is_clang: true, ver: "17" }
+          - { name: clang-18, comp: clang-18, cxx: clang++-18, image: "debian:bookworm", is_clang: true, ver: "18" }
+          - { name: clang-19, comp: clang-19, cxx: clang++-19, image: "debian:bookworm", is_clang: true, ver: "19" }
+          - { name: clang-20, comp: clang-20, cxx: clang++-20, image: "debian:bookworm", is_clang: true, ver: "20" }
+          - { name: clang-21, comp: clang-21, cxx: clang++-21, image: "debian:bookworm", is_clang: true, ver: "21" }
 
     steps:
       - name: Checkout
@@ -60,14 +42,17 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y curl git make
+          apt-get install -y wget gnupg software-properties-common curl git make build-essential
 
-      - name: Set up Clang
+      - name: Set up Clang via llvm.sh
         if: ${{ matrix.is_clang }}
-        uses: egor-tensin/setup-clang@v2
-        with:
-          version: ${{ matrix.ver }}
-          platform: x64
+        run: |
+          wget https://apt.llvm.org/llvm.sh
+          chmod +x llvm.sh
+          
+          ./llvm.sh ${{ matrix.ver }}
+          
+          apt-get install -y clang-${{ matrix.ver }}
 
       - name: Download network
         working-directory: src
