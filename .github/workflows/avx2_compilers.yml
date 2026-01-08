@@ -31,10 +31,10 @@ jobs:
           - { name: clang-15, comp: clang, cxx: clang++, image: "silkeh/clang:15", is_clang: true, ver: "15" }
           - { name: clang-16, comp: clang, cxx: clang++, image: "silkeh/clang:16", is_clang: true, ver: "16" }
           - { name: clang-17, comp: clang, cxx: clang++, image: "silkeh/clang:17", is_clang: true, ver: "17" }
-          - { name: clang-18, comp: clang, cxx: clang++, image: "silkeh/clang:18", is_clang: true, ver: "18" }
-          - { name: clang-19, comp: clang, cxx: clang++, image: "silkeh/clang:19", is_clang: true, ver: "19" }
 
           # Keeping ubuntu:rolling for versions >= 20
+          - { name: clang-18, comp: clang, cxx: clang++-18, image: "ubuntu:rolling", is_clang: true, ver: "18" }
+          - { name: clang-19, comp: clang, cxx: clang++-19, image: "ubuntu:rolling", is_clang: true, ver: "19" }
           - { name: clang-20, comp: clang, cxx: clang++-20, image: "ubuntu:rolling", is_clang: true, ver: "20" }
           - { name: clang-21, comp: clang, cxx: clang++-21, image: "ubuntu:rolling", is_clang: true, ver: "21" }
 
@@ -44,6 +44,15 @@ jobs:
 
       - name: Install dependencies
         run: |
+          # Only run the fix if we are on a buster-based image
+          if grep -q "buster" /etc/os-release; then
+            echo "Debian Buster detected. Switching to archive repositories..."
+            echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list
+            echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list
+            # Disable the "check-valid-until" safety check as archive repos are static
+            echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99-ignore-valid-until
+          fi
+
           apt-get update
           apt-get install -y curl git make
 
