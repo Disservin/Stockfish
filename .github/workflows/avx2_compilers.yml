@@ -74,6 +74,10 @@ jobs:
         working-directory: src
         run: |
           export CXXFLAGS="-Werror"
+          if [ "${{ matrix.ver }}" -le 20 ]; then
+            export LDFLAGS="-fuse-ld=lld"
+            apt install -y lld
+          fi
           make clean
           make -j build ARCH=x86-64-avx2 COMP=${{ matrix.comp }} COMPCXX=${{ matrix.cxx }}
 
