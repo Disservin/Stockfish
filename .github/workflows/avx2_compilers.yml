@@ -90,6 +90,15 @@ jobs:
 
       - name: Install build tools
         run: |
+          # Only run the fix if we are on a buster-based image
+          if grep -q "buster" /etc/os-release; then
+            echo "Debian Buster detected. Switching to archive repositories..."
+            echo "deb http://archive.debian.org/debian buster main contrib non-free" > /etc/apt/sources.list
+            echo "deb http://archive.debian.org/debian-security buster/updates main contrib non-free" >> /etc/apt/sources.list
+            # Disable the "check-valid-until" safety check as archive repos are static
+            echo 'Acquire::Check-Valid-Until "false";' > /etc/apt/apt.conf.d/99-ignore-valid-until
+          fi
+
           apt-get update
           apt-get install -y curl git make
 
