@@ -42,7 +42,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get update
-          apt-get install -y wget curl git make
+          apt-get install -y wget curl git make lsb-release
 
       - name: Set up Clang via llvm.sh
         if: ${{ matrix.is_clang }}
