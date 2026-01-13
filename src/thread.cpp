@@ -99,6 +99,11 @@ void Thread::wait_for_search_finished() {
     cv.wait(lk, [&] { return !searching; });
 }
 
+bool Thread::is_searching() {
+    std::unique_lock<std::mutex> lk(mutex);
+    return searching;
+}
+
 // Launching a function in the thread
 void Thread::run_custom_job(std::function<void()> f) {
     {

@@ -20,12 +20,15 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cmath>
+#include <csignal>
 #include <cstdint>
 #include <iterator>
 #include <optional>
 #include <sstream>
 #include <string_view>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -51,6 +54,51 @@ struct overload: Ts... {
 
 template<typename... Ts>
 overload(Ts...) -> overload<Ts...>;
+
+namespace {
+
+volatile std::sig_atomic_t sigint_requested = 0;
+constexpr auto             waitSlice        = std::chrono::milliseconds(50);
+
+void handle_sigint(int) noexcept { sigint_requested = 1; }
+
+void install_sigint_handler() noexcept {
+#if !defined(_WIN32)
+    struct sigaction sa;
+    sa.sa_handler = handle_sigint;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, nullptr);
+#endif
+}
+
+bool consume_sigint() noexcept {
+    if (!sigint_requested)
+        return false;
+    sigint_requested = 0;
+    return true;
+}
+
+bool wait_for_search_or_abort(Engine& engine) {
+    bool aborted = false;
+
+    while (engine.is_searching())
+    {
+        if (consume_sigint())
+        {
+            engine.stop();
+            aborted = true;
+        }
+        if (aborted)
+            break;
+        std::this_thread::sleep_for(waitSlice);
+    }
+
+    engine.wait_for_search_finished();
+    return aborted;
+}
+
+}  // namespace
 
 void UCIEngine::print_info_string(std::string_view str) {
     sync_cout_start();
@@ -88,11 +136,19 @@ void UCIEngine::init_search_update_listeners() {
 void UCIEngine::loop() {
     std::string token, cmd;
 
+    install_sigint_handler();
+
     for (int i = 1; i < cli.argc; ++i)
         cmd += std::string(cli.argv[i]) + " ";
 
     do
     {
+        if (consume_sigint())
+        {
+            engine.stop();
+            cmd = "quit";
+        }
+
         if (cli.argc == 1
             && !getline(std::cin, cmd))  // Wait for an input or an end-of-file (EOF) indication
             cmd = "quit";
@@ -232,6 +288,7 @@ void UCIEngine::bench(std::istream& args) {
     uint64_t    num, nodes = 0, cnt = 1;
     uint64_t    nodesSearched = 0;
     const auto& options       = engine.get_options();
+    bool        aborted       = false;
 
     engine.set_on_update_full([&](const auto& i) {
         nodesSearched = i.nodes;
@@ -263,7 +320,11 @@ void UCIEngine::bench(std::istream& args) {
                 else
                 {
                     engine.go(limits);
-                    engine.wait_for_search_finished();
+                    if (wait_for_search_or_abort(engine))
+                    {
+                        aborted = true;
+                        break;
+                    }
                 }
 
                 nodes += nodesSearched;
@@ -281,6 +342,16 @@ void UCIEngine::bench(std::istream& args) {
             engine.search_clear();  // search_clear may take a while
             elapsed = now();
         }
+
+        if (aborted)
+            break;
+    }
+
+    if (aborted)
+    {
+        engine.set_on_update_full(
+          [&](const auto& i) { on_update_full(i, options["UCI_ShowWDL"]); });
+        return;
     }
 
     elapsed = now() - elapsed + 1;  // Ensure positivity to avoid a 'divide by zero'
@@ -303,6 +374,7 @@ void UCIEngine::benchmark(std::istream& args) {
     std::string token;
     uint64_t    nodes = 0, cnt = 1;
     uint64_t    nodesSearched = 0;
+    bool        aborted       = false;
 
     engine.set_on_update_full([&](const Engine::InfoFull& i) { nodesSearched = i.nodes; });
 
@@ -341,7 +413,11 @@ void UCIEngine::benchmark(std::istream& args) {
 
             // Run with silenced network verification
             engine.go(limits);
-            engine.wait_for_search_finished();
+            if (wait_for_search_or_abort(engine))
+            {
+                aborted = true;
+                break;
+            }
         }
         else if (token == "position")
             position(is);
@@ -355,6 +431,11 @@ void UCIEngine::benchmark(std::istream& args) {
     }
 
     std::cerr << "\n";
+    if (aborted)
+    {
+        init_search_update_listeners();
+        return;
+    }
 
     cnt   = 1;
     nodes = 0;
@@ -380,6 +461,13 @@ void UCIEngine::benchmark(std::istream& args) {
 
     for (const auto& cmd : setup.commands)
     {
+        if (consume_sigint())
+        {
+            engine.stop();
+            aborted = true;
+            break;
+        }
+
         std::istringstream is(cmd);
         is >> std::skipws >> token;
 
@@ -395,7 +483,11 @@ void UCIEngine::benchmark(std::istream& args) {
 
             // Run with silenced network verification
             engine.go(limits);
-            engine.wait_for_search_finished();
+            if (wait_for_search_or_abort(engine))
+            {
+                aborted = true;
+                break;
+            }
 
             totalTime += now() - elapsed;
 
@@ -409,6 +501,12 @@ void UCIEngine::benchmark(std::istream& args) {
         {
             engine.search_clear();  // search_clear may take a while
         }
+    }
+
+    if (aborted)
+    {
+        init_search_update_listeners();
+        return;
     }
 
     totalTime = std::max<TimePoint>(totalTime, 1);  // Ensure positivity to avoid a 'divide by zero'

@@ -197,6 +197,8 @@ void Engine::set_on_verify_networks(std::function<void(std::string_view)>&& f) {
 
 void Engine::wait_for_search_finished() { threads.main_thread()->wait_for_search_finished(); }
 
+bool Engine::is_searching() { return threads.main_thread()->is_searching(); }
+
 void Engine::set_position(const std::string& fen, const std::vector<std::string>& moves) {
     // Drop the old state and create a new one
     states = StateListPtr(new std::deque<StateInfo>(1));

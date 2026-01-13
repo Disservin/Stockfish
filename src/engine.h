@@ -66,6 +66,8 @@ class Engine {
 
     // blocking call to wait for search to finish
     void wait_for_search_finished();
+    // non blocking call to check if search is running
+    bool is_searching();
     // set a new position, moves are in UCI format
     void set_position(const std::string& fen, const std::vector<std::string>& moves);
 

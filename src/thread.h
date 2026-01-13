@@ -20,12 +20,12 @@
 #define THREAD_H_INCLUDED
 
 #include <atomic>
-#include <condition_variable>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <vector>
 
 #include "memory.h"
@@ -94,6 +94,7 @@ class Thread {
     // appropriate specificity regarding search, from the point of view of an
     // outside user, so renaming of this function is left for whenever that happens.
     void   wait_for_search_finished();
+    bool   is_searching();
     size_t id() const { return idx; }
 
     LargePagePtr<Search::Worker> worker;
