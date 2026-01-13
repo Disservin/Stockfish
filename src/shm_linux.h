@@ -98,39 +98,6 @@ class SharedMemoryRegistry {
 inline std::mutex                            SharedMemoryRegistry::registry_mutex_;
 inline std::unordered_set<SharedMemoryBase*> SharedMemoryRegistry::active_instances_;
 
-class CleanupHooks {
-   private:
-    static std::once_flag register_once_;
-
-    static void handle_signal(int sig) noexcept {
-        SharedMemoryRegistry::cleanup_all();
-        _Exit(128 + sig);
-    }
-
-    static void register_signal_handlers() noexcept {
-        std::atexit([]() { SharedMemoryRegistry::cleanup_all(); });
-
-        constexpr int signals[] = {SIGHUP,  SIGINT,  SIGQUIT, SIGILL, SIGABRT, SIGFPE,
-                                   SIGSEGV, SIGTERM, SIGBUS,  SIGSYS, SIGXCPU, SIGXFSZ};
-
-        struct sigaction sa;
-        sa.sa_handler = handle_signal;
-        sigemptyset(&sa.sa_mask);
-        sa.sa_flags = 0;
-
-        for (int sig : signals)
-            sigaction(sig, &sa, nullptr);
-    }
-
-   public:
-    static void ensure_registered() noexcept {
-        std::call_once(register_once_, register_signal_handlers);
-    }
-};
-
-inline std::once_flag CleanupHooks::register_once_;
-
-
 inline int portable_fallocate(int fd, off_t offset, off_t length) {
 #ifdef __APPLE__
     fstore_t store = {F_ALLOCATECONTIG, F_PEOFPOSMODE, offset, length, 0};
@@ -229,8 +196,6 @@ class SharedMemory: public detail::SharedMemoryBase {
     }
 
     [[nodiscard]] bool open(const T& initial_value) noexcept {
-        detail::CleanupHooks::ensure_registered();
-
         bool retried_stale = false;
 
         while (true)
