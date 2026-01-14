@@ -109,10 +109,30 @@ void update_correction_history(const Position& pos,
     constexpr int nonPawnWeight = 178;
     auto&         shared        = workerThread.sharedHistory;
 
-    shared.pawn_correction_entry(pos).at(us).pawn << bonus;
-    shared.minor_piece_correction_entry(pos).at(us).minor << bonus * 156 / 128;
-    shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * nonPawnWeight / 128;
-    shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * nonPawnWeight / 128;
+    // shared.pawn_correction_entry(pos).at(us).pawn << bonus;
+    // shared.minor_piece_correction_entry(pos).at(us).minor << bonus * 156 / 128;
+    // shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite << bonus * nonPawnWeight / 128;
+    // shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack << bonus * nonPawnWeight / 128;
+    std::int16_t v1 = shared.pawn_correction_entry(pos).at(us).pawn;
+    std::int16_t v2 = shared.minor_piece_correction_entry(pos).at(us).minor;
+    std::int16_t v3 = shared.nonpawn_correction_entry<WHITE>(pos).at(us).nonPawnWhite;
+    std::int16_t v4 = shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack;
+
+    std::int32_t v[4] = { v1, v2, v3, v4 };
+    std::int32_t b[4] = { bonus, bonus * 156 / 128,
+                        bonus * nonPawnWeight / 128,
+                        bonus * nonPawnWeight / 128 };
+
+                            auto D = CORRECTION_HISTORY_LIMIT;
+    for (int i = 0; i < 4; ++i) {
+        b[i] = std::clamp(b[i], -D, D);
+        v[i] += b[i] - v[i] * std::abs(b[i]) / D;
+    }
+
+    shared.pawn_correction_entry(pos).at(us).pawn.from_raw(b[0]);
+    shared.minor_piece_correction_entry(pos).at(us).minor.from_raw(b[1]);
+    shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnWhite.from_raw(b[2]);
+    shared.nonpawn_correction_entry<BLACK>(pos).at(us).nonPawnBlack.from_raw(b[3]);
 
     if (m.is_ok())
     {

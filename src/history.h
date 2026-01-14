@@ -82,6 +82,11 @@ struct StatsEntry {
 
         assert(std::abs(T(*this)) <= D);
     }
+
+    void from_raw(int v) {
+        assert(std::abs(T(*this)) <= D);
+        entry.store(v, std::memory_order_relaxed);
+    }
 };
 
 enum StatsType {
