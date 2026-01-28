@@ -357,8 +357,6 @@ struct AccumulatorUpdateContext {
 
         const int size_a = added.ssize();
         const int size_b = removed.ssize();
-        sf_assume(size_a >= 2);
-        sf_assume(size_b >= 2);
 #ifdef VECTOR
         using Tiling = SIMDTiling<Dimensions, Dimensions, PSQTBuckets>;
         vec_t      acc[Tiling::NumRegs];
@@ -600,35 +598,39 @@ void update_accumulator_incremental(
         updateContext.apply(added, removed);
     else
     {
-        assert(added.size() == 1 || added.size() == 2);
-        assert(removed.size() == 1 || removed.size() == 2);
-        assert((Forward && added.size() <= removed.size())
-               || (!Forward && added.size() >= removed.size()));
+        [[maybe_unused]] const int added_s = added.size();
+        [[maybe_unused]] const int removed_s = removed.size();
+
+        assert(added_s == 1 || added_s == 2);
+        assert(removed_s == 1 || removed_s == 2);
+        assert((Forward && added_s <= removed_s)
+               || (!Forward && added_s >= removed_s));
 
         // Workaround compiler warning for uninitialized variables, replicated
         // on profile builds on windows with gcc 14.2.0.
         // TODO remove once unneeded
-        sf_assume(added.size() == 1 || added.size() == 2);
-        sf_assume(removed.size() == 1 || removed.size() == 2);
 
-        if ((Forward && removed.size() == 1) || (!Forward && added.size() == 1))
+        sf_assume(added_s == 1 || added_s == 2);
+        sf_assume(removed_s == 1 || removed_s == 2);
+
+        if ((Forward && removed_s == 1) || (!Forward && added_s == 1))
         {
-            assert(added.size() == 1 && removed.size() == 1);
+            assert(added_s == 1 && removed_s == 1);
             updateContext.template apply<Add, Sub>(added[0], removed[0]);
         }
-        else if (Forward && added.size() == 1)
+        else if (Forward && added_s == 1)
         {
-            assert(removed.size() == 2);
+            assert(removed_s == 2);
             updateContext.template apply<Add, Sub, Sub>(added[0], removed[0], removed[1]);
         }
-        else if (!Forward && removed.size() == 1)
+        else if (!Forward && removed_s == 1)
         {
-            assert(added.size() == 2);
+            assert(added_s == 2);
             updateContext.template apply<Add, Add, Sub>(added[0], added[1], removed[0]);
         }
         else
         {
-            assert(added.size() == 2 && removed.size() == 2);
+            assert(added_s == 2 && removed_s == 2);
             updateContext.template apply<Add, Add, Sub, Sub>(added[0], added[1], removed[0],
                                                              removed[1]);
         }
