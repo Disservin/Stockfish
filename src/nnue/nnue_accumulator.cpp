@@ -355,6 +355,10 @@ struct AccumulatorUpdateContext {
         const auto& fromPsqtAcc = from.template acc<Dimensions>().psqtAccumulation[perspective];
         auto&       toPsqtAcc   = to.template acc<Dimensions>().psqtAccumulation[perspective];
 
+        const int size_a = added.ssize();
+        const int size_b = removed.ssize();
+        sf_assume(size_a >= 2);
+        sf_assume(size_b >= 2);
 #ifdef VECTOR
         using Tiling = SIMDTiling<Dimensions, Dimensions, PSQTBuckets>;
         vec_t      acc[Tiling::NumRegs];
@@ -370,7 +374,7 @@ struct AccumulatorUpdateContext {
             for (IndexType k = 0; k < Tiling::NumRegs; ++k)
                 acc[k] = fromTile[k];
 
-            for (int i = 0; i < removed.ssize(); ++i)
+            for (int i = 0; i < size_b; ++i)
             {
                 size_t       index  = removed[i];
                 const size_t offset = Dimensions * index;
@@ -388,7 +392,7 @@ struct AccumulatorUpdateContext {
     #endif
             }
 
-            for (int i = 0; i < added.ssize(); ++i)
+            for (int i = 0; i < size_a; ++i)
             {
                 size_t       index  = added[i];
                 const size_t offset = Dimensions * index;
@@ -422,7 +426,7 @@ struct AccumulatorUpdateContext {
             for (IndexType k = 0; k < Tiling::NumPsqtRegs; ++k)
                 psqt[k] = fromTilePsqt[k];
 
-            for (int i = 0; i < removed.ssize(); ++i)
+            for (int i = 0; i < size_b; ++i)
             {
                 size_t       index      = removed[i];
                 const size_t offset     = PSQTBuckets * index + j * Tiling::PsqtTileHeight;
@@ -433,7 +437,7 @@ struct AccumulatorUpdateContext {
                     psqt[k] = vec_sub_psqt_32(psqt[k], columnPsqt[k]);
             }
 
-            for (int i = 0; i < added.ssize(); ++i)
+            for (int i = 0; i < size_a; ++i)
             {
                 size_t       index      = added[i];
                 const size_t offset     = PSQTBuckets * index + j * Tiling::PsqtTileHeight;
@@ -513,13 +517,16 @@ void double_inc_update(Color                                                   p
     // Workaround compiler warning for uninitialized variables, replicated on
     // profile builds on windows with gcc 14.2.0.
     // TODO remove once unneeded
-    sf_assume(added.size() == 1);
-    sf_assume(removed.size() == 2 || removed.size() == 3);
+    [[maybe_unused]] const int added_s = added.size();
+    [[maybe_unused]] const int removed_s = removed.size();
+
+    sf_assume(added_s == 1);
+    sf_assume(removed_s == 2 || removed_s == 3);
 
     auto updateContext =
       make_accumulator_update_context(perspective, featureTransformer, computed, target_state);
 
-    if (removed.size() == 2)
+    if (removed_s == 2)
     {
         updateContext.template apply<Add, Sub, Sub>(added[0], removed[0], removed[1]);
     }
