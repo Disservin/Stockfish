@@ -348,46 +348,60 @@ void Position::set_check_info() const {
 // The function is only used when a new position is set up
 void Position::set_state() const {
 
-    st->key               = 0;
-    st->minorPieceKey     = 0;
-    st->nonPawnKey[WHITE] = st->nonPawnKey[BLACK] = 0;
-    st->pawnKey                                   = Zobrist::noPawns;
-    st->nonPawnMaterial[WHITE] = st->nonPawnMaterial[BLACK] = VALUE_ZERO;
     st->checkersBB = attackers_to(square<KING>(sideToMove)) & pieces(~sideToMove);
-
     set_check_info();
+
+    KeyResult res = compute_keys();
+
+    st->key                    = res.key;
+    st->pawnKey                = res.pawnKey;
+    st->minorPieceKey          = res.minorPieceKey;
+    st->nonPawnKey[WHITE]      = res.nonPawnKey[WHITE];
+    st->nonPawnKey[BLACK]      = res.nonPawnKey[BLACK];
+    st->nonPawnMaterial[WHITE] = res.nonPawnMaterial[WHITE];
+    st->nonPawnMaterial[BLACK] = res.nonPawnMaterial[BLACK];
+    st->materialKey            = res.materialKey;
+}
+
+KeyResult Position::compute_keys() const {
+    KeyResult res{};
+
+    res.pawnKey = Zobrist::noPawns;
 
     for (Bitboard b = pieces(); b;)
     {
         Square s  = pop_lsb(b);
         Piece  pc = piece_on(s);
-        st->key ^= Zobrist::psq[pc][s];
+        Color  c  = color_of(pc);
+
+        res.key ^= Zobrist::psq[pc][s];
 
         if (type_of(pc) == PAWN)
-            st->pawnKey ^= Zobrist::psq[pc][s];
-
+        {
+            res.pawnKey ^= Zobrist::psq[pc][s];
+        }
         else
         {
-            st->nonPawnKey[color_of(pc)] ^= Zobrist::psq[pc][s];
-
+            res.nonPawnKey[c] ^= Zobrist::psq[pc][s];
             if (type_of(pc) != KING)
             {
-                st->nonPawnMaterial[color_of(pc)] += PieceValue[pc];
-
+                res.nonPawnMaterial[c] += PieceValue[pc];
                 if (type_of(pc) <= BISHOP)
-                    st->minorPieceKey ^= Zobrist::psq[pc][s];
+                    res.minorPieceKey ^= Zobrist::psq[pc][s];
             }
         }
     }
 
     if (st->epSquare != SQ_NONE)
-        st->key ^= Zobrist::enpassant[file_of(st->epSquare)];
+        res.key ^= Zobrist::enpassant[file_of(st->epSquare)];
 
     if (sideToMove == BLACK)
-        st->key ^= Zobrist::side;
+        res.key ^= Zobrist::side;
 
-    st->key ^= Zobrist::castling[st->castlingRights];
-    st->materialKey = compute_material_key();
+    res.key ^= Zobrist::castling[st->castlingRights];
+    res.materialKey = compute_material_key();
+
+    return res;
 }
 
 Key Position::compute_material_key() const {
@@ -1482,7 +1496,7 @@ bool Position::material_key_is_ok() const { return compute_material_key() == st-
 // This is meant to be helpful when debugging.
 bool Position::pos_is_ok() const {
 
-    constexpr bool Fast = true;  // Quick (default) or full check?
+    constexpr bool Fast = false;  // Quick (default) or full check?
 
     if ((sideToMove != WHITE && sideToMove != BLACK) || piece_on(square<KING>(WHITE)) != W_KING
         || piece_on(square<KING>(BLACK)) != B_KING
@@ -1527,6 +1541,16 @@ bool Position::pos_is_ok() const {
         }
 
     assert(material_key_is_ok() && "pos_is_ok: materialKey");
+
+    const auto keys = compute_keys();
+
+    assert(keys.key == st->key && "pos_is_ok: key");
+    assert(keys.pawnKey == st->pawnKey && "pos_is_ok: pawnKey");
+    assert(keys.minorPieceKey == st->minorPieceKey && "pos_is_ok: minorPieceKey");
+    assert(keys.nonPawnKey[0] == st->nonPawnKey[0] && "pos_is_ok: nonPawnKey[0]");
+    assert(keys.nonPawnKey[1] == st->nonPawnKey[1] && "pos_is_ok: nonPawnKey[1]");
+    assert(keys.nonPawnMaterial[0] == st->nonPawnMaterial[0] && "pos_is_ok: nonPawnMaterial[0]");
+    assert(keys.nonPawnMaterial[1] == st->nonPawnMaterial[1] && "pos_is_ok: nonPawnMaterial[1]");
 
     return true;
 }

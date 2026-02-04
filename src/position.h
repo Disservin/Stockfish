@@ -63,6 +63,13 @@ struct StateInfo {
     int        repetition;
 };
 
+struct KeyResult {
+    Key   key, pawnKey, minorPieceKey;
+    Key   nonPawnKey[2];
+    Value nonPawnMaterial[2];
+    Key   materialKey;
+};
+
 
 // A list to keep track of the position states along the setup moves (from the
 // start position to the position just before the search starts). Needed by
@@ -182,9 +189,10 @@ class Position {
    private:
     // Initialization helpers (used while setting up a position)
     void set_castling_right(Color c, Square rfrom);
-    Key  compute_material_key() const;
-    void set_state() const;
-    void set_check_info() const;
+    Key       compute_material_key() const;
+    KeyResult compute_keys() const;
+    void      set_state() const;
+    void      set_check_info() const;
 
     // Other helpers
     template<bool PutPiece, bool ComputeRay = true>
