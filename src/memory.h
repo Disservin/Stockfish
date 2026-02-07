@@ -317,16 +317,31 @@ auto windows_try_with_large_page_priviliges([[maybe_unused]] FuncYesT&& fyes, Fu
 
 #endif
 
-template<typename T, typename ByteT>
-T load_as(const ByteT* buffer) {
-    static_assert(std::is_trivially_copyable<T>::value, "Type must be trivially copyable");
-    static_assert(sizeof(ByteT) == 1);
-
-    T value;
-    std::memcpy(&value, buffer, sizeof(T));
-
-    return value;
+template<typename T>
+T* start_lifetime_as(void* p) {
+    std::memmove(p, p, sizeof(T));
+    return std::launder(static_cast<T*>(p));
 }
+
+template<typename T>
+T* start_lifetime_as(const void* p) {
+    std::memmove(const_cast<void*>(p), const_cast<void*>(p), sizeof(T));
+    return std::launder(static_cast<T*>(const_cast<void*>(p)));
+}
+
+template<typename T>
+T* start_lifetime_as_array(void* p, std::size_t n) {
+    std::memmove(p, p, sizeof(T) * n);
+    return std::launder(static_cast<T*>(p));
+}
+
+
+template<typename T>
+T* start_lifetime_as_array(const void* p, std::size_t n) {
+    std::memmove(const_cast<void*>(p), const_cast<void*>(p), sizeof(T) * n);
+    return std::launder(static_cast<T*>(const_cast<void*>(p)));
+}
+
 
 }  // namespace Stockfish
 
