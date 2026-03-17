@@ -129,6 +129,7 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
     Color us = pos.side_to_move();
 
     [[maybe_unused]] Bitboard threatByLesser[KING + 1];
+
     if constexpr (Type == QUIETS)
     {
         threatByLesser[PAWN]   = 0;
@@ -138,6 +139,14 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         threatByLesser[QUEEN] = pos.attacks_by<ROOK>(~us) | threatByLesser[ROOK];
         threatByLesser[KING]  = 0;
     }
+
+    const auto& pawnHist = sharedHistory->pawn_entry(pos);
+
+    const auto& ch0Table = *continuationHistory[0];
+    const auto& ch1Table = *continuationHistory[1];
+    const auto& ch2Table = *continuationHistory[2];
+    const auto& ch3Table = *continuationHistory[3];
+    const auto& ch5Table = *continuationHistory[5];
 
     ExtMove* it = cur;
     for (auto move : ml)
@@ -159,12 +168,12 @@ ExtMove* MovePicker::score(MoveList<Type>& ml) {
         {
             // histories
             m.value = 2 * (*mainHistory)[us][m.raw()];
-            m.value += 2 * sharedHistory->pawn_entry(pos)[pc][to];
-            m.value += (*continuationHistory[0])[pc][to];
-            m.value += (*continuationHistory[1])[pc][to];
-            m.value += (*continuationHistory[2])[pc][to];
-            m.value += (*continuationHistory[3])[pc][to];
-            m.value += (*continuationHistory[5])[pc][to];
+            m.value += 2 * pawnHist[pc][to];
+            m.value += (ch0Table)[pc][to];
+            m.value += (ch1Table)[pc][to];
+            m.value += (ch2Table)[pc][to];
+            m.value += (ch3Table)[pc][to];
+            m.value += (ch5Table)[pc][to];
 
             // bonus for checks
             m.value += (bool(pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * 16384;
