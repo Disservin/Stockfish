@@ -30,8 +30,6 @@
     #include <sys/mman.h>
     // IWYU pragma: no_include <bits/mman-map-flags-generic.h>
     #include <cstring>
-    #include <mutex>
-    #include <map>
 #endif
 
 #if defined(__APPLE__) || defined(__ANDROID__) || defined(__OpenBSD__) \
@@ -63,6 +61,42 @@
 
 
 namespace Stockfish {
+
+namespace {
+
+struct AllocHeader {
+    uint64_t magic;
+    size_t   size;
+    void*    base;
+    bool     largePageAlloc;
+};
+
+constexpr uint64_t AllocHeaderMagic = 0x53544f434b464953ULL;
+
+void* align_ptr_up(void* ptr, size_t alignment) {
+    const auto ptr_value = reinterpret_cast<uintptr_t>(ptr);
+    return reinterpret_cast<void*>((ptr_value + alignment - 1) & ~(alignment - 1));
+}
+
+void* prepare_allocation(void* base, size_t size, size_t alignment, bool largePageAlloc) {
+    if (!base)
+        return nullptr;
+
+    auto* userMem =
+      static_cast<char*>(align_ptr_up(static_cast<char*>(base) + sizeof(AllocHeader), alignment));
+    auto* header = reinterpret_cast<AllocHeader*>(userMem - sizeof(AllocHeader));
+
+    *header = {AllocHeaderMagic, size, base, largePageAlloc};
+    return userMem;
+}
+
+AllocHeader* header_from_user_ptr(void* mem) {
+    auto* header = reinterpret_cast<AllocHeader*>(static_cast<char*>(mem) - sizeof(AllocHeader));
+    assert(header->magic == AllocHeaderMagic);
+    return header;
+}
+
+}  // namespace
 
 // Wrappers for systems where the c++17 implementation does not guarantee the
 // availability of aligned_alloc(). Memory allocated with std_aligned_alloc()
@@ -115,15 +149,19 @@ static void* aligned_large_pages_alloc_windows([[maybe_unused]] size_t allocSize
 }
 
 void* aligned_large_pages_alloc_with_hint(size_t allocSize, bool) {
+    constexpr size_t alignment = 4096;
+    size_t           totalSize = allocSize + sizeof(AllocHeader) + alignment - 1;
+    totalSize                  = (totalSize + alignment - 1) / alignment * alignment;
 
     // Try to allocate large pages
-    void* mem = aligned_large_pages_alloc_windows(allocSize);
+    void* mem            = aligned_large_pages_alloc_windows(totalSize);
+    bool  largePageAlloc = mem != nullptr;
 
     // Fall back to regular, page-aligned, allocation if necessary
     if (!mem)
-        mem = VirtualAlloc(nullptr, allocSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+        mem = VirtualAlloc(nullptr, totalSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
-    return mem;
+    return prepare_allocation(mem, totalSize, alignment, largePageAlloc);
 }
 
 #else
@@ -131,46 +169,44 @@ void* aligned_large_pages_alloc_with_hint(size_t allocSize, bool) {
     #if defined(__linux__) && defined(MAP_HUGE_SHIFT)
         #define HAS_HUGE_PAGES
 
-static std::map<void*, size_t> huge_pages;
-static std::mutex              huge_pages_mtx;
-
-static void* try_huge_pages_alloc(size_t allocSize) {
-    size_t size = ((allocSize + HugePageSize - 1) / HugePageSize) * HugePageSize;
-    void*  mem  = mmap(NULL, size, PROT_READ | PROT_WRITE,
+static void* try_huge_pages_alloc(size_t allocSize, size_t alignment) {
+    size_t size = allocSize + sizeof(AllocHeader) + alignment - 1;
+    size        = (size + HugePageSize - 1) / HugePageSize * HugePageSize;
+    void* mem   = mmap(NULL, size, PROT_READ | PROT_WRITE,
                        MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | (30 << MAP_HUGE_SHIFT), -1, 0);
 
     if (mem == MAP_FAILED)
         return nullptr;
 
-    std::lock_guard lg(huge_pages_mtx);
-    huge_pages[mem] = size;
-    return mem;
+    return prepare_allocation(mem, size, alignment, true);
 }
     #endif  // defined(__linux__) && defined(MAP_HUGE_SHIFT)
 
 void* aligned_large_pages_alloc_with_hint(size_t allocSize, [[maybe_unused]] bool hugePageHint) {
-    #ifdef HAS_HUGE_PAGES
-    if (hugePageHint && allocSize >= HugePageSize)
-    {
-        void* mem = try_huge_pages_alloc(allocSize);
-        if (mem)
-            return mem;
-    }
-    #endif
-
     #if defined(__linux__)
     constexpr size_t alignment = 2 * 1024 * 1024;  // 2MB page size assumed
     #else
     constexpr size_t alignment = 4096;  // small page size assumed
     #endif
 
-    // Round up to multiples of alignment
-    size_t size = ((allocSize + alignment - 1) / alignment) * alignment;
-    void*  mem  = std_aligned_alloc(alignment, size);
-    #if defined(MADV_HUGEPAGE)
-    madvise(mem, size, MADV_HUGEPAGE);
+    #ifdef HAS_HUGE_PAGES
+    if (hugePageHint && allocSize >= HugePageSize)
+    {
+        void* mem = try_huge_pages_alloc(allocSize, alignment);
+        if (mem)
+            return mem;
+    }
     #endif
-    return mem;
+
+    // Round up to multiples of alignment
+    size_t size = allocSize + sizeof(AllocHeader) + alignment - 1;
+    size        = (size + alignment - 1) / alignment * alignment;
+    void* mem   = std_aligned_alloc(alignment, size);
+    #if defined(MADV_HUGEPAGE)
+    if (mem)
+        madvise(mem, size, MADV_HUGEPAGE);
+    #endif
+    return prepare_allocation(mem, size, alignment, false);
 }
 
 #endif
@@ -191,7 +227,7 @@ bool has_large_pages() {
     }
     else
     {
-        aligned_large_pages_free(mem);
+        VirtualFree(mem, 0, MEM_RELEASE);
         return true;
     }
 
@@ -218,7 +254,12 @@ bool has_large_pages() {
 
 void aligned_large_pages_free(void* mem) {
 
-    if (mem && !VirtualFree(mem, 0, MEM_RELEASE))
+    if (!mem)
+        return;
+
+    auto* header = header_from_user_ptr(mem);
+
+    if (!VirtualFree(header->base, 0, MEM_RELEASE))
     {
         DWORD err = GetLastError();
         std::cerr << "Failed to free large page memory. Error code: 0x" << std::hex << err
@@ -233,21 +274,19 @@ void aligned_large_pages_free(void* mem) {
     if (!mem)
         return;
 
-    #ifdef HAS_HUGE_PAGES
-    std::lock_guard lg(huge_pages_mtx);
-    if (auto it = huge_pages.find(mem); it != huge_pages.end())
+    auto* header = header_from_user_ptr(mem);
+
+    if (!header->largePageAlloc)
     {
-        if (munmap(mem, it->second) != 0)
-        {
-            std::cerr << "munmap failed: " << strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
-        }
-        huge_pages.erase(it);
+        std_aligned_free(header->base);
         return;
     }
-    #endif
 
-    std_aligned_free(mem);
+    if (munmap(header->base, header->size) != 0)
+    {
+        std::cerr << "munmap failed: " << strerror(errno) << std::endl;
+        exit(EXIT_FAILURE);
+    }
 }
 
 #endif
