@@ -318,7 +318,19 @@ void update_accumulator_incremental(
     assert(!target_state.acc().computed[perspective]);
 
     typename FeatureSet::IndexList removed, added;
-    if constexpr (Forward)
+    if constexpr (std::is_same_v<FeatureSet, ThreatFeatureSet>)
+    {
+        const auto* prefetchBase   = &featureTransformer.threatWeights[0];
+        auto        prefetchStride = static_cast<IndexType>(Dimensions);
+
+        if constexpr (Forward)
+            FeatureSet::append_changed_indices(perspective, ksq, target_state.diff, removed, added,
+                                               nullptr, false, prefetchBase, prefetchStride);
+        else
+            FeatureSet::append_changed_indices(perspective, ksq, computed.diff, added, removed,
+                                               nullptr, false, prefetchBase, prefetchStride);
+    }
+    else if constexpr (Forward)
         FeatureSet::append_changed_indices(perspective, ksq, target_state.diff, removed, added);
     else
         FeatureSet::append_changed_indices(perspective, ksq, computed.diff, added, removed);
@@ -883,8 +895,8 @@ void BigNetworkAccumulator::evaluate(
   AccumulatorCaches::Cache<TransformedFeatureDimensionsBig>& cache) noexcept {
 
     evaluate_psqt_side(psqt, WHITE, pos, featureTransformer, cache);
-    evaluate_threats_side(threat, psqt, WHITE, pos, featureTransformer);
     evaluate_psqt_side(psqt, BLACK, pos, featureTransformer, cache);
+    evaluate_threats_side(threat, psqt, WHITE, pos, featureTransformer);
     evaluate_threats_side(threat, psqt, BLACK, pos, featureTransformer);
 }
 
