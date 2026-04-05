@@ -445,6 +445,7 @@ DEPENDFLAGS = $(ENV_DEPENDFLAGS) -std=c++17
 LDFLAGS = $(ENV_LDFLAGS) $(EXTRALDFLAGS)
 
 SFBINPACK_LIBDIR = ../binpack-rust/target/release
+SFBINPACK_SO = $(SFBINPACK_LIBDIR)/libsfbinpack.so
 SFBINPACK_LDFLAGS = -L$(SFBINPACK_LIBDIR) -lsfbinpack -Wl,-rpath,$(abspath $(SFBINPACK_LIBDIR))
 
 ifeq ($(COMP),)
@@ -1140,7 +1141,10 @@ config-sanity: net
 	 test "$(comp)" = "clang" || test "$(comp)" = "armv7a-linux-androideabi16-clang" || \
 	 test "$(comp)" = "aarch64-linux-android21-clang")
 
-$(EXE): $(OBJS)
+$(SFBINPACK_SO):
+	cargo build --release --features ffi --manifest-path ../binpack-rust/Cargo.toml
+
+$(EXE): $(OBJS) $(SFBINPACK_SO)
 	+$(CXX) -o $@ $(OBJS) $(LDFLAGS) $(SFBINPACK_LDFLAGS)
 
 %.o: %.cpp
