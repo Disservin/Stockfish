@@ -20,9 +20,7 @@
 
 #include <algorithm>
 #include <cctype>
-#include <cmath>
 #include <cstdint>
-#include <cstdlib>
 #include <iterator>
 #include <optional>
 #include <sstream>
@@ -31,6 +29,7 @@
 #include <vector>
 
 #include "benchmark.h"
+#include "datagen.h"
 #include "engine.h"
 #include "memory.h"
 #include "movegen.h"
@@ -43,7 +42,6 @@
 namespace Stockfish {
 
 constexpr auto BenchmarkCommand = "speedtest";
-
 template<typename... Ts>
 struct overload: Ts... {
     using Ts::operator()...;
@@ -162,6 +160,8 @@ void UCIEngine::loop() {
 
             engine.save_network(files);
         }
+        else if (token == "datagen")
+            datagen(is);
         else if (token == "--help" || token == "help" || token == "--license" || token == "license")
             sync_cout
               << "\nStockfish is a powerful chess engine for playing and analyzing."
@@ -453,6 +453,8 @@ void UCIEngine::benchmark(std::istream& args) {
 
     init_search_update_listeners();
 }
+
+void UCIEngine::datagen(std::istream& args) { run_datagen(engine, args); }
 
 void UCIEngine::setoption(std::istringstream& is) {
     engine.wait_for_search_finished();

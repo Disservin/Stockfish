@@ -154,6 +154,55 @@ std::uint64_t Engine::perft(const std::string& fen, Depth depth, bool isChess960
     return Benchmark::perft(fen, depth, isChess960);
 }
 
+Engine::AnalysisResult Engine::analyze(Search::LimitsType limits, size_t multiPV) {
+    wait_for_search_finished();
+
+    const int previousMultiPV = options["MultiPV"];
+
+    const auto previousOnUpdateNoMoves = updateContext.onUpdateNoMoves;
+    const auto previousOnUpdateFull    = updateContext.onUpdateFull;
+    const auto previousOnIter          = updateContext.onIter;
+    const auto previousOnBestmove      = updateContext.onBestmove;
+    const auto previousOnVerify        = onVerifyNetworks;
+
+    updateContext.onUpdateNoMoves = [](const InfoShort&) {};
+    updateContext.onUpdateFull    = [](const InfoFull&) {};
+    updateContext.onIter          = [](const InfoIter&) {};
+    updateContext.onBestmove      = [](std::string_view, std::string_view) {};
+    onVerifyNetworks              = [](std::string_view) {};
+
+    if (limits.startTime == 0)
+        limits.startTime = now();
+
+    if (previousMultiPV != int(multiPV))
+    {
+        std::istringstream ss("name MultiPV value " + std::to_string(std::max<size_t>(1, multiPV)));
+        options.setoption(ss);
+    }
+
+    go(limits);
+    wait_for_search_finished();
+
+    AnalysisResult result;
+    const auto*    worker = threads.main_thread()->worker.get();
+    result.rootMoves      = worker->root_moves();
+    result.completedDepth = worker->completed_depth();
+
+    if (previousMultiPV != int(multiPV))
+    {
+        std::istringstream ss("name MultiPV value " + std::to_string(previousMultiPV));
+        options.setoption(ss);
+    }
+
+    updateContext.onUpdateNoMoves = previousOnUpdateNoMoves;
+    updateContext.onUpdateFull    = previousOnUpdateFull;
+    updateContext.onIter          = previousOnIter;
+    updateContext.onBestmove      = previousOnBestmove;
+    onVerifyNetworks              = previousOnVerify;
+
+    return result;
+}
+
 void Engine::go(Search::LimitsType& limits) {
     assert(limits.perft == 0);
     verify_networks();

@@ -48,6 +48,11 @@ class Engine {
     using InfoFull  = Search::InfoFull;
     using InfoIter  = Search::InfoIteration;
 
+    struct AnalysisResult {
+        Search::RootMoves rootMoves;
+        Depth             completedDepth = 0;
+    };
+
     Engine(std::optional<std::string> path = std::nullopt);
 
     // Cannot be movable due to components holding backreferences to fields
@@ -58,7 +63,8 @@ class Engine {
 
     ~Engine() { wait_for_search_finished(); }
 
-    std::uint64_t perft(const std::string& fen, Depth depth, bool isChess960);
+    std::uint64_t  perft(const std::string& fen, Depth depth, bool isChess960);
+    AnalysisResult analyze(Search::LimitsType limits, size_t multiPV = 1);
 
     // non blocking call to start searching
     void go(Search::LimitsType&);

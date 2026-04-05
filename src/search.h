@@ -287,6 +287,9 @@ class Worker {
 
     void ensure_network_replicated();
 
+    const RootMoves& root_moves() const { return rootMoves; }
+    Depth            completed_depth() const { return completedDepth; }
+
     // Public because they need to be updatable by the stats
     ButterflyHistory mainHistory;
     LowPlyHistory    lowPlyHistory;

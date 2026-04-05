@@ -65,6 +65,7 @@ class UCIEngine {
     void          go(std::istringstream& is);
     void          bench(std::istream& args);
     void          benchmark(std::istream& args);
+    void          datagen(std::istream& args);
     void          position(std::istringstream& is);
     void          setoption(std::istringstream& is);
     std::uint64_t perft(const Search::LimitsType&);
