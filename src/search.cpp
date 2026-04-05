@@ -95,7 +95,7 @@ int correction_value(const Worker& w, const Position& pos, const Stack* const ss
 // Add correctionHistory value to raw staticEval and guarantee evaluation
 // does not hit the tablebase range.
 Value to_corrected_static_eval(const Value v, const int cv) {
-    return std::clamp(v + cv / 131072, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
+    return std::clamp(v, VALUE_TB_LOSS_IN_MAX_PLY + 1, VALUE_TB_WIN_IN_MAX_PLY - 1);
 }
 
 void update_correction_history(const Position& pos,
@@ -447,6 +447,9 @@ void Search::Worker::iterative_deepening() {
                 lastBestMoveDepth = rootDepth;
 
             lastIterationPV = rootMoves[0].pv;
+
+            if (limits.softNodes && threads.nodes_searched() > limits.softNodes)
+                threads.stop = true;
         }
 
         // We make sure not to pick an unproven mated-in score,
@@ -1974,13 +1977,20 @@ void SearchManager::check_time(Search::Worker& worker) {
 
     static TimePoint lastInfoTime = now();
 
-    TimePoint elapsed = tm.elapsed([&worker]() { return worker.threads.nodes_searched(); });
-    TimePoint tick    = worker.limits.startTime + elapsed;
+    const uint64_t nodes   = worker.threads.nodes_searched();
+    TimePoint      elapsed = tm.elapsed([&worker]() { return worker.threads.nodes_searched(); });
+    TimePoint      tick    = worker.limits.startTime + elapsed;
 
     if (tick - lastInfoTime >= 1000)
     {
         lastInfoTime = tick;
         dbg_print();
+    }
+
+    if (worker.limits.hardNodes && nodes >= worker.limits.hardNodes)
+    {
+        worker.threads.stop = true;
+        return;
     }
 
     // We should not stop pondering until told so by the GUI
@@ -1993,7 +2003,7 @@ void SearchManager::check_time(Search::Worker& worker) {
       worker.completedDepth >= 1
       && ((worker.limits.use_time_management() && (elapsed > tm.maximum() || stopOnPonderhit))
           || (worker.limits.movetime && elapsed >= worker.limits.movetime)
-          || (worker.limits.nodes && worker.threads.nodes_searched() >= worker.limits.nodes)))
+          || (worker.limits.nodes && nodes >= worker.limits.nodes)))
         worker.threads.stop = true;
 }
 

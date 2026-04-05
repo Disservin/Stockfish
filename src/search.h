@@ -118,8 +118,8 @@ struct LimitsType {
     LimitsType() {
         time[WHITE] = time[BLACK] = inc[WHITE] = inc[BLACK] = npmsec = movetime = TimePoint(0);
         movestogo = depth = mate = perft = infinite = 0;
-        nodes                                       = 0;
-        ponderMode                                  = false;
+        nodes = softNodes = hardNodes = 0;
+        ponderMode                    = false;
     }
 
     bool use_time_management() const { return time[WHITE] || time[BLACK]; }
@@ -127,7 +127,7 @@ struct LimitsType {
     std::vector<std::string> searchmoves;
     TimePoint                time[COLOR_NB], inc[COLOR_NB], npmsec, movetime, startTime;
     int                      movestogo, depth, mate, perft, infinite;
-    uint64_t                 nodes;
+    uint64_t                 nodes, softNodes, hardNodes;
     bool                     ponderMode;
 };
 

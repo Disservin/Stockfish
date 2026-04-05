@@ -53,6 +53,12 @@ class Engine {
         Depth             completedDepth = 0;
     };
 
+    struct AnalysisConfig {
+        size_t multiPV   = 1;
+        size_t softNodes = 0;
+        size_t hardNodes = 0;
+    };
+
     Engine(std::optional<std::string> path = std::nullopt);
 
     // Cannot be movable due to components holding backreferences to fields
@@ -65,6 +71,7 @@ class Engine {
 
     std::uint64_t  perft(const std::string& fen, Depth depth, bool isChess960);
     AnalysisResult analyze(Search::LimitsType limits, size_t multiPV = 1);
+    AnalysisResult analyze(Search::LimitsType limits, const AnalysisConfig& config);
 
     // non blocking call to start searching
     void go(Search::LimitsType&);

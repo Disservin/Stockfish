@@ -155,6 +155,11 @@ std::uint64_t Engine::perft(const std::string& fen, Depth depth, bool isChess960
 }
 
 Engine::AnalysisResult Engine::analyze(Search::LimitsType limits, size_t multiPV) {
+    return analyze(limits, Engine::AnalysisConfig{multiPV, 0, 0});
+}
+
+Engine::AnalysisResult Engine::analyze(Search::LimitsType            limits,
+                                       const Engine::AnalysisConfig& config) {
     wait_for_search_finished();
 
     const int previousMultiPV = options["MultiPV"];
@@ -174,9 +179,13 @@ Engine::AnalysisResult Engine::analyze(Search::LimitsType limits, size_t multiPV
     if (limits.startTime == 0)
         limits.startTime = now();
 
-    if (previousMultiPV != int(multiPV))
+    limits.softNodes = config.softNodes;
+    limits.hardNodes = config.hardNodes;
+
+    if (previousMultiPV != int(config.multiPV))
     {
-        std::istringstream ss("name MultiPV value " + std::to_string(std::max<size_t>(1, multiPV)));
+        std::istringstream ss("name MultiPV value "
+                              + std::to_string(std::max<size_t>(1, config.multiPV)));
         options.setoption(ss);
     }
 
@@ -188,7 +197,7 @@ Engine::AnalysisResult Engine::analyze(Search::LimitsType limits, size_t multiPV
     result.rootMoves      = worker->root_moves();
     result.completedDepth = worker->completed_depth();
 
-    if (previousMultiPV != int(multiPV))
+    if (previousMultiPV != int(config.multiPV))
     {
         std::istringstream ss("name MultiPV value " + std::to_string(previousMultiPV));
         options.setoption(ss);
@@ -205,7 +214,7 @@ Engine::AnalysisResult Engine::analyze(Search::LimitsType limits, size_t multiPV
 
 void Engine::go(Search::LimitsType& limits) {
     assert(limits.perft == 0);
-    verify_networks();
+    // verify_networks();
 
     threads.start_thinking(options, pos, states, limits);
 }

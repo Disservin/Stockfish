@@ -26,6 +26,7 @@
 #include <limits>
 #include <optional>
 #include <random>
+#include <csignal>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -50,9 +51,25 @@ constexpr int    OpeningMultiPVLines    = 4;
 constexpr int    AdjudicationAbsScore   = 2000;
 constexpr int    DrawAdjudicationScore  = 10;
 constexpr int    AdjudicationMoveCount  = 4;
-constexpr auto   OpeningSearchNodeLimit = uint64_t(4000);
-constexpr auto   GameSearchNodeLimit    = uint64_t(8000);
+constexpr auto   HardSearchNodeLimit    = uint64_t(40000);
+constexpr auto   OpeningSearchNodeLimit = uint64_t(500);
+constexpr auto   GameSearchNodeLimit    = uint64_t(5000);
 constexpr size_t RandomPlies[]          = {9, 10};
+
+volatile std::sig_atomic_t DatagenStopRequested = 0;
+
+void on_datagen_sigint(int) { DatagenStopRequested = 1; }
+
+class ScopedSigintHandler {
+   public:
+    ScopedSigintHandler() { previous = std::signal(SIGINT, on_datagen_sigint); }
+
+    ~ScopedSigintHandler() { std::signal(SIGINT, previous); }
+
+   private:
+    using Handler = void (*)(int);
+    Handler previous;
+};
 
 struct DatagenPosition {
     std::string fen;
@@ -155,9 +172,8 @@ bool parse_datagen_args(std::istream& is, DatagenArgs& args, std::string& error)
     return true;
 }
 
-Search::LimitsType nodes_limit(uint64_t nodes) {
+Search::LimitsType nodes_limit() {
     Search::LimitsType limits;
-    limits.nodes     = nodes;
     limits.startTime = now();
     return limits;
 }
@@ -167,7 +183,9 @@ std::optional<Move> choose_datagen_move(Engine& engine, const Position& pos, std
     if (legalMoves.size() == 0)
         return std::nullopt;
 
-    auto analysis = engine.analyze(nodes_limit(OpeningSearchNodeLimit), OpeningMultiPVLines);
+    auto analysis = engine.analyze(
+      nodes_limit(),
+      Engine::AnalysisConfig{OpeningMultiPVLines, OpeningSearchNodeLimit, HardSearchNodeLimit});
 
     std::vector<Move> candidates;
     candidates.reserve(analysis.rootMoves.size());
@@ -297,7 +315,8 @@ bool play_datagen_game(Engine&                  engine,
             return false;
         }
 
-        auto analysis = engine.analyze(nodes_limit(GameSearchNodeLimit));
+        auto analysis = engine.analyze(
+          nodes_limit(), Engine::AnalysisConfig{1, GameSearchNodeLimit, HardSearchNodeLimit});
         if (analysis.rootMoves.empty() || analysis.rootMoves[0].pv.empty())
             break;
 
@@ -427,6 +446,9 @@ void run_datagen(Engine& engine, std::istream& args) {
     std::istringstream hashOption("name Hash value " + std::to_string(datagenArgs.hash));
     engine.get_options().setoption(hashOption);
 
+    DatagenStopRequested = 0;
+    ScopedSigintHandler sigintHandler;
+
     std::mt19937_64          rng(datagenArgs.seed);
     sfbinpack_writer_handle* writer = sfbinpack_writer_new(datagenArgs.output.c_str());
     const TimePoint          start  = now();
@@ -441,7 +463,7 @@ void run_datagen(Engine& engine, std::istream& args) {
 
     uint64_t generated = 0;
     uint64_t positions = 0;
-    while (generated < datagenArgs.games)
+    while (generated < datagenArgs.games && !DatagenStopRequested)
     {
         std::string              startFen;
         std::vector<std::string> openingMoves;
@@ -488,6 +510,9 @@ void run_datagen(Engine& engine, std::istream& args) {
     }
 
     sync_cout << "" << sync_endl;
+
+    if (DatagenStopRequested)
+        sync_cout << "info string datagen interrupt received, finalizing output" << sync_endl;
 
     const auto finishStatus = sfbinpack_writer_finish(writer);
     if (finishStatus != SFBINPACK_STATUS_OK)
