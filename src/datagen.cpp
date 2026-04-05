@@ -21,12 +21,17 @@
 #include <cmath>
 #include <cstdint>
 #include <deque>
+#include <filesystem>
+#include <iomanip>
+#include <limits>
 #include <optional>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include "engine.h"
+#include "misc.h"
 #include "movegen.h"
 #include "position.h"
 #include "score.h"
@@ -34,6 +39,7 @@
 #include "sfbinpack.h"
 #include "types.h"
 #include "uci.h"
+#include "ucioption.h"
 
 namespace Stockfish {
 
@@ -57,6 +63,7 @@ struct DatagenPosition {
 
 struct DatagenArgs {
     uint64_t    games = 0;
+    uint64_t    hash  = 0;
     uint64_t    seed  = 0;
     std::string output;
 };
@@ -72,6 +79,7 @@ struct DatagenGame {
 bool parse_datagen_args(std::istream& is, DatagenArgs& args, std::string& error) {
     std::string token;
     bool        haveGames  = false;
+    bool        haveHash   = false;
     bool        haveSeed   = false;
     bool        haveOutput = false;
 
@@ -85,6 +93,15 @@ bool parse_datagen_args(std::istream& is, DatagenArgs& args, std::string& error)
                 return false;
             }
             haveGames = true;
+        }
+        else if (token == "hash")
+        {
+            if (!(is >> args.hash))
+            {
+                error = "Missing value after 'hash'.";
+                return false;
+            }
+            haveHash = true;
         }
         else if (token == "seed")
         {
@@ -111,15 +128,27 @@ bool parse_datagen_args(std::istream& is, DatagenArgs& args, std::string& error)
         }
     }
 
-    if (!haveGames || !haveSeed || !haveOutput)
+    if (!haveGames || !haveHash || !haveSeed || !haveOutput)
     {
-        error = "Usage: datagen games <count> seed <seed> output <data.binpack>";
+        error = "Usage: datagen games <count> hash <mb> seed <seed> output <data.binpack>";
         return false;
     }
 
     if (!args.games)
     {
         error = "games must be greater than 0.";
+        return false;
+    }
+
+    if (!args.hash)
+    {
+        error = "hash must be greater than 0.";
+        return false;
+    }
+
+    if (args.hash > uint64_t(std::numeric_limits<int>::max()))
+    {
+        error = "hash is too large.";
         return false;
     }
 
@@ -345,6 +374,44 @@ void write_datagen_game(sfbinpack_writer_handle*            writer,
     }
 }
 
+uint64_t output_size(const std::string& path) {
+    std::error_code ec;
+    const auto      size = std::filesystem::file_size(path, ec);
+    return ec ? 0 : size;
+}
+
+std::string human_bytes(uint64_t bytes) {
+    static constexpr const char* Units[] = {"B", "KiB", "MiB", "GiB", "TiB"};
+
+    double value = bytes;
+    int    unit  = 0;
+    while (value >= 1024.0 && unit < 4)
+    {
+        value /= 1024.0;
+        ++unit;
+    }
+
+    std::ostringstream os;
+    os << std::fixed << std::setprecision(unit == 0 ? 0 : 1) << value << ' ' << Units[unit];
+    return os.str();
+}
+
+void print_progress_line(uint64_t           generated,
+                         uint64_t           totalGames,
+                         uint64_t           positions,
+                         TimePoint          elapsed,
+                         const std::string& outputPath) {
+    const uint64_t posPerSec   = 1000 * positions / elapsed;
+    const uint64_t bytes       = output_size(outputPath);
+    const uint64_t bytesPerMin = 60000 * bytes / elapsed;
+
+    sync_cout_start();
+    std::cout << "\rinfo string datagen games " << generated << "/" << totalGames << " positions "
+              << positions << " speed " << posPerSec << " pos/s write " << human_bytes(bytesPerMin)
+              << "/min" << std::string(16, ' ') << std::flush;
+    sync_cout_end();
+}
+
 }  // namespace
 
 void run_datagen(Engine& engine, std::istream& args) {
@@ -356,6 +423,9 @@ void run_datagen(Engine& engine, std::istream& args) {
         sync_cout << "info string datagen error: " << error << sync_endl;
         return;
     }
+
+    std::istringstream hashOption("name Hash value " + std::to_string(datagenArgs.hash));
+    engine.get_options().setoption(hashOption);
 
     std::mt19937_64          rng(datagenArgs.seed);
     sfbinpack_writer_handle* writer = sfbinpack_writer_new(datagenArgs.output.c_str());
@@ -413,12 +483,11 @@ void run_datagen(Engine& engine, std::istream& args) {
         ++generated;
         positions += game.entries.size();
 
-        const TimePoint elapsed   = std::max<TimePoint>(1, now() - start);
-        const uint64_t  posPerSec = 1000 * positions / elapsed;
-
-        sync_cout << "info string datagen games " << generated << "/" << datagenArgs.games
-                  << " positions " << positions << " speed " << posPerSec << " pos/s" << sync_endl;
+        const TimePoint elapsed = std::max<TimePoint>(1, now() - start);
+        print_progress_line(generated, datagenArgs.games, positions, elapsed, datagenArgs.output);
     }
+
+    sync_cout << "" << sync_endl;
 
     const auto finishStatus = sfbinpack_writer_finish(writer);
     if (finishStatus != SFBINPACK_STATUS_OK)
