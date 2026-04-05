@@ -567,8 +567,11 @@ void Search::Worker::do_move(
     // Preferable over fetch_add to avoid locking instructions
     nodes.store(nodes.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 
-    auto [dirtyPiece, dirtyThreats] = accumulatorStack.push();
+    DirtyPiece   dirtyPiece;
+    DirtyThreats dirtyThreats;
+    new (&dirtyThreats) DirtyThreats;
     pos.do_move(move, st, givesCheck, dirtyPiece, dirtyThreats, &tt, &sharedHistory);
+    accumulatorStack.push(dirtyPiece, dirtyThreats);
 
     if (ss != nullptr)
     {
