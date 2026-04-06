@@ -284,9 +284,7 @@ size_t ThreadPool::num_threads() const { return threads.size(); }
 size_t ThreadPool::backward_pv_threads() const {
     if (threads.size() <= 1)
         return 0;
-
-    const size_t helpers = threads.size() / 4;
-    return std::min(helpers, threads.size() - 1);
+    return threads.size() / 8;
 }
 
 bool ThreadPool::is_backward_pv_helper(size_t threadId) const {
