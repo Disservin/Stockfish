@@ -22,6 +22,7 @@
 #include <cassert>
 #include <deque>
 #include <map>
+#include <shared_mutex>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -280,6 +281,30 @@ void ThreadPool::wait_on_thread(size_t threadId) {
 
 size_t ThreadPool::num_threads() const { return threads.size(); }
 
+size_t ThreadPool::backward_pv_threads() const {
+    if (threads.size() <= 1)
+        return 0;
+
+    const size_t helpers = threads.size() / 4;
+    return std::min(helpers, threads.size() - 1);
+}
+
+bool ThreadPool::is_backward_pv_helper(size_t threadId) const {
+    return threadId > 0 && threadId <= backward_pv_threads();
+}
+
+void ThreadPool::publish_backward_pv(Depth depth, const std::vector<Move>& pv) {
+    std::unique_lock<std::shared_mutex> lock(backwardPvMutex);
+    backwardPv.rootDepth = depth;
+    backwardPv.pv        = pv;
+    ++backwardPv.version;
+}
+
+ThreadPool::SharedBackwardPV ThreadPool::get_backward_pv_snapshot() const {
+    std::shared_lock<std::shared_mutex> lock(backwardPvMutex);
+    return backwardPv;
+}
+
 
 // Wakes up main thread waiting in idle_loop() and returns immediately.
 // Main thread will wake up other threads and start the search.
@@ -294,6 +319,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
     main_manager()->ponder                 = limits.ponderMode;
 
     increaseDepth = true;
+    backwardPv    = {};
 
     Search::RootMoves rootMoves;
     const auto        legalmoves = MoveList<LEGAL>(pos);
@@ -354,7 +380,8 @@ Thread* ThreadPool::get_best_thread() const {
 
     // Find the minimum score of all threads
     for (auto&& th : threads)
-        minScore = std::min(minScore, th->worker->rootMoves[0].score);
+        if (!is_backward_pv_helper(th->id()))
+            minScore = std::min(minScore, th->worker->rootMoves[0].score);
 
     // Vote according to score and depth, and select the best thread
     auto thread_voting_value = [minScore](Thread* th) {
@@ -362,7 +389,8 @@ Thread* ThreadPool::get_best_thread() const {
     };
 
     for (auto&& th : threads)
-        votes[th->worker->rootMoves[0].pv[0]] += thread_voting_value(th.get());
+        if (!is_backward_pv_helper(th->id()))
+            votes[th->worker->rootMoves[0].pv[0]] += thread_voting_value(th.get());
 
     auto has_bound = [](const Thread* th) {
         return th->worker->rootMoves[0].scoreLowerbound || th->worker->rootMoves[0].scoreUpperbound;
@@ -370,6 +398,9 @@ Thread* ThreadPool::get_best_thread() const {
 
     for (auto&& th : threads)
     {
+        if (is_backward_pv_helper(th->id()))
+            continue;
+
         const auto bestThreadScore = bestThread->worker->rootMoves[0].score;
         const auto newThreadScore  = th->worker->rootMoves[0].score;
 

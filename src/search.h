@@ -284,6 +284,7 @@ class Worker {
     void start_searching();
 
     bool is_mainthread() const { return threadIdx == 0; }
+    bool is_backward_pv_helper() const;
 
     void ensure_network_replicated();
 
@@ -300,10 +301,17 @@ class Worker {
 
    private:
     void iterative_deepening();
+    void backward_pv_helper();
 
     void do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss);
     void
     do_move(Position& pos, const Move move, StateInfo& st, const bool givesCheck, Stack* const ss);
+    void do_move(Position&    pos,
+                 const Move   move,
+                 StateInfo&   st,
+                 const bool   givesCheck,
+                 Stack* const ss,
+                 bool         countNode);
     void do_null_move(Position& pos, StateInfo& st, Stack* const ss);
     void undo_move(Position& pos, const Move move);
     void undo_null_move(Position& pos);

@@ -179,6 +179,10 @@ void Search::Worker::ensure_network_replicated() {
     (void) (networks[numaAccessToken]);
 }
 
+bool Search::Worker::is_backward_pv_helper() const {
+    return threads.is_backward_pv_helper(threadIdx);
+}
+
 void Search::Worker::start_searching() {
 
     accumulatorStack.reset();
@@ -187,7 +191,10 @@ void Search::Worker::start_searching() {
     // Non-main threads go directly to iterative_deepening()
     if (!is_mainthread())
     {
-        iterative_deepening();
+        if (is_backward_pv_helper())
+            backward_pv_helper();
+        else
+            iterative_deepening();
         return;
     }
 
@@ -447,6 +454,9 @@ void Search::Worker::iterative_deepening() {
                 lastBestMoveDepth = rootDepth;
 
             lastIterationPV = rootMoves[0].pv;
+
+            if (is_mainthread())
+                threads.publish_backward_pv(rootDepth, lastIterationPV);
         }
 
         // We make sure not to pick an unproven mated-in score,
@@ -556,16 +566,103 @@ void Search::Worker::iterative_deepening() {
                              skill.best ? skill.best : skill.pick_best(rootMoves, multiPV)));
 }
 
+void Search::Worker::backward_pv_helper() {
+
+    Move pv[MAX_PLY + 1];
+
+    Stack  stack[MAX_PLY + 10] = {};
+    Stack* ss                  = stack + 7;
+
+    for (int i = 7; i > 0; --i)
+    {
+        (ss - i)->continuationHistory =
+          &continuationHistory[0][0][NO_PIECE][0];  // Use as a sentinel
+        (ss - i)->continuationCorrectionHistory = &continuationCorrectionHistory[NO_PIECE][0];
+        (ss - i)->staticEval                    = VALUE_NONE;
+    }
+
+    for (int i = 0; i <= MAX_PLY + 2; ++i)
+        (ss + i)->ply = i;
+
+    while (!threads.stop)
+    {
+        auto snapshot = threads.get_backward_pv_snapshot();
+
+        size_t targetPly = 0;
+        Depth  depth     = std::max(Depth(1), rootDepth);
+
+        if (snapshot.pv.size() >= 2 && snapshot.rootDepth >= 2)
+        {
+            const size_t candidateCount =
+              std::min(snapshot.pv.size() - 1, size_t(std::max(Depth(0), snapshot.rootDepth - 1)));
+
+            if (candidateCount)
+            {
+                targetPly = candidateCount - ((threadIdx - 1) % candidateCount);
+                depth     = std::max(Depth(1), snapshot.rootDepth - Depth(targetPly));
+            }
+        }
+
+        StateInfo states[MAX_PLY];
+        Stack*    cur = ss;
+
+        rootDelta       = VALUE_INFINITE;
+        optimism[WHITE] = optimism[BLACK] = VALUE_ZERO;
+        selDepth                          = 0;
+
+        cur->pv           = pv;
+        cur->excludedMove = Move::none();
+        cur->ttPv         = false;
+        cur->staticEval   = VALUE_NONE;
+        cur->currentMove  = Move::none();
+
+        for (size_t ply = 0; ply < targetPly && !threads.stop; ++ply)
+        {
+            cur->inCheck = rootPos.checkers();
+            do_move(rootPos, snapshot.pv[ply], states[ply], rootPos.gives_check(snapshot.pv[ply]),
+                    cur, false);
+            ++cur;
+            cur->pv           = pv;
+            cur->excludedMove = Move::none();
+            cur->ttPv         = false;
+            cur->staticEval   = VALUE_NONE;
+        }
+
+        if (!threads.stop)
+        {
+            cur->pv[0] = Move::none();
+            (void) search<PV>(rootPos, cur, -VALUE_INFINITE, VALUE_INFINITE, depth, false);
+        }
+
+        while (cur != ss)
+        {
+            --cur;
+            undo_move(rootPos, snapshot.pv[size_t(cur - ss)]);
+        }
+    }
+}
+
 
 void Search::Worker::do_move(Position& pos, const Move move, StateInfo& st, Stack* const ss) {
-    do_move(pos, move, st, pos.gives_check(move), ss);
+    do_move(pos, move, st, pos.gives_check(move), ss, true);
 }
 
 void Search::Worker::do_move(
   Position& pos, const Move move, StateInfo& st, const bool givesCheck, Stack* const ss) {
+    do_move(pos, move, st, givesCheck, ss, true);
+}
+
+void Search::Worker::do_move(Position&    pos,
+                             const Move   move,
+                             StateInfo&   st,
+                             const bool   givesCheck,
+                             Stack* const ss,
+                             bool         countNode) {
     bool capture = pos.capture_stage(move);
-    // Preferable over fetch_add to avoid locking instructions
-    nodes.store(nodes.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
+
+    if (countNode)
+        // Preferable over fetch_add to avoid locking instructions
+        nodes.store(nodes.load(std::memory_order_relaxed) + 1, std::memory_order_relaxed);
 
     auto [dirtyPiece, dirtyThreats] = accumulatorStack.push();
     pos.do_move(move, st, givesCheck, dirtyPiece, dirtyThreats, &tt, &sharedHistory);

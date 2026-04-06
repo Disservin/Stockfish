@@ -24,6 +24,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <shared_mutex>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -114,6 +115,12 @@ class Thread {
 // is done through this class.
 class ThreadPool {
    public:
+    struct SharedBackwardPV {
+        Depth             rootDepth = 0;
+        uint64_t          version   = 0;
+        std::vector<Move> pv;
+    };
+
     ThreadPool() {}
 
     ~ThreadPool() {
@@ -148,6 +155,10 @@ class ThreadPool {
     Thread*                get_best_thread() const;
     void                   start_searching();
     void                   wait_for_search_finished() const;
+    size_t                 backward_pv_threads() const;
+    bool                   is_backward_pv_helper(size_t threadId) const;
+    void                   publish_backward_pv(Depth depth, const std::vector<Move>& pv);
+    SharedBackwardPV       get_backward_pv_snapshot() const;
 
     std::vector<size_t> get_bound_thread_count_by_numa_node() const;
 
@@ -166,6 +177,8 @@ class ThreadPool {
     StateListPtr                         setupStates;
     std::vector<std::unique_ptr<Thread>> threads;
     std::vector<NumaIndex>               boundThreadToNumaNode;
+    mutable std::shared_mutex            backwardPvMutex;
+    SharedBackwardPV                     backwardPv;
 
     uint64_t accumulate(std::atomic<uint64_t> Search::Worker::* member) const {
 
