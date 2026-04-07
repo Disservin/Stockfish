@@ -67,6 +67,43 @@ namespace {
 constexpr int SEARCHEDLIST_CAPACITY = 32;
 using SearchedList                  = ValueList<Move, SEARCHEDLIST_CAPACITY>;
 
+bool should_extend_root_pv(const SearchManager& mainThread) {
+
+    const size_t count = mainThread.rootEvalHistoryCount;
+
+    if (count < SearchManager::RootEvalHistorySize)
+        return false;
+
+    const size_t idx  = mainThread.rootEvalHistoryIdx;
+    const auto&  hist = mainThread.rootEvalHistory;
+
+    const Value oldest = hist[idx % SearchManager::RootEvalHistorySize];
+    const Value middle = hist[(idx + 1) % SearchManager::RootEvalHistorySize];
+    const Value latest = hist[(idx + 2) % SearchManager::RootEvalHistorySize];
+
+    if (is_decisive(oldest) || is_decisive(middle) || is_decisive(latest))
+        return false;
+
+    const bool continuouslyDecreasing = oldest >= middle && middle >= latest && oldest > latest;
+    const bool stable =
+      std::max({oldest, middle, latest}) - std::min({oldest, middle, latest}) <= 12;
+
+    return continuouslyDecreasing || stable;
+}
+
+void record_root_eval(SearchManager& mainThread, Value score) {
+
+    if (!is_valid(score) || is_decisive(score))
+        return;
+
+    const size_t idx = mainThread.rootEvalHistoryIdx;
+
+    mainThread.rootEvalHistory[idx] = score;
+    mainThread.rootEvalHistoryIdx   = (idx + 1) % SearchManager::RootEvalHistorySize;
+    mainThread.rootEvalHistoryCount =
+      std::min(mainThread.rootEvalHistoryCount + 1, SearchManager::RootEvalHistorySize);
+}
+
 // (*Scalers):
 // The values with Scaler asterisks have proven non-linear scaling.
 // They are optimized to time controls of 180 + 1.8 and longer,
@@ -183,6 +220,7 @@ void Search::Worker::start_searching() {
 
     accumulatorStack.reset();
     lastIterationPV.clear();
+    rootEvalTrendExtension = is_mainthread() && should_extend_root_pv(*main_manager());
 
     // Non-main threads go directly to iterative_deepening()
     if (!is_mainthread())
@@ -238,6 +276,7 @@ void Search::Worker::start_searching() {
 
     main_manager()->bestPreviousScore        = bestThread->rootMoves[0].score;
     main_manager()->bestPreviousAverageScore = bestThread->rootMoves[0].averageScore;
+    record_root_eval(*main_manager(), bestThread->rootMoves[0].score);
 
     std::string ponder;
     bool        extractedPonder = false;
@@ -372,6 +411,7 @@ void Search::Worker::iterative_deepening() {
                 // effective increment for every four searchAgain steps (see issue #2717).
                 Depth adjustedDepth =
                   std::max(1, rootDepth - failedHighCnt - 3 * (searchAgainCounter + 1) / 4);
+
                 rootDelta = beta - alpha;
                 bestValue = search<Root>(rootPos, ss, alpha, beta, adjustedDepth, false);
 
@@ -1196,6 +1236,10 @@ moves_loop:  // When in check, search starts here
             else if (cutNode)
                 extension = -2;
         }
+
+        if (!rootNode && PvNode && ss->followPV && moveCount == 1 && !excludedMove
+            && rootEvalTrendExtension)
+            extension++;
 
         // Step 16. Make the move
         do_move(pos, move, st, givesCheck, ss);

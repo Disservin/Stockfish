@@ -219,6 +219,8 @@ struct Skill {
 // keeping track of the time, and storing data strictly related to the main thread.
 class SearchManager: public ISearchManager {
    public:
+    constexpr static size_t RootEvalHistorySize = 3;
+
     using UpdateShort    = std::function<void(const InfoShort&)>;
     using UpdateFull     = std::function<void(const InfoFull&)>;
     using UpdateIter     = std::function<void(const InfoIteration&)>;
@@ -247,11 +249,14 @@ class SearchManager: public ISearchManager {
     int                       callsCnt;
     std::atomic_bool          ponder;
 
-    std::array<Value, 4> iterValue;
-    double               previousTimeReduction;
-    Value                bestPreviousScore;
-    Value                bestPreviousAverageScore;
-    bool                 stopOnPonderhit;
+    std::array<Value, 4>                   iterValue;
+    double                                 previousTimeReduction;
+    Value                                  bestPreviousScore;
+    Value                                  bestPreviousAverageScore;
+    std::array<Value, RootEvalHistorySize> rootEvalHistory{};
+    size_t                                 rootEvalHistoryCount = 0;
+    size_t                                 rootEvalHistoryIdx   = 0;
+    bool                                   stopOnPonderhit;
 
     size_t id;
 
@@ -342,6 +347,7 @@ class Worker {
     RootMoves rootMoves;
     Depth     rootDepth, completedDepth;
     Value     rootDelta;
+    bool      rootEvalTrendExtension = false;
 
     std::vector<Move> lastIterationPV;
 
