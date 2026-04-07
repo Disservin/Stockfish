@@ -103,25 +103,12 @@ jobs:
 
   OfficialBinaries:
     if: github.repository == 'Disservin/Stockfish'
-    needs: [OfficialReleaseDraft, Matrix, Compilation]
+    needs: [OfficialReleaseDraft, Compilation, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
       release_tag: ${{ needs.OfficialReleaseDraft.outputs.release_tag }}
       release_prerelease: false
-    permissions:
-      contents: write # For uploading release assets
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-
-  OfficialARMBinaries:
-    if: github.repository == 'Disservin/Stockfish'
-    needs: [OfficialReleaseDraft, Matrix, ARMCompilation]
-    uses: ./.github/workflows/upload_binaries.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-      release_tag: ${{ needs.OfficialReleaseDraft.outputs.release_tag }}
-      release_prerelease: false
+      single_job: true
     permissions:
       contents: write # For uploading release assets
     secrets:

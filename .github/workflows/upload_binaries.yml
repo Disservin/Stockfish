@@ -4,11 +4,14 @@ on:
     inputs:
       matrix:
         type: string
-        required: true
+        required: false
       release_tag:
         type: string
         required: false
       release_prerelease:
+        type: boolean
+        required: false
+      single_job:
         type: boolean
         required: false
     secrets:
@@ -17,6 +20,7 @@ on:
 
 jobs:
   Artifacts:
+    if: ${{ !inputs.single_job }}
     name: ${{ matrix.config.name }} ${{ matrix.binaries }}
     runs-on: ubuntu-latest
     env:
@@ -83,4 +87,99 @@ jobs:
           draft: true
           prerelease: ${{ inputs.release_prerelease }}
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
+          token: ${{ secrets.token }}
+
+  ArtifactsSequential:
+    if: ${{ inputs.single_job }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Download artifacts from compilation
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y zip
+
+      - name: Download wiki
+        run: |
+          git clone https://github.com/official-stockfish/Stockfish.wiki.git wiki
+          rm -rf wiki/.git
+
+      - name: Create release archives
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+
+          mkdir -p release-assets
+
+          for artifact_dir in artifacts/*; do
+            [[ -d "$artifact_dir" ]] || continue
+
+            binaries=("$artifact_dir"/stockfish-*)
+            if (( ${#binaries[@]} == 0 )); then
+              continue
+            fi
+
+            binary_path="${binaries[0]}"
+            binary_name="$(basename "$binary_path")"
+            archive_base="${binary_name%.exe}"
+            package_root="$RUNNER_TEMP/$archive_base"
+
+            rm -rf "$package_root"
+            mkdir -p "$package_root/stockfish"
+
+            cp -r wiki "$package_root/stockfish/"
+            cp -r "$artifact_dir/src" "$package_root/stockfish/"
+            cp -r "$artifact_dir/scripts" "$package_root/stockfish/"
+            cp "$binary_path" "$package_root/stockfish/"
+            cp "$artifact_dir/Top CPU Contributors.txt" "$package_root/stockfish/"
+            cp "$artifact_dir/Copying.txt" "$package_root/stockfish/"
+            cp "$artifact_dir/AUTHORS" "$package_root/stockfish/"
+            cp "$artifact_dir/CITATION.cff" "$package_root/stockfish/"
+            cp "$artifact_dir/README.md" "$package_root/stockfish/"
+            cp "$artifact_dir/CONTRIBUTING.md" "$package_root/stockfish/"
+
+            if [[ "$binary_name" == *.exe ]]; then
+              (cd "$package_root" && zip -r "$GITHUB_WORKSPACE/release-assets/$archive_base.zip" stockfish)
+            else
+              chmod +x "$package_root/stockfish/$binary_name"
+              tar -C "$package_root" -cvf "$GITHUB_WORKSPACE/release-assets/$archive_base.tar" stockfish
+            fi
+          done
+
+      - name: Collect release asset list
+        id: release_files
+        run: |
+          shopt -s nullglob
+          assets=(release-assets/*)
+
+          if (( ${#assets[@]} == 0 )); then
+            echo 'No release assets were created.'
+            exit 1
+          fi
+
+          {
+            echo 'files<<EOF'
+            printf '%s\n' "${assets[@]}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload Draft Release Assets
+        if: inputs.release_tag != ''
+        uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          draft: true
+          prerelease: ${{ inputs.release_prerelease }}
+          files: ${{ steps.release_files.outputs.files }}
           token: ${{ secrets.token }}
