@@ -11,6 +11,9 @@ on:
         required: true
         type: string
 
+permissions:
+  contents: read
+
 jobs:
   Matrix:
     runs-on: ubuntu-latest
@@ -75,19 +78,16 @@ jobs:
         run: gh release view "${{ inputs.release_tag }}" >/dev/null 2>&1 && { echo 'Release already exists for this tag.'; exit 1; } || true
 
       - name: Ensure git tag does not already exist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh api "repos/${{ github.repository }}/git/ref/tags/${{ inputs.release_tag }}" >/dev/null 2>&1 && { echo 'Tag already exists.'; exit 1; } || true
-
-      - name: Create official release tag
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh api "repos/${{ github.repository }}/git/refs" -f ref="refs/tags/${{ inputs.release_tag }}" -f sha="${{ github.sha }}"
+        run: git ls-remote --exit-code --tags origin "refs/tags/${{ inputs.release_tag }}" >/dev/null && { echo 'Tag already exists on origin.'; exit 1; } || true
 
       - name: Create draft official release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release create "${{ inputs.release_tag }}" --draft --title "${{ inputs.release_title }}" --notes ""
+        uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
+        with:
+          name: ${{ inputs.release_title }}
+          tag_name: ${{ inputs.release_tag }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          body: ""
 
   Compilation:
     needs: [Matrix]
