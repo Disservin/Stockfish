@@ -1,8 +1,6 @@
 name: Stockfish
 on:
   push:
-    tags:
-      - "*"
     branches:
       - master
       - tools
@@ -13,7 +11,7 @@ on:
       - tools
 jobs:
   Prerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && (github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'))
+    if: github.repository == 'official-stockfish/Stockfish' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: [Matrix]
     outputs:
@@ -128,31 +126,33 @@ jobs:
     uses: ./.github/workflows/arm_compilation.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-  Binaries:
+  DevBinaries:
     if: github.repository == 'official-stockfish/Stockfish'
     needs: [Prerelease, Matrix, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.matrix }}
       release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+      release_prerelease: true
     permissions:
       contents: write # For uploading release assets
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
-  ARM_Binaries:
+  DevARMBinaries:
     if: github.repository == 'official-stockfish/Stockfish'
     needs: [Prerelease, Matrix, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
       release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+      release_prerelease: true
     permissions:
       contents: write # For uploading release assets
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   PublishPrerelease:
     if: github.repository == 'official-stockfish/Stockfish' && needs.Prerelease.outputs.release_tag != ''
-    needs: [Prerelease, Binaries, ARM_Binaries]
+    needs: [Prerelease, DevBinaries, DevARMBinaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write # For publishing the draft prerelease
