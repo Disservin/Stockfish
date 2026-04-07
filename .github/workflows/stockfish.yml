@@ -1,8 +1,6 @@
 name: Stockfish
 on:
   push:
-    tags:
-      - "*"
     branches:
       - master
       - tools
@@ -18,8 +16,7 @@ concurrency:
 
 jobs:
   Prerelease:
-    name: Prerelease
-    if: github.repository == 'official-stockfish/Stockfish' && (github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'))
+    if: github.repository == 'official-stockfish/Stockfish' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: [Matrix]
     outputs:
@@ -168,33 +165,35 @@ jobs:
     name: "Universal builds"
     needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
     uses: ./.github/workflows/universal_compilation.yml
-  ARM_Binaries:
+  DevBinaries:
     if: github.repository == 'official-stockfish/Stockfish'
     name: Android uploads
     needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
-      with:
-        matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-        release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+    with:
+      matrix: ${{ needs.Matrix.outputs.universal_matrix }}
+      release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+      release_prerelease: true
     permissions:
       contents: write # For uploading release assets
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
-  Universal_Binaries:
+  DevARMBinaries:
     if: github.repository == 'official-stockfish/Stockfish'
     name: Universal binaries
     needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
-      with:
-        matrix: ${{ needs.Matrix.outputs.universal_matrix }}
-        release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+    with:
+      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+      release_tag: ${{ needs.Prerelease.outputs.release_tag }}
+      release_prerelease: true
     permissions:
       contents: write # For uploading release assets
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   PublishPrerelease:
     if: github.repository == 'official-stockfish/Stockfish' && needs.Prerelease.outputs.release_tag != ''
-    needs: [Prerelease, ARM_Binaries, Universal_Binaries]
+    needs: [Prerelease, DevBinaries, DevARMBinaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write # For publishing the draft prerelease
