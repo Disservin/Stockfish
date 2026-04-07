@@ -312,6 +312,8 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
 
     Tablebases::Config tbConfig = Tablebases::rank_root_moves(options, pos, rootMoves);
 
+    update_root_diversity_prefix(rootMoves);
+
     // After ownership transfer 'states' becomes empty, so if we stop the search
     // and call 'go' again without setting a new position states.get() == nullptr.
     assert(states.get() || setupStates.get());
@@ -342,6 +344,27 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
         th->wait_for_search_finished();
 
     main_thread()->start_searching();
+}
+
+void ThreadPool::update_root_diversity_prefix(const Search::RootMoves& rootMoves) {
+
+    std::lock_guard<std::mutex> lock(rootDiversityMutex);
+
+    rootDiversityCount = std::min(rootMoves.size(), RootDiversityPrefixLimit);
+
+    for (size_t i = 0; i < rootDiversityCount; ++i)
+        rootDiversityPrefix[i] = rootMoves[i].pv[0];
+
+    for (size_t i = rootDiversityCount; i < RootDiversityPrefixLimit; ++i)
+        rootDiversityPrefix[i] = Move::none();
+}
+
+std::array<Move, ThreadPool::RootDiversityPrefixLimit>
+ThreadPool::get_root_diversity_prefix(size_t& count) const {
+
+    std::lock_guard<std::mutex> lock(rootDiversityMutex);
+    count = rootDiversityCount;
+    return rootDiversityPrefix;
 }
 
 Thread* ThreadPool::get_best_thread() const {

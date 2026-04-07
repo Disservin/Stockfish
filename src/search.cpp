@@ -311,6 +311,46 @@ void Search::Worker::iterative_deepening() {
 
     multiPV = std::min(multiPV, rootMoves.size());
 
+    auto rotate_root_diversity_prefix = [this, multiPV]() {
+        if (is_mainthread() || multiPV != 1 || rootMoves.size() < 4)
+            return;
+
+        size_t prefixCount = 0;
+        auto   prefixMoves = threads.get_root_diversity_prefix(prefixCount);
+
+        if (prefixCount < 2)
+            return;
+
+        prefixCount = std::min(prefixCount, rootMoves.size());
+
+        size_t tbPrefixCount = 0;
+        while (tbPrefixCount < prefixCount && rootMoves[tbPrefixCount].tbRank != 0)
+            ++tbPrefixCount;
+
+        prefixCount -= tbPrefixCount;
+
+        if (prefixCount < 2)
+            return;
+
+        for (size_t i = 0; i < prefixCount; ++i)
+        {
+            auto it = std::find_if(
+              rootMoves.begin() + tbPrefixCount + i, rootMoves.end(),
+              [move = prefixMoves[i]](const RootMove& rm) { return rm.pv[0] == move; });
+
+            if (it == rootMoves.end())
+                break;
+
+            std::rotate(rootMoves.begin() + tbPrefixCount + i, it, it + 1);
+        }
+
+        const size_t rotation = threadIdx % prefixCount;
+        if (rotation != 0)
+            std::rotate(rootMoves.begin() + tbPrefixCount,
+                        rootMoves.begin() + tbPrefixCount + rotation,
+                        rootMoves.begin() + tbPrefixCount + prefixCount);
+    };
+
     int searchAgainCounter = 0;
 
     lowPlyHistory.fill(98);
@@ -323,6 +363,8 @@ void Search::Worker::iterative_deepening() {
     while (++rootDepth < MAX_PLY && !threads.stop
            && !(limits.depth && mainThread && rootDepth > limits.depth))
     {
+        rotate_root_diversity_prefix();
+
         // Age out PV variability metric
         if (mainThread)
             totBestMoveChanges /= 2;
@@ -442,6 +484,9 @@ void Search::Worker::iterative_deepening() {
         if (!threads.stop)
         {
             completedDepth = rootDepth;
+
+            if (is_mainthread())
+                threads.update_root_diversity_prefix(rootMoves);
 
             if (lastIterationPV.empty() || rootMoves[0].pv[0] != lastIterationPV[0])
                 lastBestMoveDepth = rootDepth;

@@ -20,6 +20,7 @@
 #define THREAD_H_INCLUDED
 
 #include <atomic>
+#include <array>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
@@ -114,6 +115,8 @@ class Thread {
 // is done through this class.
 class ThreadPool {
    public:
+    static constexpr size_t RootDiversityPrefixLimit = 8;
+
     ThreadPool() {}
 
     ~ThreadPool() {
@@ -153,6 +156,9 @@ class ThreadPool {
 
     void ensure_network_replicated();
 
+    void update_root_diversity_prefix(const Search::RootMoves& rootMoves);
+    std::array<Move, RootDiversityPrefixLimit> get_root_diversity_prefix(size_t& count) const;
+
     std::atomic_bool stop, increaseDepth;
 
     auto cbegin() const noexcept { return threads.cbegin(); }
@@ -163,9 +169,12 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    StateListPtr                         setupStates;
-    std::vector<std::unique_ptr<Thread>> threads;
-    std::vector<NumaIndex>               boundThreadToNumaNode;
+    mutable std::mutex                         rootDiversityMutex;
+    std::array<Move, RootDiversityPrefixLimit> rootDiversityPrefix{};
+    size_t                                     rootDiversityCount = 0;
+    StateListPtr                               setupStates;
+    std::vector<std::unique_ptr<Thread>>       threads;
+    std::vector<NumaIndex>                     boundThreadToNumaNode;
 
     uint64_t accumulate(std::atomic<uint64_t> Search::Worker::* member) const {
 
