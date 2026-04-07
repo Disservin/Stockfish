@@ -35,7 +35,7 @@ jobs:
           echo "ARM_MATRIX=$TASKS_ARM" >> $GITHUB_OUTPUT
 
   OfficialReleaseDraft:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: github.repository == 'Disservin/Stockfish'
     runs-on: ubuntu-latest
     needs: [Matrix]
     outputs:
@@ -111,7 +111,7 @@ jobs:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
 
   OfficialBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: github.repository == 'Disservin/Stockfish'
     needs: [OfficialReleaseDraft, Matrix, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
@@ -124,7 +124,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
 
   OfficialARMBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: github.repository == 'Disservin/Stockfish'
     needs: [OfficialReleaseDraft, Matrix, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:

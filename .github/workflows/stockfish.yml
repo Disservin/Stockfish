@@ -11,7 +11,7 @@ on:
       - tools
 jobs:
   Prerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.repository == 'Disservin/Stockfish' && github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     needs: [Matrix]
     outputs:
@@ -127,7 +127,7 @@ jobs:
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
   DevBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: github.repository == 'Disservin/Stockfish'
     needs: [Prerelease, Matrix, Compilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
@@ -139,7 +139,7 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   DevARMBinaries:
-    if: github.repository == 'official-stockfish/Stockfish'
+    if: github.repository == 'Disservin/Stockfish'
     needs: [Prerelease, Matrix, ARMCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
@@ -151,7 +151,7 @@ jobs:
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
   PublishPrerelease:
-    if: github.repository == 'official-stockfish/Stockfish' && needs.Prerelease.outputs.release_tag != ''
+    if: github.repository == 'Disservin/Stockfish' && needs.Prerelease.outputs.release_tag != ''
     needs: [Prerelease, DevBinaries, DevARMBinaries]
     runs-on: ubuntu-latest
     permissions:
