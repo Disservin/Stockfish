@@ -10,10 +10,6 @@ on:
         description: Official release title
         required: true
         type: string
-      release_notes:
-        description: Official release notes body
-        required: true
-        type: string
 
 jobs:
   Matrix:
@@ -53,7 +49,6 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.release_tag }}
           RELEASE_TITLE: ${{ inputs.release_title }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
           if [[ "${{ github.ref_name }}" != 'master' ]]; then
             echo 'Official releases must be dispatched from master.'
@@ -65,8 +60,8 @@ jobs:
             exit 1
           fi
 
-          if [[ -z "$RELEASE_TITLE" || -z "$RELEASE_NOTES" ]]; then
-            echo 'release_title and release_notes are required.'
+          if [[ -z "$RELEASE_TITLE" ]]; then
+            echo 'release_title is required.'
             exit 1
           fi
 
@@ -92,11 +87,7 @@ jobs:
       - name: Create draft official release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
-        run: |
-          NOTES_FILE=$(mktemp)
-          printf '%s' "$RELEASE_NOTES" > "$NOTES_FILE"
-          gh release create "${{ inputs.release_tag }}" --draft --title "${{ inputs.release_title }}" --notes-file "$NOTES_FILE"
+        run: gh release create "${{ inputs.release_tag }}" --draft --title "${{ inputs.release_title }}" --notes ""
 
   Compilation:
     needs: [Matrix]
