@@ -366,7 +366,14 @@ class PRNG {
 };
 
 inline uint64_t mul_hi64(uint64_t a, uint64_t b) {
-#if defined(__GNUC__) && defined(IS_64BIT)
+#if defined(__BMI2__)
+    uint64_t hi, lo;
+    __asm__("mulx %[b], %[lo], %[hi]"
+        : [hi] "=r"(hi), [lo] "=r"(lo)
+        : "d"(a), [b] "r"(b)
+    );
+    return hi;
+#elif defined(__GNUC__) && defined(IS_64BIT)
     __extension__ using uint128 = unsigned __int128;
     return (uint128(a) * uint128(b)) >> 64;
 #else
