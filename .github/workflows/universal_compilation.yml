@@ -6,7 +6,7 @@ jobs:
     name: Linux
     runs-on: ubuntu-latest
     container:
-      image: gcc:15.2-bookworm@sha256:9ca91b05c7b07d2979f16413e8b2cd6ec8a7c80ffca4121ccab0aeba33f90460 # gcc:15.2-bookworm
+      image: alpine:3.22@sha256:310c62b5e7ca5b08167e4384c68db0fd2905dd9c7493756d356e893909057601 # alpine:3.22
     defaults:
       run:
         shell: bash
@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install dependencies
-        run: apt-get update && apt-get install -y sudo libc6 libc6-i386 && echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        run: apk add --no-cache bash binutils g++ gcompat git make sudo
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@2a27a21f27212e473f3cc59a6dac97d8dffe8970 # v3.0
@@ -29,8 +29,10 @@ jobs:
         run: chown -R $(id -u):$(id -g) .
 
       - name: Build universal binary
-        run: make -j4 -C src ARCH=x86-64-universal profile-build
-          RUN_PREFIX="$SDE_DIR/sde -future --"
+        run: |
+          make -j4 -C src ARCH=x86-64-universal profile-build \
+            ENV_LDFLAGS='-static' \
+            RUN_PREFIX="$SDE_DIR/sde -future --"
 
       - name: Strip binary
         run: strip src/stockfish
