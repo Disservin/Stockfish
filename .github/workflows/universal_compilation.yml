@@ -17,14 +17,20 @@ jobs:
           fetch-depth: 0
 
       - name: Install sudo
-        run: apt-get update && apt-get install -y sudo && echo "root ALL=(ALL)
-          NOPASSWD:ALL" >> /etc/sudoers
+        run: apt-get update && apt-get install -y sudo libc6 2>&1 && echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@d230e06df0ca06ced70000e4a7fa62afc9a2001e # v4.0
         with:
           environmentVariableName: SDE_DIR
           sdeVersion: 10.8.0
+
+      - name: Debug SDE
+        run: |
+          echo "SDE_DIR=$SDE_DIR"
+          ls -la "$SDE_DIR/sde"
+          file "$SDE_DIR/sde"
+          ldd "$SDE_DIR/sde"
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=x86-64-universal profile-build
