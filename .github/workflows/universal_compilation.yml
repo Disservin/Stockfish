@@ -9,7 +9,7 @@ jobs:
       image: alpine:3.22@sha256:310c62b5e7ca5b08167e4384c68db0fd2905dd9c7493756d356e893909057601 # alpine:3.22
     defaults:
       run:
-        shell: bash
+        shell: sh
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -29,6 +29,7 @@ jobs:
         run: chown -R $(id -u):$(id -g) .
 
       - name: Build universal binary
+        shell: bash
         run: |
           make -j4 -C src ARCH=x86-64-universal profile-build \
             ENV_LDFLAGS='-static' \
@@ -41,6 +42,7 @@ jobs:
         run: mv src/stockfish stockfish-linux-x86-64-universal
 
       - name: Extract the bench number from the commit history
+        shell: bash
         run: |
           for hash in $(git rev-list -100 HEAD); do
             benchref=$(git show -s $hash | tac | grep -m 1 -o -x '[[:space:]]*\b[Bb]ench[ :]\+[1-9][0-9]\{5,7\}\b[[:space:]]*' | sed 's/[^0-9]//g') && break || true
