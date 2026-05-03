@@ -4,7 +4,9 @@ on:
 jobs:
   UniversalLinux:
     name: Linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: gcc:15@sha256:7c7782df5e7281b07fbd616c77310253a42c144068eefb71e202ad27c8be8488 # 15.2
     defaults:
       run:
         shell: bash
@@ -14,19 +16,24 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Install GCC 15
-        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2.0
-        with:
-          version: 15
+      - name: Install dependencies
+        run: apt-get update && apt-get install -y sudo libc6 libc6-i386 && echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
       - name: Download SDE package
-        uses: petarpetrovt/setup-sde@2a27a21f27212e473f3cc59a6dac97d8dffe8970 # v3.0
+        uses: petarpetrovt/setup-sde@d230e06df0ca06ced70000e4a7fa62afc9a2001e # v4.0
         with:
           environmentVariableName: SDE_DIR
-          sdeVersion: 9.33.0
+          sdeVersion: 10.8.0
+
+      - name: Debug SDE
+        run: |
+          echo "SDE_DIR=$SDE_DIR"
+          ls -la "$SDE_DIR/sde"
+          file "$SDE_DIR/sde"
 
       - name: Build universal binary
-        run: make -j4 -C src ARCH=x86-64-universal profile-build RUN_PREFIX="$SDE_DIR/sde -future --"
+        run: make -j4 -C src ARCH=x86-64-universal profile-build
+          RUN_PREFIX="$SDE_DIR/sde -future --"
 
       - name: Strip binary
         run: strip src/stockfish
@@ -54,9 +61,9 @@ jobs:
         with:
           name: linux x86-64-universal
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output
 
   UniversalWindows:
     name: Windows
@@ -113,6 +120,6 @@ jobs:
         with:
           name: windows x86-64-universal
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output
