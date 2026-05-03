@@ -7,7 +7,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: gcc:15@sha256:7c7782df5e7281b07fbd616c77310253a42c144068eefb71e202ad27c8be8488 # 15.2
-      options: --user 1001 # ensure container user matches the github runner user
     defaults:
       run:
         shell: bash
@@ -25,6 +24,9 @@ jobs:
         with:
           environmentVariableName: SDE_DIR
           sdeVersion: 9.33.0
+
+      - name: Fix workspace ownership
+        run: chown -R $(id -u):$(id -g) .
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=x86-64-universal profile-build
