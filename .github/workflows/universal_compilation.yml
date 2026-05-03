@@ -4,7 +4,9 @@ on:
 jobs:
   UniversalLinux:
     name: Linux
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
+    container:
+      image: gcc:15@sha256:7c7782df5e7281b07fbd616c77310253a42c144068eefb71e202ad27c8be8488 # 15.2
     defaults:
       run:
         shell: bash
@@ -14,10 +16,9 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Install GCC 15
-        uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2.0
-        with:
-          version: 15
+      - name: Install sudo
+        run: apt-get update && apt-get install -y sudo && echo "root ALL=(ALL)
+          NOPASSWD:ALL" >> /etc/sudoers
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@2a27a21f27212e473f3cc59a6dac97d8dffe8970 # v3.0
@@ -26,7 +27,8 @@ jobs:
           sdeVersion: 9.33.0
 
       - name: Build universal binary
-        run: make -j4 -C src ARCH=x86-64-universal profile-build RUN_PREFIX="$SDE_DIR/sde -future --"
+        run: make -j4 -C src ARCH=x86-64-universal profile-build
+          RUN_PREFIX="$SDE_DIR/sde -future --"
 
       - name: Strip binary
         run: strip src/stockfish
@@ -42,7 +44,8 @@ jobs:
           [[ -n "$benchref" ]] && echo "benchref=$benchref" >> $GITHUB_ENV && echo "From commit: $hash" && echo "Reference bench: $benchref" || echo "No bench found"
 
       - name: Check arch selection under SDE
-        run: ./scripts/check_universal.sh ./stockfish-linux-x86-64-universal "$SDE_DIR/sde" "$benchref"
+        run: ./scripts/check_universal.sh ./stockfish-linux-x86-64-universal
+          "$SDE_DIR/sde" "$benchref"
 
       - name: Remove non src files
         run: |
@@ -54,9 +57,9 @@ jobs:
         with:
           name: linux x86-64-universal
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output
 
   UniversalWindows:
     name: Windows
@@ -101,7 +104,8 @@ jobs:
           [[ -n "$benchref" ]] && echo "benchref=$benchref" >> $GITHUB_ENV && echo "From commit: $hash" && echo "Reference bench: $benchref" || echo "No bench found"
 
       - name: Check arch selection under SDE
-        run: ./scripts/check_universal.sh ./stockfish-windows-x86-64-universal.exe "$SDE_DIR/sde" "$benchref"
+        run: ./scripts/check_universal.sh ./stockfish-windows-x86-64-universal.exe
+          "$SDE_DIR/sde" "$benchref"
 
       - name: Remove non src files
         run: |
@@ -113,6 +117,6 @@ jobs:
         with:
           name: windows x86-64-universal
           path: |
-             .
-             !.git
-             !.output
+            .
+            !.git
+            !.output
