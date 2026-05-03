@@ -25,11 +25,8 @@ jobs:
           environmentVariableName: SDE_DIR
           sdeVersion: 9.33.0
 
-      - name: Debug SDE
-        run: |
-          echo "SDE_DIR=$SDE_DIR"
-          ls -la "$SDE_DIR/sde"
-          file "$SDE_DIR/sde"
+      - name: Fix workspace ownership
+        run: chown -R $(id -u):$(id -g) .
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=x86-64-universal profile-build
