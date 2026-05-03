@@ -30,7 +30,6 @@ jobs:
           echo "SDE_DIR=$SDE_DIR"
           ls -la "$SDE_DIR/sde"
           file "$SDE_DIR/sde"
-          ldd "$SDE_DIR/sde"
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=x86-64-universal profile-build
