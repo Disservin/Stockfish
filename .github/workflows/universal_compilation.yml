@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install sudo
-        run: apt-get update && apt-get install -y sudo libc6 2>&1 && echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        run: apt-get update && apt-get install -y sudo libc6 libc6-i386 && echo "root ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@d230e06df0ca06ced70000e4a7fa62afc9a2001e # v4.0
