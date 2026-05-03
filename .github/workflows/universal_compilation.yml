@@ -6,7 +6,7 @@ jobs:
     name: Linux
     runs-on: ubuntu-latest
     container:
-      image: gcc:15@sha256:7c7782df5e7281b07fbd616c77310253a42c144068eefb71e202ad27c8be8488 # 15.2
+      image: gcc:15.2-bookworm@sha256:9ca91b05c7b07d2979f16413e8b2cd6ec8a7c80ffca4121ccab0aeba33f90460 # gcc:15.2-bookworm
     defaults:
       run:
         shell: bash
