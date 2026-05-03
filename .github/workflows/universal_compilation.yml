@@ -1,0 +1,139 @@
+name: Universal Compilation
+on:
+  workflow_call:
+jobs:
+  UniversalLinux:
+    name: Linux
+    runs-on: ubuntu-latest
+    container:
+      image: alpine:3.23@sha256:5b10f432ef3da1b8d4c7eb6c487f2f5a8f096bc91145e68878dd4a5019afde11 # alpine:3.22
+    defaults:
+      run:
+        shell: sh
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: apk add --no-cache bash binutils g++ gcompat git make sudo wget xz
+
+      - name: Install i386 glibc runtime for SDE
+        run: |
+          mkdir -p /opt/glibc-i386
+          wget -q -O /tmp/libc6-i386.deb https://deb.debian.org/debian/pool/main/g/glibc/libc6-i386_2.36-9+deb12u13_amd64.deb
+          ar p /tmp/libc6-i386.deb data.tar.xz | tar -xJ -C /opt/glibc-i386
+
+      - name: Download SDE package
+        uses: petarpetrovt/setup-sde@2a27a21f27212e473f3cc59a6dac97d8dffe8970 # v3.0
+        with:
+          environmentVariableName: SDE_DIR
+          sdeVersion: 9.33.0
+
+      - name: Prepare SDE wrapper
+        run: |
+          printf '%s\n' '#!/bin/sh' \
+            "exec /opt/glibc-i386/lib/ld-linux.so.2 --library-path /opt/glibc-i386/lib32 '$SDE_DIR/sde' \"\$@\"" \
+            > /usr/local/bin/sde-wrapper
+          chmod +x /usr/local/bin/sde-wrapper
+
+      - name: Fix workspace ownership
+        run: chown -R $(id -u):$(id -g) .
+
+      - name: Build universal binary
+        shell: bash
+        run: |
+          make -j4 -C src ARCH=x86-64-universal profile-build \
+            ENV_LDFLAGS='-static' \
+            RUN_PREFIX="/usr/local/bin/sde-wrapper -future --"
+
+      - name: Strip binary
+        run: strip src/stockfish
+
+      - name: Rename binary
+        run: mv src/stockfish stockfish-linux-x86-64-universal
+
+      - name: Extract the bench number from the commit history
+        shell: bash
+        run: |
+          for hash in $(git rev-list -100 HEAD); do
+            benchref=$(git show -s $hash | tac | grep -m 1 -o -x '[[:space:]]*\b[Bb]ench[ :]\+[1-9][0-9]\{5,7\}\b[[:space:]]*' | sed 's/[^0-9]//g') && break || true
+          done
+          [[ -n "$benchref" ]] && echo "benchref=$benchref" >> $GITHUB_ENV && echo "From commit: $hash" && echo "Reference bench: $benchref" || echo "No bench found"
+
+      - name: Check arch selection under SDE
+        run: ./scripts/check_universal.sh ./stockfish-linux-x86-64-universal /usr/local/bin/sde-wrapper "$benchref"
+
+      - name: Remove non src files
+        run: |
+          rm -fR src/temp_builds
+          git -C src clean -fx
+
+      - name: Upload artifact for (pre)-release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: linux x86-64-universal
+          path: |
+            .
+            !.git
+            !.output
+
+  UniversalWindows:
+    name: Windows
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup msys and install required packages
+        uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
+        with:
+          msystem: mingw64
+          install: mingw-w64-x86_64-gcc make git zip
+
+      - name: Download SDE package
+        uses: petarpetrovt/setup-sde@2a27a21f27212e473f3cc59a6dac97d8dffe8970 # v3.0
+        with:
+          environmentVariableName: SDE_DIR
+          sdeVersion: 9.33.0
+
+      - name: Build universal binary
+        run: |
+          SDE_PATH=$(cygpath "$SDE_DIR")
+          make -j4 -C src ARCH=x86-64-universal profile-build RUN_PREFIX="$SDE_PATH/sde.exe -future --"
+
+      - name: Strip binary
+        run: strip src/stockfish.exe
+
+      - name: Rename binary
+        run: mv src/stockfish.exe stockfish-windows-x86-64-universal.exe
+
+      - name: Extract the bench number from the commit history
+        run: |
+          for hash in $(git rev-list -100 HEAD); do
+            benchref=$(git show -s $hash | tac | grep -m 1 -o -x '[[:space:]]*\b[Bb]ench[ :]\+[1-9][0-9]\{5,7\}\b[[:space:]]*' | sed 's/[^0-9]//g') && break || true
+          done
+          [[ -n "$benchref" ]] && echo "benchref=$benchref" >> $GITHUB_ENV && echo "From commit: $hash" && echo "Reference bench: $benchref" || echo "No bench found"
+
+      - name: Check arch selection under SDE
+        run: ./scripts/check_universal.sh ./stockfish-windows-x86-64-universal.exe "$SDE_DIR/sde" "$benchref"
+
+      - name: Remove non src files
+        run: |
+          rm -fR src/temp_builds
+          git -C src clean -fx
+
+      - name: Upload artifact for (pre)-release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows x86-64-universal
+          path: |
+            .
+            !.git
+            !.output

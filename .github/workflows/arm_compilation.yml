@@ -1,4 +1,4 @@
-name: Compilation
+name: Android Compilation
 on:
   workflow_call:
     inputs:
@@ -7,7 +7,7 @@ on:
         required: true
 jobs:
   Compilation:
-    name: ${{ matrix.config.name }} ${{ matrix.binaries }}
+    name: "Android build: ${{ matrix.config.name }} ${{ matrix.binaries }}"
     runs-on: ${{ matrix.config.os }}
     env:
       COMPCXX: ${{ matrix.config.compiler }}

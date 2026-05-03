@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   Prerelease:
+    name: Prerelease
     if: github.repository == 'official-stockfish/Stockfish' && (github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'))
     runs-on: ubuntu-latest
     needs: [Matrix]
@@ -79,83 +80,121 @@ jobs:
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
   Matrix:
+    name: Prepare matrices
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      macos_matrix: ${{ steps.set-macos-matrix.outputs.macos_matrix }}
+      windows_arm_matrix: ${{ steps.set-windows-arm-matrix.outputs.windows_arm_matrix }}
       arm_matrix: ${{ steps.set-arm-matrix.outputs.arm_matrix }}
       universal_matrix: ${{ steps.set-universal-matrix.outputs.universal_matrix }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-      - id: set-matrix
+      - id: set-macos-matrix
         run: |
-          TASKS=$(echo $(cat .github/ci/matrix.json) )
-          echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
+          MACOS_MATRIX=$(jq -c '.' .github/ci/macos_matrix.json)
+          echo "MACOS_MATRIX=$MACOS_MATRIX" >> $GITHUB_OUTPUT
+      - id: set-windows-arm-matrix
+        run: |
+          WINDOWS_ARM_MATRIX=$(jq -c '.' .github/ci/windows_arm_matrix.json)
+          echo "WINDOWS_ARM_MATRIX=$WINDOWS_ARM_MATRIX" >> $GITHUB_OUTPUT
       - id: set-arm-matrix
         run: |
-          TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
-          echo "ARM_MATRIX=$TASKS_ARM" >> $GITHUB_OUTPUT
+          ARM_MATRIX=$(jq -c '.' .github/ci/arm_matrix.json)
+          echo "ARM_MATRIX=$ARM_MATRIX" >> $GITHUB_OUTPUT
       - id: set-universal-matrix
         run: |
-          TASKS_UNIVERSAL=$(echo $(cat .github/ci/universal_matrix.json) )
-          echo "UNIVERSAL_MATRIX=$TASKS_UNIVERSAL" >> $GITHUB_OUTPUT
+          UNIVERSAL_MATRIX=$(jq -c '.' .github/ci/universal_matrix.json)
+          echo "UNIVERSAL_MATRIX=$UNIVERSAL_MATRIX" >> $GITHUB_OUTPUT
   # Testing Jobs
-  IWYU:
-    uses: ./.github/workflows/iwyu.yml
-  Sanitizers:
-    if: ${{ always() }}
-    uses: ./.github/workflows/sanitizers.yml
-  Tests:
-    if: ${{ always() }}
-    uses: ./.github/workflows/tests.yml
-  Matetrack:
-    if: ${{ always() }}
-    uses: ./.github/workflows/matetrack.yml
-  Games:
-    if: ${{ always() }}
-    uses: ./.github/workflows/games.yml
-  CompilerCheck:
-    if: ${{ always() }}
-    uses: ./.github/workflows/avx2_compilers.yml
-  # Release Jobs
-  Compilation:
-    needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
-    uses: ./.github/workflows/compilation.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
-  ARMCompilation:
-    needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
-    uses: ./.github/workflows/arm_compilation.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-  Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
-    needs: [Prerelease, Matrix, Compilation]
-    uses: ./.github/workflows/upload_binaries.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
-    permissions:
-      contents: write # For deleting/creating a (pre)release
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-  ARM_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
-    needs: [Prerelease, Matrix, ARMCompilation]
-    uses: ./.github/workflows/upload_binaries.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.arm_matrix }}
-    permissions:
-      contents: write # For deleting/creating a (pre)release
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
-  Universal_Binaries:
-    if: github.repository == 'official-stockfish/Stockfish'
-    needs: [Prerelease, Matrix, Compilation]
-    uses: ./.github/workflows/upload_binaries.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.universal_matrix }}
-    permissions:
-      contents: write # For deleting/creating a (pre)release
-    secrets:
-      token: ${{ secrets.GITHUB_TOKEN }}
+  # IWYU:
+  #   name: IWYU
+  #   uses: ./.github/workflows/iwyu.yml
+  # Sanitizers:
+  #   name: Sanitizers
+  #   if: ${{ always() }}
+  #   uses: ./.github/workflows/sanitizers.yml
+  # Tests:
+  #   name: Tests
+  #   if: ${{ always() }}
+  #   uses: ./.github/workflows/tests.yml
+  # Matetrack:
+  #   name: Matetrack
+  #   if: ${{ always() }}
+  #   uses: ./.github/workflows/matetrack.yml
+  # Games:
+  #   name: Games
+  #   if: ${{ always() }}
+  #   uses: ./.github/workflows/games.yml
+  # CompilerCheck:
+  #   name: Compiler check
+  #   if: ${{ always() }}
+  #   uses: ./.github/workflows/avx2_compilers.yml
+  # # Release Jobs
+  # Compilation:
+  #   name: macOS builds
+  #   needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
+  #   uses: ./.github/workflows/compilation.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.macos_matrix }}
+  # WindowsARMCompilation:
+  #   name: Windows ARM builds
+  #   needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
+  #   uses: ./.github/workflows/compilation.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.windows_arm_matrix }}
+  # ARMCompilation:
+  #   name: Android builds
+  #   needs: [Matrix, Sanitizers, Tests, Matetrack, Games, CompilerCheck]
+  #   uses: ./.github/workflows/arm_compilation.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+  UniversalCompilation:
+    name: "Universal builds"
+    needs: [Matrix]
+    uses: ./.github/workflows/universal_compilation.yml
+  # Binaries:
+  #   if: github.repository == 'official-stockfish/Stockfish'
+  #   name: macOS uploads
+  #   needs: [Prerelease, Matrix, Compilation]
+  #   uses: ./.github/workflows/upload_binaries.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.macos_matrix }}
+  #   permissions:
+  #     contents: write # For deleting/creating a (pre)release
+  #   secrets:
+  #     token: ${{ secrets.GITHUB_TOKEN }}
+  # WindowsARM_Binaries:
+  #   if: github.repository == 'official-stockfish/Stockfish'
+  #   name: Windows ARM uploads
+  #   needs: [Prerelease, Matrix, WindowsARMCompilation]
+  #   uses: ./.github/workflows/upload_binaries.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.windows_arm_matrix }}
+  #   permissions:
+  #     contents: write # For deleting/creating a (pre)release
+  #   secrets:
+  #     token: ${{ secrets.GITHUB_TOKEN }}
+  # ARM_Binaries:
+  #   if: github.repository == 'official-stockfish/Stockfish'
+  #   name: Android uploads
+  #   needs: [Prerelease, Matrix, ARMCompilation]
+  #   uses: ./.github/workflows/upload_binaries.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.arm_matrix }}
+  #   permissions:
+  #     contents: write # For deleting/creating a (pre)release
+  #   secrets:
+  #     token: ${{ secrets.GITHUB_TOKEN }}
+  # Universal_Binaries:
+  #   if: github.repository == 'official-stockfish/Stockfish'
+  #   name: Universal binaries
+  #   needs: [Prerelease, Matrix, UniversalCompilation]
+  #   uses: ./.github/workflows/upload_binaries.yml
+  #   with:
+  #     matrix: ${{ needs.Matrix.outputs.universal_matrix }}
+  #   permissions:
+  #     contents: write # For deleting/creating a (pre)release
+  #   secrets:
+  #     token: ${{ secrets.GITHUB_TOKEN }}
