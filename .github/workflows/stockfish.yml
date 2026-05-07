@@ -98,6 +98,9 @@ jobs:
             > For stable, thoroughly tested builds use the [official releases](https://github.com/official/stockfish/releases).
             > Pre-releases may contain bugs.
             
+            *Some platforms ship a **universal binary** that automatically selects the best
+            instruction set for your CPU — no manual selection needed.*
+            
             ---
             
             ## Commits
@@ -105,11 +108,6 @@ jobs:
             ${{ steps.recent_commits.outputs.COMMITS }}
             
             [View all commits →](https://github.com/${{ github.repository }}/commits/master)
-            
-            
-            > [!TIP]
-            > Some platforms ship a **universal binary** that automatically selects the best
-            > instruction set for your CPU — no manual selection needed.
   Matrix:
     name: Prepare matrices
     runs-on: ubuntu-latest
