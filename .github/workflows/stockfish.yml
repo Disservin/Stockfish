@@ -70,6 +70,18 @@ jobs:
             echo "OFFICIAL_RELEASE=false" >> $GITHUB_ENV
           fi
 
+      # Get recent commits for release body
+      - name: Get commits in this push
+        id: recent_commits
+        run: |
+          COMMITS=$(git log \
+            --format="- [%h](https://github.com/${{ github.repository }}/commit/%H) %s" \
+            ${{ github.event.before }}..HEAD)
+
+          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       # Create a new pre-release, the other upload_binaries.yml will upload the binaries
       # to this pre-release.
       - name: Create Prerelease
@@ -79,6 +91,19 @@ jobs:
           name: Stockfish dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           tag_name: stockfish-dev-${{ env.COMMIT_DATE }}-${{ env.COMMIT_SHA }}
           prerelease: true
+          body: |
+            ## Recent Commits
+
+            ${{ steps.recent_commits.outputs.COMMITS }}
+
+            View all commits:
+            https://github.com/${{ github.repository }}/commits/main
+
+            ---
+
+            > **Note:** For most users we recommend official releases.
+            > Pre-releases are intended for enthusiasts who want to help test
+            > the latest development version before official releases.
   Matrix:
     name: Prepare matrices
     runs-on: ubuntu-latest

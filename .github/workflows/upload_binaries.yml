@@ -84,6 +84,15 @@ jobs:
         id: commit_date
         run: echo "COMMIT_DATE=$(git show -s --date=format:'%Y%m%d' --format=%cd HEAD)" >> $GITHUB_ENV
 
+      # Get recent commits for release body
+      - name: Get commits in this push
+        id: recent_commits
+        run: |
+          COMMITS=$(git log --format="- %h %s" ${{ github.event.before }}..HEAD)
+          echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       # Make sure that an old ci that still runs on master doesn't recreate a prerelease
       - name: Check Pullable Commits
         id: check_commits
@@ -112,3 +121,13 @@ jobs:
           prerelease: true
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
           token: ${{ secrets.token }}
+          body: |
+            ## Recent Commits
+
+            ${{ steps.recent_commits.outputs.COMMITS }}
+
+            View all commits: https://github.com/${{ github.repository }}/commits/main
+
+            ---
+
+            > **Note:** For most users we recommend our releases. Pre-releases are recommended for enthusiasts who would like to help test the latest development version ahead of official releases.
