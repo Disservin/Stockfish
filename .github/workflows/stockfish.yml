@@ -76,9 +76,8 @@ jobs:
         id: recent_commits
         run: |
           COMMITS=$(git log \
-            --format="- [%h](https://github.com/${{ github.repository }}/commit/%H) %s" \
+            --format="- [\`%h\`](https://github.com/${{ github.repository }}/commit/%H) %s" \
             ${{ github.event.before }}..HEAD)
-
           echo "COMMITS<<EOF" >> $GITHUB_OUTPUT
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
