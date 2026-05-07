@@ -121,20 +121,3 @@ jobs:
           prerelease: true
           files: stockfish-${{ matrix.config.simple_name }}-${{ matrix.binaries }}.${{ matrix.config.archive_ext }}
           token: ${{ secrets.token }}
-          body: |
-            > **Info:** Linux and Windows x86-64 releases now distribute only
-            > the universal binary, which automatically selects the best
-            > supported instruction set for your CPU and makes the old
-            > architecture-specific builds unnecessary.
-
-            ## Recent Commits
-
-            ${{ steps.recent_commits.outputs.COMMITS }}
-
-            View all commits: https://github.com/${{ github.repository }}/commits/main
-
-            ---
-
-            > **Note:** For most users we recommend official releases.
-            > Pre-releases are intended for enthusiasts who want to help test
-            > the latest development version before official releases.
