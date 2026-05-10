@@ -185,7 +185,7 @@ jobs:
     uses: ./.github/workflows/universal_compilation.yml
   Binaries:
     name: macOS uploads
-    needs: [Prerelease, Matrix, Compilation]
+    needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.macos_matrix }}
@@ -195,7 +195,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
   WindowsARM_Binaries:
     name: Windows ARM uploads
-    needs: [Prerelease, Matrix, WindowsARMCompilation]
+    needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.windows_arm_matrix }}
@@ -205,7 +205,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
   ARM_Binaries:
     name: Android uploads
-    needs: [Prerelease, Matrix, ARMCompilation]
+    needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.arm_matrix }}
@@ -215,7 +215,7 @@ jobs:
       token: ${{ secrets.GITHUB_TOKEN }}
   Universal_Binaries:
     name: Universal binaries
-    needs: [Prerelease, Matrix, UniversalCompilation]
+    needs: [Prerelease, Matrix]
     uses: ./.github/workflows/upload_binaries.yml
     with:
       matrix: ${{ needs.Matrix.outputs.universal_matrix }}
