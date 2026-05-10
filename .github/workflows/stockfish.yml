@@ -21,7 +21,7 @@ jobs:
     name: Prerelease
     if: github.repository == 'official-stockfish/Stockfish' && (github.ref == 'refs/heads/master' || (startsWith(github.ref_name, 'sf_') && github.ref_type == 'tag'))
     runs-on: ubuntu-latest
-    needs: [Matrix]
+    needs: [Matrix, Compilation, WindowsARMCompilation, ARMCompilation, UniversalCompilation]
     permissions:
       contents: write # For deleting/creating a prerelease
     steps:
@@ -95,7 +95,7 @@ jobs:
             Precompiled binaries of the latest Stockfish development version, built automatically on every commit.
             
             > [!NOTE]
-            > For stable, thoroughly tested builds use the [official releases](https://github.com/official/stockfish/releases).
+            > For stable, thoroughly tested builds use the [official releases](https://github.com/${{ github.repository }}/releases).
             > Pre-releases may contain bugs.
             
             *Some platforms ship a **universal binary** that automatically selects the best
