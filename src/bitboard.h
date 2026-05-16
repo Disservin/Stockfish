@@ -22,13 +22,13 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstring>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
 #include <initializer_list>
 #include <array>
 
+#include "bitops.h"
 #include "types.h"
 
 #ifdef __aarch64__
@@ -72,7 +72,6 @@ constexpr Bitboard Rank6BB = Rank1BB << (8 * 5);
 constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
-extern uint8_t PopCnt16[1 << 16];
 extern uint8_t SquareDistance[SQUARE_NB][SQUARE_NB];
 
 extern Bitboard BetweenBB[SQUARE_NB][SQUARE_NB];
@@ -92,8 +91,8 @@ struct Magic {
     Bitboard hyperbola(Bitboard occupied, Bitboard mask) const {
         Bitboard o   = occupied & mask;
         Bitboard fwd = o - r;
-        Bitboard rev = __rbitll(o) - rr;
-        return (fwd ^ __rbitll(rev)) & mask;
+        Bitboard rev = Bitops::bitreverse(o) - rr;
+        return (fwd ^ Bitops::bitreverse(rev)) & mask;
     }
 
     Bitboard attacks_bb(Bitboard occupied) const {
@@ -117,7 +116,7 @@ struct Magic {
     unsigned index(Bitboard occupied) const {
 
     #ifdef USE_PEXT
-        return unsigned(pext(occupied, mask));
+        return unsigned(Bitops::pext(occupied, mask));
     #else
         if (Is64Bit)
             return unsigned(((occupied & mask) * magic) >> shift);
@@ -130,7 +129,7 @@ struct Magic {
 
     Bitboard attacks_bb(Bitboard occupied) const {
     #ifdef USE_PEXT
-        return pdep(attacks[index(occupied)], pseudoAttacks);
+        return Bitops::pdep(attacks[index(occupied)], pseudoAttacks);
     #else
         return attacks[index(occupied)];
     #endif
@@ -144,6 +143,22 @@ constexpr Bitboard square_bb(Square s) {
     assert(is_ok(s));
     return 1ULL << s;
 }
+
+constexpr int constexpr_popcount(Bitboard b) { return Bitops::constexpr_popcount(b); }
+
+inline int popcount(Bitboard b) { return Bitops::popcount(b); }
+
+constexpr int constexpr_lsb(Bitboard b) { return Bitops::constexpr_lsb(b); }
+
+inline Square lsb(Bitboard b) { return Square(Bitops::lsb(b)); }
+
+inline Square msb(Bitboard b) { return Square(Bitops::msb(b)); }
+
+// Returns the bitboard of the least significant
+// square of a non-zero bitboard. It is equivalent to square_bb(lsb(bb)).
+inline Bitboard least_significant_square_bb(Bitboard b) { return Bitops::least_significant_bit(b); }
+
+inline Square pop_lsb(Bitboard& b) { return Square(Bitops::pop_lsb(b)); }
 
 
 // Overloads of bitwise operators between a Bitboard and a Square for testing
@@ -252,129 +267,6 @@ inline int distance<Square>(Square x, Square y) {
 
 inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
 
-
-constexpr int constexpr_popcount(Bitboard b) {
-    b = b - ((b >> 1) & 0x5555555555555555ULL);
-    b = (b & 0x3333333333333333ULL) + ((b >> 2) & 0x3333333333333333ULL);
-    b = (b + (b >> 4)) & 0x0F0F0F0F0F0F0F0FULL;
-    return static_cast<int>((b * 0x0101010101010101ULL) >> 56);
-}
-
-// Counts the number of non-zero bits in a bitboard.
-inline int popcount(Bitboard b) {
-
-#ifndef USE_POPCNT
-
-    std::uint16_t indices[4];
-    std::memcpy(indices, &b, sizeof(b));
-    return PopCnt16[indices[0]] + PopCnt16[indices[1]] + PopCnt16[indices[2]]
-         + PopCnt16[indices[3]];
-
-#elif defined(_MSC_VER)
-
-    return int(_mm_popcnt_u64(b));
-
-#else  // Assumed gcc or compatible compiler
-
-    return __builtin_popcountll(b);
-
-#endif
-}
-
-inline constexpr int lsb_index64[64] = {
-  0,  47, 1,  56, 48, 27, 2,  60, 57, 49, 41, 37, 28, 16, 3,  61, 54, 58, 35, 52, 50, 42,
-  21, 44, 38, 32, 29, 23, 17, 11, 4,  62, 46, 55, 26, 59, 40, 36, 15, 53, 34, 51, 20, 43,
-  31, 22, 10, 45, 25, 39, 14, 33, 19, 30, 9,  24, 13, 18, 8,  12, 7,  6,  5,  63};
-
-constexpr int constexpr_lsb(uint64_t bb) {
-    assert(bb != 0);
-    constexpr uint64_t debruijn64 = 0x03F79D71B4CB0A89ULL;
-    return lsb_index64[((bb ^ (bb - 1)) * debruijn64) >> 58];
-}
-
-// Returns the least significant bit in a non-zero bitboard.
-inline Square lsb(Bitboard b) {
-    assert(b);
-
-#if defined(__GNUC__)  // GCC, Clang, ICX
-
-    return Square(__builtin_ctzll(b));
-
-#elif defined(_MSC_VER)
-    #ifdef _WIN64  // MSVC, WIN64
-
-    unsigned long idx;
-    _BitScanForward64(&idx, b);
-    return Square(idx);
-
-    #else  // MSVC, WIN32
-    unsigned long idx;
-
-    if (b & 0xffffffff)
-    {
-        _BitScanForward(&idx, int32_t(b));
-        return Square(idx);
-    }
-    else
-    {
-        _BitScanForward(&idx, int32_t(b >> 32));
-        return Square(idx + 32);
-    }
-    #endif
-#else  // Compiler is neither GCC nor MSVC compatible
-    #error "Compiler not supported."
-#endif
-}
-
-// Returns the most significant bit in a non-zero bitboard.
-inline Square msb(Bitboard b) {
-    assert(b);
-
-#if defined(__GNUC__)  // GCC, Clang, ICX
-
-    return Square(63 ^ __builtin_clzll(b));
-
-#elif defined(_MSC_VER)
-    #ifdef _WIN64  // MSVC, WIN64
-
-    unsigned long idx;
-    _BitScanReverse64(&idx, b);
-    return Square(idx);
-
-    #else  // MSVC, WIN32
-
-    unsigned long idx;
-
-    if (b >> 32)
-    {
-        _BitScanReverse(&idx, int32_t(b >> 32));
-        return Square(idx + 32);
-    }
-    else
-    {
-        _BitScanReverse(&idx, int32_t(b));
-        return Square(idx);
-    }
-    #endif
-#else  // Compiler is neither GCC nor MSVC compatible
-    #error "Compiler not supported."
-#endif
-}
-
-// Returns the bitboard of the least significant
-// square of a non-zero bitboard. It is equivalent to square_bb(lsb(bb)).
-inline Bitboard least_significant_square_bb(Bitboard b) {
-    assert(b);
-    return b & -b;
-}
-
-// Finds and clears the least significant bit in a non-zero bitboard.
-inline Square pop_lsb(Bitboard& b) {
-    assert(b);
-    const Square s = lsb(b);
-    b &= b - 1;
-    return s;
-}
 
 namespace Bitboards {
 // Returns the bitboard of target square for the given step
