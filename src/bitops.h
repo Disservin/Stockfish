@@ -126,7 +126,7 @@ inline int msb(std::uint64_t value) {
 
 #if defined(__GNUC__)  // GCC, Clang, ICX
 
-    return 63 - __builtin_clzll(value);
+    return 63 ^ __builtin_clzll(value);
 
 #elif defined(_MSC_VER)
 
