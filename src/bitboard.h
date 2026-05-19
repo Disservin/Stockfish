@@ -36,6 +36,8 @@
     #define USE_HYPERBOLA_QUINT
 #elif defined(__loongarch__) && __loongarch_grlen == 64
     #define USE_HYPERBOLA_QUINT
+#elif defined(USE_AVX512ICL)
+    #define USE_HYPERBOLA_QUINT
 #endif
 
 namespace Stockfish {
@@ -84,9 +86,15 @@ extern Bitboard RayPassBB[SQUARE_NB][SQUARE_NB];
 #ifdef USE_HYPERBOLA_QUINT
 
 inline Bitboard reverse_bb(Bitboard bb) {
+    #if defined(__has_builtin)
+        #if __has_builtin(__builtin_bitreverse64)
+    return __builtin_bitreverse64(bb);
+        #endif
+    #endif
+
     #ifdef __aarch64__
     return __rbitll(bb);
-    #else  // loongarch
+    #else
     Bitboard out;
     asm("bitrev.d %0, %1" : "=r"(out) : "r"(bb));
     return out;
