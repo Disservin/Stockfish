@@ -263,13 +263,13 @@ Move* generate_moves(const Position& pos, Move* moveList, Bitboard target) {
     while (bb)
     {
         Square from = pop_lsb(bb);
-#ifdef USE_AVX512ICL
-        if constexpr (Pt != QUEEN)
-        {
-            moveList = splat_precomputed_moves<Pt>(moveList, from, pos.pieces(), target);
-            continue;
-        }
-#endif
+        // #ifdef USE_AVX512ICL
+        //         if constexpr (Pt != QUEEN)
+        //         {
+        //             moveList = splat_precomputed_moves<Pt>(moveList, from, pos.pieces(), target);
+        //             continue;
+        //         }
+        // #endif
         Bitboard b = attacks_bb<Pt>(from, pos.pieces()) & target;
 
         moveList = splat_moves(moveList, from, b);
@@ -305,7 +305,9 @@ Move* generate_all(const Position& pos, Move* moveList) {
     Bitboard b = Type == EVASIONS ? ~pos.pieces(Us) : target;
 
 #ifdef USE_AVX512ICL
-    moveList = splat_precomputed_moves<KING>(moveList, ksq, 0ULL, b);
+    // moveList = splat_precomputed_moves<KING>(moveList, ksq, 0ULL, b);
+    moveList = splat_moves(moveList, ksq, attacks_bb<KING>(ksq) & b);
+
 #else
     moveList = splat_moves(moveList, ksq, attacks_bb<KING>(ksq) & b);
 #endif
