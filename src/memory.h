@@ -62,7 +62,7 @@ using AdjustTokenPrivileges_t =
 namespace Stockfish {
 
 void* std_aligned_alloc(size_t alignment, size_t size);
-void  std_aligned_free(void* ptr);
+void  std_aligned_free(void* ptr, size_t alignment);
 
 // Memory aligned by page size, min alignment: 4096 bytes
 void* aligned_large_pages_alloc(size_t size);
@@ -128,7 +128,7 @@ memory_allocator(ALLOC_FUNC alloc_func, size_t num) {
     // Save the array size in the memory location
     char* raw_memory =
       reinterpret_cast<char*>(alloc_func(array_offset + num * sizeof(ElementType)));
-    ASSERT_ALIGNED(raw_memory, alignof(T));
+    ASSERT_ALIGNED(raw_memory + array_offset, alignof(T));
 
     new (raw_memory) size_t(num);
 
@@ -194,12 +194,20 @@ std::enable_if_t<std::is_array_v<T>, LargePagePtr<T>> make_unique_large_page(siz
 
 template<typename T>
 struct AlignedDeleter {
-    void operator()(T* ptr) const { return memory_deleter<T>(ptr, std_aligned_free); }
+    void operator()(T* ptr) const {
+        memory_deleter<T>(ptr, [](void* p) {
+            std_aligned_free(p, alignof(T));
+        });
+    }
 };
 
 template<typename T>
 struct AlignedArrayDeleter {
-    void operator()(T* ptr) const { return memory_deleter_array<T>(ptr, std_aligned_free); }
+    void operator()(T* ptr) const {
+        memory_deleter_array<T>(ptr, [](void* p) {
+            std_aligned_free(p, alignof(T));
+        });
+    }
 };
 
 template<typename T>
