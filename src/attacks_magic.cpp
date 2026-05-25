@@ -1,7 +1,39 @@
-#ifndef ATTACKS_MAGIC_IMPL_H_INCLUDED
-#define ATTACKS_MAGIC_IMPL_H_INCLUDED
+/*
+  Stockfish, a UCI chess playing engine derived from Glaurung 2.1
+  Copyright (C) 2004-2026 The Stockfish developers (see AUTHORS file)
 
+  Stockfish is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  Stockfish is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+#include "attacks.h"
+
+#if !defined(USE_HYPERBOLA_QUINT) && !defined(USE_DUAL_HYPERBOLA_QUINT)
+
+    #include <array>
+
+    #include "misc.h"
+
+namespace Stockfish::Attacks {
 namespace {
+
+#ifdef USE_PEXT
+using MagicMask = uint16_t;
+#else
+using MagicMask = Bitboard;
+#endif
+
+alignas(64) Magic Magics[SQUARE_NB][2];
 
 [[maybe_unused]] constexpr Bitboard constexpr_pext(Bitboard b, Bitboard m) {
     Bitboard result = 0, bit = 0;
@@ -18,10 +50,7 @@ namespace {
 constexpr
     #endif
   void
-  init_magics(PieceType             pt,
-              MagicMask             table[],
-              Magic                 magics[][2],
-              [[maybe_unused]] bool tableAlreadyInit) {
+  init_magics(PieceType pt, MagicMask table[], Magic magics[][2], [[maybe_unused]] bool tableAlreadyInit) {
     #if !defined(USE_COMPTIME_ATTACKS)
     tableAlreadyInit = false;
     #endif
@@ -34,6 +63,7 @@ constexpr
     int      epoch[4096] = {}, cnt = 0;
     Bitboard reference[4096] = {};
     #endif
+
     int size = 0;
 
     for (Square s = SQ_A1; s <= SQ_H8; ++s)
@@ -117,4 +147,28 @@ std::array<MagicMask, 0x1480>  BishopTable;
 
 }  // namespace
 
-#endif  // ATTACKS_MAGIC_IMPL_H_INCLUDED
+void init_impl() {
+    init_magics(ROOK, const_cast<MagicMask*>(RookTable.data()), Magics, true);
+    init_magics(BISHOP, const_cast<MagicMask*>(BishopTable.data()), Magics, true);
+}
+
+const Magic& magic(Square s, PieceType pt) {
+    assert((pt == BISHOP || pt == ROOK) && is_ok(s));
+    return Magics[s][pt - BISHOP];
+}
+
+Bitboard bishop_attacks_bb(Square s, Bitboard occupied) {
+    return magic(s, BISHOP).attacks_bb(occupied);
+}
+
+Bitboard rook_attacks_bb(Square s, Bitboard occupied) {
+    return magic(s, ROOK).attacks_bb(occupied);
+}
+
+std::pair<Bitboard, Bitboard> both_attacks_bb(Square s, Bitboard occupied) {
+    return {bishop_attacks_bb(s, occupied), rook_attacks_bb(s, occupied)};
+}
+
+}  // namespace Stockfish::Attacks
+
+#endif

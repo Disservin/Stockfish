@@ -1,6 +1,13 @@
 #ifndef ATTACKS_MAGIC_H_INCLUDED
 #define ATTACKS_MAGIC_H_INCLUDED
 
+#include <cstdint>
+#include <utility>
+
+#include "bitboard.h"
+
+namespace Stockfish::Attacks {
+
 // Magic holds all magic bitboards relevant data for a single square.
 struct Magic {
     Bitboard mask;
@@ -37,18 +44,12 @@ struct Magic {
     }
 };
 
+void init_impl();
 const Magic& magic(Square s, PieceType pt);
+Bitboard     bishop_attacks_bb(Square s, Bitboard occupied);
+Bitboard     rook_attacks_bb(Square s, Bitboard occupied);
+std::pair<Bitboard, Bitboard> both_attacks_bb(Square s, Bitboard occupied);
 
-inline Bitboard bishop_attacks_bb(Square s, Bitboard occupied) {
-    return magic(s, BISHOP).attacks_bb(occupied);
-}
-
-inline Bitboard rook_attacks_bb(Square s, Bitboard occupied) {
-    return magic(s, ROOK).attacks_bb(occupied);
-}
-
-inline std::pair<Bitboard, Bitboard> both_attacks_bb(Square s, Bitboard occupied) {
-    return {bishop_attacks_bb(s, occupied), rook_attacks_bb(s, occupied)};
-}
+}  // namespace Stockfish::Attacks
 
 #endif  // ATTACKS_MAGIC_H_INCLUDED

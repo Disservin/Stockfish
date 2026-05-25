@@ -22,10 +22,9 @@
 #include <array>
 #include <cassert>
 #include <initializer_list>
-#include <utility>
 
-#include "types.h"
 #include "bitboard.h"
+
 
 #ifdef __aarch64__
     #include <arm_acle.h>
@@ -37,32 +36,24 @@
     #define USE_DUAL_HYPERBOLA_QUINT
 #endif
 
+#ifdef USE_HYPERBOLA_QUINT
+    #include "attacks_hyperbola.h"
+
+#elif defined(USE_DUAL_HYPERBOLA_QUINT)
+    #include "attacks_dual_hyperbola.h"
+
+#else
+    #include "attacks_magic.h"
+
+#endif
+
 namespace Stockfish::Attacks {
 
 void init();
 
-#ifdef USE_HYPERBOLA_QUINT
-#include "attacks_hyperbola.h"
-
-#elif defined(USE_DUAL_HYPERBOLA_QUINT)
-#include "attacks_dual_hyperbola.h"
-
-#else
-#include "attacks_magic.h"
-
-#endif
-
 Bitboard line_bb(Square s1, Square s2);
 Bitboard between_bb(Square s1, Square s2);
 Bitboard ray_pass_bb(Square s1, Square s2);
-
-// Returns the bitboard of target square for the given step
-// from the given square. If the step is off the board, returns empty bitboard.
-constexpr Bitboard safe_destination(Square s, int step) {
-    constexpr auto abs = [](int v) { return v < 0 ? -v : v; };
-    Square         to  = Square(s + step);
-    return is_ok(to) && abs(file_of(s) - file_of(to)) <= 2 ? square_bb(to) : Bitboard(0);
-}
 
 constexpr Bitboard sliding_attack(PieceType pt, Square sq, Bitboard occupied) {
     Bitboard            attacks = 0, dest = 0;
@@ -170,8 +161,7 @@ inline Bitboard attacks_bb(Square s, Bitboard occupied) {
         return bishop_attacks_bb(s, occupied);
     case ROOK :
         return rook_attacks_bb(s, occupied);
-    case QUEEN :
-    {
+    case QUEEN : {
         const auto [bishop, rook] = both_attacks_bb(s, occupied);
         return bishop | rook;
     }

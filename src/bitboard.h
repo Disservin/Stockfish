@@ -103,6 +103,26 @@ constexpr Bitboard file_bb(File f) { return FileABB << f; }
 
 constexpr Bitboard file_bb(Square s) { return file_bb(file_of(s)); }
 
+constexpr Bitboard line_mask(Square sq, Direction d1, Direction d2) {
+    constexpr auto abs = [](int v) { return v < 0 ? -v : v; };
+    Bitboard mask = 0;
+    for (Direction d : {d1, d2})
+    {
+        Square s = sq;
+        for (;;)
+        {
+            Square to = Square(s + d);
+            if (!is_ok(to) || abs(file_of(s) - file_of(to)) > 2)
+                break;
+
+            Bitboard dest = square_bb(to);
+            mask |= dest;
+            s += d;
+        }
+    }
+    return mask;
+}
+
 
 // Moves a bitboard one or two steps as specified by the direction D
 template<Direction D>
@@ -155,6 +175,14 @@ inline int distance<Square>(Square x, Square y) {
 }
 
 inline int edge_distance(File f) { return std::min(f, File(FILE_H - f)); }
+
+// Returns the bitboard of target square for the given step
+// from the given square. If the step is off the board, returns empty bitboard.
+constexpr Bitboard safe_destination(Square s, int step) {
+    constexpr auto abs = [](int v) { return v < 0 ? -v : v; };
+    Square         to  = Square(s + step);
+    return is_ok(to) && abs(file_of(s) - file_of(to)) <= 2 ? square_bb(to) : Bitboard(0);
+}
 
 
 constexpr int constexpr_popcount(Bitboard b) {
