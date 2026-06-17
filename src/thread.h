@@ -20,6 +20,7 @@
 #define THREAD_H_INCLUDED
 
 #include <atomic>
+#include <array>
 #include <condition_variable>
 #include <functional>
 #include <memory>
@@ -145,6 +146,9 @@ class ThreadPool {
     u64                    nodes_searched() const;
     u64                    tb_hits() const;
     Thread*                get_best_thread() const;
+    Move                   best_pv_move(usize ply) const;
+    void                   set_best_pv(const Search::PVMoves& pv);
+    void                   clear_best_pv();
     void                   start_searching();
     void                   wait_for_search_finished() const;
 
@@ -164,9 +168,11 @@ class ThreadPool {
     auto empty() const noexcept { return threads.empty(); }
 
    private:
-    StateListPtr                         setupStates;
-    std::vector<std::unique_ptr<Thread>> threads;
-    std::vector<NumaIndex>               boundThreadToNumaNode;
+    StateListPtr                              setupStates;
+    std::vector<std::unique_ptr<Thread>>      threads;
+    std::vector<NumaIndex>                    boundThreadToNumaNode;
+    std::array<std::atomic<u16>, MAX_PLY + 1> bestPV{};
+    std::atomic<usize>                        bestPVLength = 0;
 
     u64 accumulate(RelaxedAtomic<u64> Search::Worker::* member) const {
 

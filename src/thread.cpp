@@ -144,6 +144,22 @@ Search::SearchManager* ThreadPool::main_manager() { return main_thread()->worker
 u64 ThreadPool::nodes_searched() const { return accumulate(&Search::Worker::nodes); }
 u64 ThreadPool::tb_hits() const { return accumulate(&Search::Worker::tbHits); }
 
+Move ThreadPool::best_pv_move(usize ply) const {
+    if (ply >= bestPVLength.load(std::memory_order_acquire))
+        return Move::none();
+
+    return Move(bestPV[ply].load(std::memory_order_relaxed));
+}
+
+void ThreadPool::set_best_pv(const Search::PVMoves& pv) {
+    for (usize i = 0; i < pv.size(); ++i)
+        bestPV[i].store(pv[i].raw(), std::memory_order_relaxed);
+
+    bestPVLength.store(pv.size(), std::memory_order_release);
+}
+
+void ThreadPool::clear_best_pv() { bestPVLength.store(0, std::memory_order_release); }
+
 static usize next_power_of_two(u64 count) { return count > 1 ? (2ULL << msb(count - 1)) : 1; }
 
 // Creates/destroys threads to match the requested number.
@@ -295,6 +311,7 @@ void ThreadPool::start_thinking(const OptionsMap&  options,
 
     main_manager()->stopOnPonderhit = stop = false;
     main_manager()->ponder                 = limits.ponderMode;
+    clear_best_pv();
 
     increaseDepth = true;
 

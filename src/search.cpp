@@ -514,6 +514,9 @@ bool Search::Worker::iterative_deepening() {
             {
                 lastBestMovePV    = rootMoves[0].pv;
                 lastBestMoveScore = rootMoves[0].score;
+
+                if (mainThread && !lastBestMovePV.empty())
+                    threads.set_best_pv(lastBestMovePV);
             }
         }
 
@@ -749,6 +752,10 @@ Value Search::Worker::search(
                 || ((ss - 1)->followPV
                     && (static_cast<usize>(ss->ply - 1) < lastIterationIdxPV.size()
                         && (ss - 1)->currentMove == lastIterationIdxPV[ss->ply - 1]));
+    ss->followSharedPV = !is_mainthread()
+                      && (rootNode
+                          || ((ss - 1)->followSharedPV
+                              && (ss - 1)->currentMove == threads.best_pv_move(ss->ply - 1)));
 
     // Check for the available remaining time
     if (is_mainthread())
@@ -1092,12 +1099,19 @@ moves_loop:  // When in check, search starts here
 
     value = bestValue;
 
-    int moveCount = 0;
+    int  moveCount            = 0;
+    Move deferredSharedPvMove = Move::none();
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
-    while ((move = mp.next_move()) != Move::none())
+    while ((move = mp.next_move()) != Move::none() || deferredSharedPvMove != Move::none())
     {
+        if (move == Move::none())
+        {
+            move                 = deferredSharedPvMove;
+            deferredSharedPvMove = Move::none();
+        }
+
         assert(move.is_ok());
 
         if (move == excludedMove)
@@ -1112,6 +1126,15 @@ moves_loop:  // When in check, search starts here
         // searched and those of lower "TB rank" if we are in a TB root position.
         if (rootNode && !std::count(rootMoves.begin() + pvIdx, rootMoves.begin() + pvLast, move))
             continue;
+
+        // Helper threads still search the current shared PV move, but only after
+        // giving an alternative continuation a chance first.
+        if (!is_mainthread() && ss->followSharedPV && deferredSharedPvMove == Move::none()
+            && move == threads.best_pv_move(ss->ply))
+        {
+            deferredSharedPvMove = move;
+            continue;
+        }
 
         ss->moveCount = ++moveCount;
 
@@ -1134,6 +1157,9 @@ moves_loop:  // When in check, search starts here
         int delta = beta - alpha;
 
         int r = reduction(improving, depth, moveCount, delta);
+
+        if (!is_mainthread() && ss->followSharedPV && move == threads.best_pv_move(ss->ply))
+            r += 128 * std::min(ss->ply + 1, 6);
 
         // Increase reduction for ttPv nodes (*Scaler)
         // Larger values scale well
@@ -1434,6 +1460,9 @@ moves_loop:  // When in check, search starts here
 
                 for (Move pvMove : *(ss + 1)->pv)
                     rm.pv.push_back(pvMove);
+
+                if (is_mainthread() && !pvIdx)
+                    threads.set_best_pv(rm.pv);
 
                 // We record how often the best move has been changed in each iteration.
                 // This information is used for time management. In MultiPV mode,
