@@ -44,6 +44,24 @@ struct AccumulatorCaches;
 
 using NetworkOutput = std::tuple<Value, Value>;
 
+struct NetworkHeader {
+    u32         hashValue;
+    std::string description;
+};
+
+struct LoadedNetwork {
+    std::string path;
+    std::string description;
+};
+
+struct NetworkVerificationResult {
+    bool        ok;
+    std::string requestedPath;
+    std::string loadedPath;
+    std::string infoMessage;
+    std::string errorMessage;
+};
+
 // The network must be a trivial type, i.e. the memory must be in-line.
 // This is required to allow sharing the network via shared memory, as
 // there is no way to run destructors.
@@ -68,25 +86,34 @@ class Network {
                            AccumulatorCaches& cache) const;
 
 
-    void verify(std::string evalfilePath, const std::function<void(std::string_view)>&) const;
-    NnueEvalTrace trace_evaluate(const Position&    pos,
-                                 AccumulatorStack&  accumulatorStack,
-                                 AccumulatorCaches& cache) const;
+    NetworkVerificationResult verify(std::string evalfilePath) const;
+    NnueEvalTrace             trace_evaluate(const Position&    pos,
+                                             AccumulatorStack&  accumulatorStack,
+                                             AccumulatorCaches& cache) const;
 
    private:
-    void load_user_net(const std::string&, const std::string&);
-    void load_internal();
+    std::optional<LoadedNetwork> load_user_net(const std::string&, const std::string&);
+    std::optional<LoadedNetwork> load_internal();
+    void                         apply_loaded_network(LoadedNetwork&& loaded);
 
-    void initialize();
-
-    bool                       save(std::ostream&, const std::string&, const std::string&) const;
+    bool                       save(std::ostream&, const std::string&) const;
     std::optional<std::string> load(std::istream&);
+    std::string                resolve_evalfile_path(std::string evalfilePath) const;
+    std::optional<std::string>
+    resolve_save_target(const std::optional<std::string>& filename) const;
 
-    bool read_header(std::istream&, u32*, std::string*) const;
-    bool write_header(std::ostream&, u32, const std::string&) const;
+    std::optional<NetworkHeader> read_header(std::istream&) const;
+    bool                         write_header(std::ostream&, u32, const std::string&) const;
 
-    bool read_parameters(std::istream&, std::string&);
-    bool write_parameters(std::ostream&, const std::string&) const;
+    std::optional<std::string> read_parameters(std::istream&);
+    bool                       write_parameters(std::ostream&, const std::string&) const;
+    NetworkOutput              evaluate_bucket(const Position&         pos,
+                                               AccumulatorStack&       accumulatorStack,
+                                               AccumulatorCaches&      cache,
+                                               IndexType               bucket,
+                                               TransformedFeatureType* transformedFeatures) const;
+
+    int get_bucket(const Position& pos) const { return (pos.count<ALL_PIECES>() - 1) / 4; }
 
     // Input feature converter
     FeatureTransformer featureTransformer;

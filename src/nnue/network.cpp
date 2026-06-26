@@ -24,6 +24,7 @@
 #include <optional>
 #include <type_traits>
 #include <vector>
+#include <sstream>
 
 #define INCBIN_SILENCE_BITCODE_WARNING
 #include "../incbin/incbin.h"
@@ -60,6 +61,21 @@ const unsigned int  gEmbeddedNNUESize    = 1;
 
 namespace Stockfish::Eval::NNUE {
 
+namespace {
+
+struct EvaluationBuffer {
+    static constexpr u64 alignment = CacheLineSize;
+
+    alignas(alignment) TransformedFeatureType transformedFeatures[FeatureTransformer::BufferSize];
+
+    TransformedFeatureType* data() {
+        ASSERT_ALIGNED(transformedFeatures, alignment);
+        return transformedFeatures;
+    }
+};
+
+}  // namespace
+
 
 namespace Detail {
 
@@ -85,6 +101,8 @@ bool write_parameters(std::ostream& stream, const T& reference) {
 }  // namespace Detail
 
 void Network::load(const std::string& rootDirectory, std::string evalfilePath) {
+    const std::string requestedPath = resolve_evalfile_path(std::move(evalfilePath));
+
 #if defined(DEFAULT_NNUE_DIRECTORY)
     std::vector<std::string> dirs = {"<internal>", "", rootDirectory,
                                      stringify(DEFAULT_NNUE_DIRECTORY)};
@@ -92,48 +110,43 @@ void Network::load(const std::string& rootDirectory, std::string evalfilePath) {
     std::vector<std::string> dirs = {"<internal>", "", rootDirectory};
 #endif
 
-    if (evalfilePath.empty())
-        evalfilePath = evalFile.defaultName;
-
     for (const auto& directory : dirs)
     {
-        if (std::string(evalFile.current) != evalfilePath)
+        if (std::string(evalFile.current) == requestedPath)
+            break;
+
+        std::optional<LoadedNetwork> loaded;
+
+        if (directory != "<internal>")
+            loaded = load_user_net(directory, requestedPath);
+        else if (requestedPath == std::string(evalFile.defaultName))
+            loaded = load_internal();
+
+        if (loaded)
         {
-            if (directory != "<internal>")
-                load_user_net(directory, evalfilePath);
-            else if (evalfilePath == std::string(evalFile.defaultName))
-                load_internal();
+            apply_loaded_network(std::move(*loaded));
+            break;
         }
     }
 }
 
 
 bool Network::save(const std::optional<std::string>& filename) const {
-    std::string actualFilename;
-    std::string msg;
-
-    if (filename.has_value())
-        actualFilename = filename.value();
-    else
+    const auto actualFilename = resolve_save_target(filename);
+    if (!actualFilename)
     {
-        if (std::string(evalFile.current) != std::string(evalFile.defaultName))
-        {
-            msg = "Failed to export a net. "
-                  "A non-embedded net can only be saved if the filename is specified";
-
-            sync_cout << msg << sync_endl;
-            return false;
-        }
-
-        actualFilename = evalFile.defaultName;
+        sync_cout
+          << "Failed to export a net. A non-embedded net can only be saved if the filename is specified"
+          << sync_endl;
+        return false;
     }
 
-    std::ofstream stream(actualFilename, std::ios_base::binary);
-    bool          saved = save(stream, evalFile.current, evalFile.netDescription);
+    std::ofstream stream(*actualFilename, std::ios_base::binary);
+    const bool    saved = save(stream, evalFile.netDescription);
 
-    msg = saved ? "Network saved successfully to " + actualFilename : "Failed to export a net";
-
-    sync_cout << msg << sync_endl;
+    sync_cout << (saved ? "Network saved successfully to " + *actualFilename
+                        : "Failed to export a net")
+              << sync_endl;
     return saved;
 }
 
@@ -141,103 +154,82 @@ bool Network::save(const std::optional<std::string>& filename) const {
 NetworkOutput Network::evaluate(const Position&    pos,
                                 AccumulatorStack&  accumulatorStack,
                                 AccumulatorCaches& cache) const {
+    EvaluationBuffer buffer;
 
-    constexpr u64 alignment = CacheLineSize;
-
-    alignas(alignment) TransformedFeatureType transformedFeatures[FeatureTransformer::BufferSize];
-
-    ASSERT_ALIGNED(transformedFeatures, alignment);
-
-    NNZInfo<L1> nnzInfo;
-
-    const int  bucket     = (pos.count<ALL_PIECES>() - 1) / 4;
-    const auto psqt       = featureTransformer.transform(pos, accumulatorStack, cache,
-                                                         transformedFeatures, bucket, nnzInfo);
-    const auto positional = network[bucket].propagate(transformedFeatures, nnzInfo);
-    return {static_cast<Value>(psqt / OutputScale), static_cast<Value>(positional / OutputScale)};
+    const int bucket = get_bucket(pos);
+    return evaluate_bucket(pos, accumulatorStack, cache, bucket, buffer.data());
 }
 
 
-void Network::verify(std::string                                  evalfilePath,
-                     const std::function<void(std::string_view)>& f) const {
-    if (evalfilePath.empty())
-        evalfilePath = evalFile.defaultName;
+NetworkVerificationResult Network::verify(std::string evalfilePath) const {
+    const std::string requestedPath = resolve_evalfile_path(std::move(evalfilePath));
+    const std::string loadedPath    = std::string(evalFile.current);
 
-    if (std::string(evalFile.current) != evalfilePath)
+    if (loadedPath == requestedPath)
     {
-        if (f)
-        {
-            std::string msg1 =
-              "Network evaluation parameters compatible with the engine must be available.";
-            std::string msg2 = "The network file " + evalfilePath + " was not loaded successfully.";
-            std::string msg3 = "The UCI option EvalFile might need to specify the full path, "
-                               "including the directory name, to the network file.";
-            std::string msg4 = "The default net can be downloaded from: "
-                               "https://tests.stockfishchess.org/api/nn/"
-                             + std::string(evalFile.defaultName);
-            std::string msg5 = "The engine will be terminated now.";
+        std::ostringstream info;
+        const usize size = (sizeof(featureTransformer) + sizeof(NetworkArchitecture) * LayerStacks);
+        const std::string sizeMiB = std::to_string(size / (1024 * 1024));
 
-            std::string msg = "ERROR: " + msg1 + '\n' + "ERROR: " + msg2 + '\n' + "ERROR: " + msg3
-                            + '\n' + "ERROR: " + msg4 + '\n' + "ERROR: " + msg5 + '\n';
+        const auto transformedFeatureDimensions = network[0].TransformedFeatureDimensions;
+        const auto fc0Outputs                   = network[0].FC_0_OUTPUTS;
+        const auto fc1Outputs                   = network[0].FC_1_OUTPUTS;
 
-            f(msg);
-        }
+        const std::string architecture = std::to_string(featureTransformer.InputDimensions) + ", "
+                                       + std::to_string(transformedFeatureDimensions) + ", "
+                                       + std::to_string(fc0Outputs) + ", "
+                                       + std::to_string(fc1Outputs) + ", 1";
 
-        exit(EXIT_FAILURE);
+        info << "NNUE evaluation using " << loadedPath                //
+             << " (" << sizeMiB << "MiB, (" << architecture << "))";  //
+
+        return {true, requestedPath, loadedPath, info.str(), {}};
     }
 
-    if (f)
-    {
-        usize size = sizeof(featureTransformer) + sizeof(NetworkArchitecture) * LayerStacks;
-        f("NNUE evaluation using " + evalfilePath + " (" + std::to_string(size / (1024 * 1024))
-          + "MiB, (" + std::to_string(featureTransformer.InputDimensions) + ", "
-          + std::to_string(network[0].TransformedFeatureDimensions) + ", "
-          + std::to_string(network[0].FC_0_OUTPUTS) + ", " + std::to_string(network[0].FC_1_OUTPUTS)
-          + ", 1))");
-    }
+    std::ostringstream error;
+
+    error
+      << "ERROR: Network evaluation parameters compatible with the engine must be available.\n"
+      << "ERROR: The network file " << requestedPath << " was not loaded successfully.\n"
+      << "ERROR: The UCI option EvalFile might need to specify the full path, including the directory name, to the network file.\n"
+      << "ERROR: The default net can be downloaded from: https://tests.stockfishchess.org/api/nn/"
+      << evalFile.defaultName.c_str() << '\n'
+      << "ERROR: The engine will be terminated now.\n";
+
+    return {false, requestedPath, loadedPath, {}, error.str()};
 }
 
 
 NnueEvalTrace Network::trace_evaluate(const Position&    pos,
                                       AccumulatorStack&  accumulatorStack,
                                       AccumulatorCaches& cache) const {
-
-    constexpr u64 alignment = CacheLineSize;
-
-    alignas(alignment) TransformedFeatureType transformedFeatures[FeatureTransformer::BufferSize];
-
-    ASSERT_ALIGNED(transformedFeatures, alignment);
+    EvaluationBuffer buffer;
 
     NnueEvalTrace t{};
-    t.correctBucket = (pos.count<ALL_PIECES>() - 1) / 4;
+    t.correctBucket = get_bucket(pos);
     for (IndexType bucket = 0; bucket < LayerStacks; ++bucket)
     {
-        NNZInfo<L1> nnzInfo;
-        const auto  materialist = featureTransformer.transform(pos, accumulatorStack, cache,
-                                                               transformedFeatures, bucket, nnzInfo);
-        const auto  positional  = network[bucket].propagate(transformedFeatures, nnzInfo);
-
-        t.psqt[bucket]       = static_cast<Value>(materialist / OutputScale);
-        t.positional[bucket] = static_cast<Value>(positional / OutputScale);
+        std::tie(t.psqt[bucket], t.positional[bucket]) =
+          evaluate_bucket(pos, accumulatorStack, cache, bucket, buffer.data());
     }
 
     return t;
 }
 
 
-void Network::load_user_net(const std::string& dir, const std::string& evalfilePath) {
+std::optional<LoadedNetwork> Network::load_user_net(const std::string& dir,
+                                                    const std::string& evalfilePath) {
     std::ifstream stream(dir + evalfilePath, std::ios::binary);
     auto          description = load(stream);
 
-    if (description.has_value())
-    {
-        evalFile.current        = evalfilePath;
-        evalFile.netDescription = description.value();
-    }
+    if (!description)
+        return std::nullopt;
+
+    return LoadedNetwork{evalfilePath, std::move(*description)};
 }
 
 
-void Network::load_internal() {
+std::optional<LoadedNetwork> Network::load_internal() {
     // C++ way to prepare a buffer for a memory stream
     class MemoryBuffer: public std::basic_streambuf<char> {
        public:
@@ -249,7 +241,7 @@ void Network::load_internal() {
 
 #ifdef UNIVERSAL_BINARY_MACOS_X86_SLICE
     if (gEmbeddedNNUEData == nullptr)  // failed embedded load
-        return;
+        return std::nullopt;
 #endif
 
     MemoryBuffer buffer(const_cast<char*>(reinterpret_cast<const char*>(gEmbeddedNNUEData)),
@@ -258,32 +250,56 @@ void Network::load_internal() {
     std::istream stream(&buffer);
     auto         description = load(stream);
 
-    if (description.has_value())
-    {
-        evalFile.current        = evalFile.defaultName;
-        evalFile.netDescription = description.value();
-    }
+    if (!description)
+        return std::nullopt;
+
+    return LoadedNetwork{std::string(evalFile.defaultName), std::move(*description)};
 }
 
 
-void Network::initialize() { initialized = true; }
+void Network::apply_loaded_network(LoadedNetwork&& loaded) {
+    evalFile.current        = std::move(loaded.path);
+    evalFile.netDescription = std::move(loaded.description);
+    initialized             = true;
+}
 
 
-bool Network::save(std::ostream&      stream,
-                   const std::string& name,
-                   const std::string& netDescription) const {
-    if (name.empty() || name == "None")
-        return false;
-
+bool Network::save(std::ostream& stream, const std::string& netDescription) const {
     return write_parameters(stream, netDescription);
 }
 
 
-std::optional<std::string> Network::load(std::istream& stream) {
-    initialize();
-    std::string description;
+NetworkOutput Network::evaluate_bucket(const Position&         pos,
+                                       AccumulatorStack&       accumulatorStack,
+                                       AccumulatorCaches&      cache,
+                                       IndexType               bucket,
+                                       TransformedFeatureType* transformedFeatures) const {
+    NNZInfo<L1> nnzInfo;
 
-    return read_parameters(stream, description) ? std::make_optional(description) : std::nullopt;
+    const auto psqt       = featureTransformer.transform(pos, accumulatorStack, cache,
+                                                         transformedFeatures, bucket, nnzInfo);
+    const auto positional = network[bucket].propagate(transformedFeatures, nnzInfo);
+    return {static_cast<Value>(psqt / OutputScale), static_cast<Value>(positional / OutputScale)};
+}
+
+
+std::optional<std::string> Network::load(std::istream& stream) { return read_parameters(stream); }
+
+
+std::string Network::resolve_evalfile_path(std::string evalfilePath) const {
+    return evalfilePath.empty() ? std::string(evalFile.defaultName) : std::move(evalfilePath);
+}
+
+
+std::optional<std::string>
+Network::resolve_save_target(const std::optional<std::string>& filename) const {
+    if (filename.has_value())
+        return filename;
+
+    if (std::string(evalFile.current) != std::string(evalFile.defaultName))
+        return std::nullopt;
+
+    return std::string(evalFile.defaultName);
 }
 
 
@@ -300,17 +316,21 @@ usize Network::get_content_hash() const {
 }
 
 // Read network header
-bool Network::read_header(std::istream& stream, u32* hashValue, std::string* desc) const {
-    u32 version, size;
+std::optional<NetworkHeader> Network::read_header(std::istream& stream) const {
+    const u32 version   = read_little_endian<u32>(stream);
+    const u32 hashValue = read_little_endian<u32>(stream);
+    const u32 size      = read_little_endian<u32>(stream);
 
-    version    = read_little_endian<u32>(stream);
-    *hashValue = read_little_endian<u32>(stream);
-    size       = read_little_endian<u32>(stream);
     if (!stream || version != Version)
-        return false;
-    desc->resize(size);
-    stream.read(&(*desc)[0], size);
-    return !stream.fail();
+        return std::nullopt;
+
+    NetworkHeader header{hashValue, std::string(size, '\0')};
+    stream.read(header.description.data(), size);
+
+    if (stream.fail())
+        return std::nullopt;
+
+    return header;
 }
 
 
@@ -324,20 +344,27 @@ bool Network::write_header(std::ostream& stream, u32 hashValue, const std::strin
 }
 
 
-bool Network::read_parameters(std::istream& stream, std::string& netDescription) {
-    u32 hashValue;
-    if (!read_header(stream, &hashValue, &netDescription))
-        return false;
-    if (hashValue != Network::hash)
-        return false;
+std::optional<std::string> Network::read_parameters(std::istream& stream) {
+    const auto header = read_header(stream);
+    if (!header)
+        return std::nullopt;
+
+    if (header->hashValue != Network::hash)
+        return std::nullopt;
+
     if (!Detail::read_parameters(stream, featureTransformer))
-        return false;
+        return std::nullopt;
+
     for (usize i = 0; i < LayerStacks; ++i)
     {
         if (!Detail::read_parameters(stream, network[i]))
-            return false;
+            return std::nullopt;
     }
-    return stream && stream.peek() == std::ios::traits_type::eof();
+
+    if (!(stream && stream.peek() == std::ios::traits_type::eof()))
+        return std::nullopt;
+
+    return header->description;
 }
 
 

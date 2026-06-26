@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdlib>
 #include <deque>
 #include <iosfwd>
 #include <memory>
@@ -256,7 +257,18 @@ void Engine::set_ponderhit(bool b) { threads.main_manager()->ponder = b; }
 // network related
 
 void Engine::verify_network() const {
-    network->verify(options["EvalFile"], onVerifyNetwork);
+    const auto verification = network->verify(options["EvalFile"]);
+
+    if (!verification.ok)
+    {
+        if (onVerifyNetwork)
+            onVerifyNetwork(verification.errorMessage);
+
+        exit(EXIT_FAILURE);
+    }
+
+    if (onVerifyNetwork)
+        onVerifyNetwork(verification.infoMessage);
 
     auto statuses = network.get_status_and_errors();
     for (usize i = 0; i < statuses.size(); ++i)
