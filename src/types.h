@@ -240,22 +240,61 @@ constexpr Depth DEPTH_QS = 0;
 constexpr Depth DEPTH_UNSEARCHED = -2;
 constexpr Depth DEPTH_NONE       = -3;
 
-// clang-format off
-enum Square : u8 {
-    SQ_A1, SQ_B1, SQ_C1, SQ_D1, SQ_E1, SQ_F1, SQ_G1, SQ_H1,
-    SQ_A2, SQ_B2, SQ_C2, SQ_D2, SQ_E2, SQ_F2, SQ_G2, SQ_H2,
-    SQ_A3, SQ_B3, SQ_C3, SQ_D3, SQ_E3, SQ_F3, SQ_G3, SQ_H3,
-    SQ_A4, SQ_B4, SQ_C4, SQ_D4, SQ_E4, SQ_F4, SQ_G4, SQ_H4,
-    SQ_A5, SQ_B5, SQ_C5, SQ_D5, SQ_E5, SQ_F5, SQ_G5, SQ_H5,
-    SQ_A6, SQ_B6, SQ_C6, SQ_D6, SQ_E6, SQ_F6, SQ_G6, SQ_H6,
-    SQ_A7, SQ_B7, SQ_C7, SQ_D7, SQ_E7, SQ_F7, SQ_G7, SQ_H7,
-    SQ_A8, SQ_B8, SQ_C8, SQ_D8, SQ_E8, SQ_F8, SQ_G8, SQ_H8,
-    SQ_NONE,
+enum File : u8;
+enum Rank : u8;
 
-    SQUARE_ZERO = 0,
-    SQUARE_NB   = 64
+    #if defined NDEBUG
+        #define X_ASSERT(CHECK) void(0)
+    #else
+        #define X_ASSERT(CHECK) ((CHECK) ? void(0) : [] { assert(!#CHECK); }())
+    #endif
+
+class Square {
+   public:
+    Square() = default;
+    constexpr Square(int s) :
+        value(u8(s)) {
+        X_ASSERT(within_range());
+    }
+
+    constexpr operator int() const {
+        X_ASSERT(within_range());
+        return value;
+    }
+
+    constexpr bool   is_ok() const { return value < 64; }
+    constexpr bool   within_range() const { return value < 65; }
+    constexpr Square flip_rank() const;
+    constexpr Square flip_file() const;
+    constexpr File   file() const;
+    constexpr Rank   rank() const;
+    constexpr Square relative(Color c) const;
+
+   private:
+    u8 value;
 };
+
+static_assert(sizeof(Square) == sizeof(u8));
+
+    #define SQ(Name, Value) inline constexpr Square Name(Value)
+
+// clang-format off
+SQ(SQ_A1,  0); SQ(SQ_B1,  1); SQ(SQ_C1,  2); SQ(SQ_D1,  3); SQ(SQ_E1,  4); SQ(SQ_F1,  5); SQ(SQ_G1,  6); SQ(SQ_H1,  7);
+SQ(SQ_A2,  8); SQ(SQ_B2,  9); SQ(SQ_C2, 10); SQ(SQ_D2, 11); SQ(SQ_E2, 12); SQ(SQ_F2, 13); SQ(SQ_G2, 14); SQ(SQ_H2, 15);
+SQ(SQ_A3, 16); SQ(SQ_B3, 17); SQ(SQ_C3, 18); SQ(SQ_D3, 19); SQ(SQ_E3, 20); SQ(SQ_F3, 21); SQ(SQ_G3, 22); SQ(SQ_H3, 23);
+SQ(SQ_A4, 24); SQ(SQ_B4, 25); SQ(SQ_C4, 26); SQ(SQ_D4, 27); SQ(SQ_E4, 28); SQ(SQ_F4, 29); SQ(SQ_G4, 30); SQ(SQ_H4, 31);
+SQ(SQ_A5, 32); SQ(SQ_B5, 33); SQ(SQ_C5, 34); SQ(SQ_D5, 35); SQ(SQ_E5, 36); SQ(SQ_F5, 37); SQ(SQ_G5, 38); SQ(SQ_H5, 39);
+SQ(SQ_A6, 40); SQ(SQ_B6, 41); SQ(SQ_C6, 42); SQ(SQ_D6, 43); SQ(SQ_E6, 44); SQ(SQ_F6, 45); SQ(SQ_G6, 46); SQ(SQ_H6, 47);
+SQ(SQ_A7, 48); SQ(SQ_B7, 49); SQ(SQ_C7, 50); SQ(SQ_D7, 51); SQ(SQ_E7, 52); SQ(SQ_F7, 53); SQ(SQ_G7, 54); SQ(SQ_H7, 55);
+SQ(SQ_A8, 56); SQ(SQ_B8, 57); SQ(SQ_C8, 58); SQ(SQ_D8, 59); SQ(SQ_E8, 60); SQ(SQ_F8, 61); SQ(SQ_G8, 62); SQ(SQ_H8, 63);
 // clang-format on
+
+SQ(SQ_NONE, 64);
+SQ(SQUARE_ZERO, 0);
+
+inline constexpr int SQUARE_NB = 64;
+
+    #undef SQ
 
 enum Direction : i8 {
     NORTH = 8,
@@ -292,6 +331,16 @@ enum Rank : u8 {
     RANK_8,
     RANK_NB
 };
+
+constexpr Square Square::flip_rank() const { return Square(*this ^ SQ_A8); }
+
+constexpr Square Square::flip_file() const { return Square(*this ^ SQ_H1); }
+
+constexpr File Square::file() const { return File(*this & 7); }
+
+constexpr Rank Square::rank() const { return Rank(*this >> 3); }
+
+constexpr Square Square::relative(Color c) const { return Square(*this ^ (c * 56)); }
 
 // Keep track of what a move changes on the board (used by NNUE)
 struct DirtyPiece {
@@ -367,12 +416,6 @@ constexpr Square& operator-=(Square& s, Direction d) { return s = s - d; }
 // Toggle color
 constexpr Color operator~(Color c) { return Color(c ^ BLACK); }
 
-// Swap A1 <-> A8
-constexpr Square flip_rank(Square s) { return Square(s ^ SQ_A8); }
-
-// Swap A1 <-> H1
-constexpr Square flip_file(Square s) { return Square(s ^ SQ_H1); }
-
 // Swap color of piece B_KNIGHT <-> W_KNIGHT
 constexpr Piece operator~(Piece pc) { return Piece(pc ^ 8); }
 
@@ -391,17 +434,7 @@ constexpr Color color_of(Piece pc) {
     return Color(pc >> 3);
 }
 
-constexpr bool is_ok(Square s) { return s >= SQ_A1 && s <= SQ_H8; }
-
-constexpr File file_of(Square s) { return File(s & 7); }
-
-constexpr Rank rank_of(Square s) { return Rank(s >> 3); }
-
-constexpr Square relative_square(Color c, Square s) { return Square(s ^ (c * 56)); }
-
 constexpr Rank relative_rank(Color c, Rank r) { return Rank(r ^ (c * 7)); }
-
-constexpr Rank relative_rank(Color c, Square s) { return relative_rank(c, rank_of(s)); }
 
 constexpr Direction pawn_push(Color c) { return c == WHITE ? NORTH : SOUTH; }
 

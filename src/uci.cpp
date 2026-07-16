@@ -592,7 +592,7 @@ std::string UCIEngine::wdl(Value v, const Position& pos) {
 }
 
 std::string UCIEngine::square(Square s) {
-    return std::string{char('a' + file_of(s)), char('1' + rank_of(s))};
+    return std::string{char('a' + s.file()), char('1' + s.rank())};
 }
 
 std::string UCIEngine::move(Move m, bool chess960) {
@@ -606,7 +606,7 @@ std::string UCIEngine::move(Move m, bool chess960) {
     Square to   = m.to_sq();
 
     if (m.type_of() == CASTLING && !chess960)
-        to = make_square(to > from ? FILE_G : FILE_C, rank_of(from));
+        to = make_square(to > from ? FILE_G : FILE_C, from.rank());
 
     std::string move = square(from) + square(to);
 

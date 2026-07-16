@@ -238,7 +238,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos);
 inline Color Position::side_to_move() const { return sideToMove; }
 
 inline Piece Position::piece_on(Square s) const {
-    assert(is_ok(s));
+    assert(s.is_ok());
     return board[s];
 }
 

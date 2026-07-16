@@ -94,7 +94,7 @@ struct alignas(32) DualMagic {
     Bitboard r, rr;
 
     const u8* RESTRICT rankAttacksLookup;
-    // 8 * rank_of(sq)
+    // 8 * sq.rank()
     int shift;
 
     // We always compute [bishop, rook] attacks at once, then rely on
@@ -173,7 +173,7 @@ Bitboard ray_pass_bb(Square s1, Square s2);
 constexpr Bitboard safe_destination(Square s, int step) {
     constexpr auto abs = [](int v) { return v < 0 ? -v : v; };
     Square         to  = Square(s + step);
-    return is_ok(to) && abs(file_of(s) - file_of(to)) <= 2 ? square_bb(to) : Bitboard(0);
+    return to.is_ok() && abs(s.file() - to.file()) <= 2 ? square_bb(to) : Bitboard(0);
 }
 
 constexpr Bitboard sliding_attack(PieceType pt, Square sq, Bitboard occupied) {
@@ -264,7 +264,7 @@ inline constexpr auto PawnPushOrAttacks = []() constexpr {
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s, Color c = COLOR_NB) {
 
-    assert((Pt != PAWN || c < COLOR_NB) && is_ok(s));
+    assert((Pt != PAWN || c < COLOR_NB) && s.is_ok());
     return Pt == PAWN ? PseudoAttacks[c][s] : PseudoAttacks[Pt][s];
 }
 
@@ -274,7 +274,7 @@ inline Bitboard attacks_bb(Square s, Color c = COLOR_NB) {
 template<PieceType Pt>
 inline Bitboard attacks_bb(Square s, Bitboard occupied) {
 
-    assert(Pt != PAWN && is_ok(s));
+    assert(Pt != PAWN && s.is_ok());
 
 #ifdef USE_DUAL_HYPERBOLA_QUINT
     const auto [bishop, rook] = dual_magic(s).both_attacks_bb(occupied);
@@ -309,7 +309,7 @@ inline Bitboard attacks_bb(Square s, Bitboard occupied) {
 // Sliding piece attacks do not continue past an occupied square.
 inline Bitboard attacks_bb(PieceType pt, Square s, Bitboard occupied) {
 
-    assert(pt != PAWN && is_ok(s));
+    assert(pt != PAWN && s.is_ok());
 
     switch (pt)
     {

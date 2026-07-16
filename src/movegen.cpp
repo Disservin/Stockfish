@@ -165,7 +165,7 @@ Move* generate_pawn_moves(const Position& pos, Move* moveList, Bitboard target) 
 
         if (pos.ep_square() != SQ_NONE)
         {
-            assert(rank_of(pos.ep_square()) == relative_rank(Us, RANK_6));
+            assert(pos.ep_square().rank() == relative_rank(Us, RANK_6));
 
             // An en passant capture cannot resolve a discovered check
             if (Type == EVASIONS && (target & (pos.ep_square() + Up)))

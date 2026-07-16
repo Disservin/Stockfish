@@ -232,7 +232,7 @@ void FullThreats::append_active_indices(Color perspective, const Position& pos, 
                     Square to       = pop_lsb(attacks);
                     Square from     = to - attkDir;
                     Piece  attacked = pos.piece_on(to);
-                    assert(file_of(from) != file_of(to) || type_of(attacked) == PAWN);
+                    assert(from.file() != to.file() || type_of(attacked) == PAWN);
                     IndexType index = make_index(perspective, attacker, from, to, attacked, ksq);
                     active.push_back_if_lt(index, Dimensions);
                 }

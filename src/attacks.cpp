@@ -88,8 +88,8 @@ static void init_dual_magics(DualMagic magics[]) {
         m.maskAntidiag      = line_mask(s, NORTH_WEST, SOUTH_EAST);
         m.r                 = square_bb(s) * 2;
         m.rr                = square_bb(Square(63 - int(s))) * 2;
-        m.rankAttacksLookup = RankAttacks[int(file_of(s))].data();
-        m.shift             = 8 * int(rank_of(s));
+        m.rankAttacksLookup = RankAttacks[int(s.file())].data();
+        m.shift             = 8 * int(s.rank());
     }
 }
 
@@ -127,7 +127,7 @@ void init_magics(PieceType pt, Bitboard table[], Magic magics[][2]) {
             b = (b - m.mask) & m.mask;
         } while (b);
 
-        PRNG rng(seeds[Is64Bit][rank_of(s)]);
+        PRNG rng(seeds[Is64Bit][s.rank()]);
 
         for (int i = 0; i < size;)
         {
@@ -191,23 +191,23 @@ void init() {
 const DualMagic& dual_magic(Square s) { return DualMagics[s]; }
 #else
 const Magic& magic(Square s, PieceType pt) {
-    assert((pt == BISHOP || pt == ROOK) && is_ok(s));
+    assert((pt == BISHOP || pt == ROOK) && s.is_ok());
     return Magics[s][pt - BISHOP];
 }
 #endif
 
 Bitboard line_bb(Square s1, Square s2) {
-    assert(is_ok(s1) && is_ok(s2));
+    assert(s1.is_ok() && s2.is_ok());
     return LineBB[s1][s2];
 }
 
 Bitboard between_bb(Square s1, Square s2) {
-    assert(is_ok(s1) && is_ok(s2));
+    assert(s1.is_ok() && s2.is_ok());
     return BetweenBB[s1][s2];
 }
 
 Bitboard ray_pass_bb(Square s1, Square s2) {
-    assert(is_ok(s1) && is_ok(s2));
+    assert(s1.is_ok() && s2.is_ok());
     return RayPassBB[s1][s2];
 }
 

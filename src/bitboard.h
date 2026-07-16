@@ -63,7 +63,7 @@ constexpr Bitboard Rank7BB = Rank1BB << (8 * 6);
 constexpr Bitboard Rank8BB = Rank1BB << (8 * 7);
 
 constexpr Bitboard square_bb(Square s) {
-    assert(is_ok(s));
+    assert(s.is_ok());
     return 1ULL << s;
 }
 
@@ -91,11 +91,11 @@ constexpr bool more_than_one(Bitboard b) { return b & (b - 1); }
 
 constexpr Bitboard rank_bb(Rank r) { return Rank1BB << (8 * r); }
 
-constexpr Bitboard rank_bb(Square s) { return rank_bb(rank_of(s)); }
+constexpr Bitboard rank_bb(Square s) { return rank_bb(s.rank()); }
 
 constexpr Bitboard file_bb(File f) { return FileABB << f; }
 
-constexpr Bitboard file_bb(Square s) { return file_bb(file_of(s)); }
+constexpr Bitboard file_bb(Square s) { return file_bb(s.file()); }
 
 
 // Moves a bitboard one or two steps as specified by the direction D
