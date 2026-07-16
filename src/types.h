@@ -243,32 +243,60 @@ constexpr Depth DEPTH_NONE       = -3;
 enum File : u8;
 enum Rank : u8;
 
-    #if defined NDEBUG
-        #define X_ASSERT(CHECK) void(0)
-    #else
-        #define X_ASSERT(CHECK) ((CHECK) ? void(0) : [] { assert(!#CHECK); }())
-    #endif
+enum Direction : i8 {
+    NORTH = 8,
+    EAST  = 1,
+    SOUTH = -NORTH,
+    WEST  = -EAST,
+
+    NORTH_EAST = NORTH + EAST,
+    SOUTH_EAST = SOUTH + EAST,
+    SOUTH_WEST = SOUTH + WEST,
+    NORTH_WEST = NORTH + WEST
+};
+
 
 class Square {
    public:
     Square() = default;
     constexpr Square(int s) :
-        value(u8(s)) {
-        X_ASSERT(within_range());
-    }
+        value(u8(s)) {}
 
     constexpr operator int() const {
-        X_ASSERT(within_range());
+    #if defined(__GNUC__) || defined(__clang__)
+        if (!__builtin_is_constant_evaluated())
+        {
+            assert(within_range() && "Square value must be in the range [0, 64]");
+            sf_assume(within_range());
+        }
+    #endif
         return value;
     }
 
-    constexpr bool   is_ok() const { return value < 64; }
-    constexpr bool   within_range() const { return value < 65; }
-    constexpr Square flip_rank() const;
-    constexpr Square flip_file() const;
-    constexpr File   file() const;
-    constexpr Rank   rank() const;
-    constexpr Square relative(Color c) const;
+    constexpr bool    is_ok() const { return value < 64; }
+    constexpr bool    within_range() const { return value < 65; }
+    constexpr Square& operator++();
+    constexpr Square& operator--();
+    constexpr Square  operator++(int);
+    constexpr Square  operator--(int);
+
+    friend constexpr Square operator+(Square s, Direction d) {
+        return Square(int(s.value) + int(d));
+    }
+
+    friend constexpr Square operator-(Square s, Direction d) {
+        return Square(int(s.value) - int(d));
+    }
+
+    friend constexpr Square& operator+=(Square& s, Direction d) { return s = s + d; }
+    friend constexpr Square& operator-=(Square& s, Direction d) { return s = s - d; }
+    constexpr Square         flip_rank() const;
+    constexpr Square         flip_file() const;
+    constexpr File           file() const;
+    constexpr Rank           rank() const;
+    constexpr Square         relative(Color c) const;
+
+    constexpr static bool is_ok(int s) { return 0 <= s && s < 64; }
 
    private:
     u8 value;
@@ -296,17 +324,21 @@ inline constexpr int SQUARE_NB = 64;
 
     #undef SQ
 
-enum Direction : i8 {
-    NORTH = 8,
-    EAST  = 1,
-    SOUTH = -NORTH,
-    WEST  = -EAST,
+constexpr Square& Square::operator++() { return *this = Square(value + 1); }
 
-    NORTH_EAST = NORTH + EAST,
-    SOUTH_EAST = SOUTH + EAST,
-    SOUTH_WEST = SOUTH + WEST,
-    NORTH_WEST = NORTH + WEST
-};
+constexpr Square& Square::operator--() { return *this = Square(value - 1); }
+
+constexpr Square Square::operator++(int) {
+    Square old = *this;
+    ++*this;
+    return old;
+}
+
+constexpr Square Square::operator--(int) {
+    Square old = *this;
+    --*this;
+    return old;
+}
 
 enum File : u8 {
     FILE_A,
@@ -332,15 +364,15 @@ enum Rank : u8 {
     RANK_NB
 };
 
-constexpr Square Square::flip_rank() const { return Square(*this ^ SQ_A8); }
+constexpr Square Square::flip_rank() const { return Square(value ^ 56); }
 
-constexpr Square Square::flip_file() const { return Square(*this ^ SQ_H1); }
+constexpr Square Square::flip_file() const { return Square(value ^ 7); }
 
-constexpr File Square::file() const { return File(*this & 7); }
+constexpr File Square::file() const { return File(value & 7); }
 
-constexpr Rank Square::rank() const { return Rank(*this >> 3); }
+constexpr Rank Square::rank() const { return Rank(value >> 3); }
 
-constexpr Square Square::relative(Color c) const { return Square(*this ^ (c * 56)); }
+constexpr Square Square::relative(Color c) const { return Square(value ^ (c * 56)); }
 
 // Keep track of what a move changes on the board (used by NNUE)
 struct DirtyPiece {
@@ -398,7 +430,6 @@ struct DirtyThreats {
         constexpr T& operator--(T& d) { return d = T(int(d) - 1); }
 
 ENABLE_INCR_OPERATORS_ON(PieceType)
-ENABLE_INCR_OPERATORS_ON(Square)
 ENABLE_INCR_OPERATORS_ON(File)
 ENABLE_INCR_OPERATORS_ON(Rank)
 
@@ -406,12 +437,6 @@ ENABLE_INCR_OPERATORS_ON(Rank)
 
 constexpr Direction operator+(Direction d1, Direction d2) { return Direction(int(d1) + int(d2)); }
 constexpr Direction operator*(int i, Direction d) { return Direction(i * int(d)); }
-
-// Additional operators to add a Direction to a Square
-constexpr Square  operator+(Square s, Direction d) { return Square(int(s) + int(d)); }
-constexpr Square  operator-(Square s, Direction d) { return Square(int(s) - int(d)); }
-constexpr Square& operator+=(Square& s, Direction d) { return s = s + d; }
-constexpr Square& operator-=(Square& s, Direction d) { return s = s - d; }
 
 // Toggle color
 constexpr Color operator~(Color c) { return Color(c ^ BLACK); }

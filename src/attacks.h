@@ -172,8 +172,11 @@ Bitboard ray_pass_bb(Square s1, Square s2);
 // from the given square. If the step is off the board, returns empty bitboard.
 constexpr Bitboard safe_destination(Square s, int step) {
     constexpr auto abs = [](int v) { return v < 0 ? -v : v; };
-    Square         to  = Square(s + step);
-    return to.is_ok() && abs(s.file() - to.file()) <= 2 ? square_bb(to) : Bitboard(0);
+    if (!Square::is_ok(s + step))
+        return 0;
+
+    Square to = Square(s + step);
+    return abs(s.file() - to.file()) <= 2 ? square_bb(to) : Bitboard(0);
 }
 
 constexpr Bitboard sliding_attack(PieceType pt, Square sq, Bitboard occupied) {
