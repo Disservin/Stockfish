@@ -39,6 +39,66 @@
 
 namespace Stockfish::Eval::NNUE::Layers {
 
+namespace Detail {
+
+template<int N, typename Vec>
+struct Accumulators {
+    Vec                      value;
+    Accumulators<N - 1, Vec> next;
+};
+
+template<typename Vec>
+struct Accumulators<0, Vec> {};
+
+template<int N, typename Vec>
+inline sf_always_inline void load_bias(Accumulators<N, Vec>& acc, const Vec* bias) {
+    acc.value = bias[0];
+    load_bias(acc.next, bias + 1);
+}
+
+template<typename Vec>
+inline sf_always_inline void load_bias(Accumulators<0, Vec>&, const Vec*) {}
+
+template<int N, typename Vec>
+inline sf_always_inline void set_all(Accumulators<N, Vec>& acc, Vec value) {
+    acc.value = value;
+    set_all(acc.next, value);
+}
+
+template<typename Vec>
+inline sf_always_inline void set_all(Accumulators<0, Vec>&, Vec) {}
+
+template<int N, typename OutVec, typename InVec, typename AddDpbusd>
+inline sf_always_inline void
+accumulate(Accumulators<N, OutVec>& acc, InVec in, const InVec* col, AddDpbusd add_dpbusd) {
+    add_dpbusd(acc.value, in, col[0]);
+    accumulate(acc.next, in, col + 1, add_dpbusd);
+}
+
+template<typename OutVec, typename InVec, typename AddDpbusd>
+inline sf_always_inline void accumulate(Accumulators<0, OutVec>&, InVec, const InVec*, AddDpbusd) {}
+
+template<int N, typename Vec, typename Add>
+inline sf_always_inline void
+merge_add(Accumulators<N, Vec>& acc, const Accumulators<N, Vec>& other, Add add) {
+    acc.value = add(acc.value, other.value);
+    merge_add(acc.next, other.next, add);
+}
+
+template<typename Vec, typename Add>
+inline sf_always_inline void merge_add(Accumulators<0, Vec>&, const Accumulators<0, Vec>&, Add) {}
+
+template<int N, typename Vec>
+inline sf_always_inline void store(const Accumulators<N, Vec>& acc, Vec* out) {
+    out[0] = acc.value;
+    store(acc.next, out + 1);
+}
+
+template<typename Vec>
+inline sf_always_inline void store(const Accumulators<0, Vec>&, Vec*) {}
+
+}  // namespace Detail
+
 // Sparse input implementation
 template<IndexType InDims, IndexType OutDims>
 class AffineTransformSparseInput {
@@ -166,28 +226,36 @@ class AffineTransformSparseInput {
     #endif
         constexpr IndexType OutputSimdWidth = sizeof(outvec_t) / sizeof(OutputType);
         constexpr IndexType NumAccums       = OutputDimensions / OutputSimdWidth;
-        // If we're using high-latency dot product instructions, split the accumulators
-        // into separate dependency chains and merge at the end
-        constexpr IndexType NumRegs =
-    #if (defined(USE_VNNI) && defined(USE_AVX512)) || defined(USE_NEON_DOTPROD)
-          3 * NumAccums;
-    #elif defined(USE_AVXVNNI)
-          2 * NumAccums;
-    #else
-          NumAccums;
-    #endif
 
         const outvec_t* biasvec = reinterpret_cast<const outvec_t*>(biases);
-        outvec_t        acc[NumRegs];
-        for (IndexType k = 0; k < NumAccums; ++k)
-            acc[k] = biasvec[k];
+        Detail::Accumulators<NumAccums, outvec_t> acc;
+        Detail::load_bias(acc, biasvec);
 
-    #if defined(USE_AVXVNNI)
-        for (IndexType k = NumAccums; k < NumRegs; ++k)
-            acc[k] = vec_set_32(0);
-    #elif defined(USE_NEON_DOTPROD)
-        for (IndexType k = NumAccums; k < NumRegs; ++k)
-            acc[k] = vdupq_n_s32(0);
+        const auto add_dpbusd = [](outvec_t& acc, invec_t in, invec_t col) {
+            vec_add_dpbusd_32(acc, in, col);
+        };
+
+    #if defined(USE_AVXVNNI) || defined(USE_NEON_DOTPROD) \
+      || (defined(USE_AVX512) && defined(USE_VNNI))
+        Detail::Accumulators<NumAccums, outvec_t> acc2;
+        Detail::set_all(acc2,
+        #if defined(USE_NEON_DOTPROD)
+                        vdupq_n_s32(0)
+        #else
+                        vec_set_32(0)
+        #endif
+        );
+    #endif
+
+    #if defined(USE_NEON_DOTPROD) || (defined(USE_AVX512) && defined(USE_VNNI))
+        Detail::Accumulators<NumAccums, outvec_t> acc3;
+        Detail::set_all(acc3,
+        #if defined(USE_NEON_DOTPROD)
+                        vdupq_n_s32(0)
+        #else
+                        vec_set_32(0)
+        #endif
+        );
     #endif
 
         // convince GCC to not do weird pointer arithmetic in the following loops
@@ -197,8 +265,6 @@ class AffineTransformSparseInput {
         const auto* start = nnzInfo.nnz;
         const auto* end   = nnzInfo.nnz + nnzInfo.count;
 
-        for (IndexType k = NumAccums; k < NumRegs; ++k)
-            acc[k] = vec_zero();
         #if defined(USE_VNNI)
         while (start < end - 2)
         {
@@ -214,16 +280,10 @@ class AffineTransformSparseInput {
               reinterpret_cast<const invec_t*>(&weights_cp[i1 * OutputDimensions * ChunkSize]);
             const auto col2 =
               reinterpret_cast<const invec_t*>(&weights_cp[i2 * OutputDimensions * ChunkSize]);
-            for (IndexType k = 0; k < NumAccums; ++k)
-            {
-                vec_add_dpbusd_32(acc[k], in0, col0[k]);
-                vec_add_dpbusd_32(acc[k + NumAccums], in1, col1[k]);
-                vec_add_dpbusd_32(acc[k + 2 * NumAccums], in2, col2[k]);
-            }
+            Detail::accumulate(acc, in0, col0, add_dpbusd);
+            Detail::accumulate(acc2, in1, col1, add_dpbusd);
+            Detail::accumulate(acc3, in2, col2, add_dpbusd);
         }
-
-        for (IndexType k = 0; k < NumAccums; ++k)
-            acc[k] = vec_add_32(vec_add_32(acc[k], acc[k + NumAccums]), acc[k + 2 * NumAccums]);
         #endif
 
         while (start < end)
@@ -232,8 +292,7 @@ class AffineTransformSparseInput {
             const invec_t in = vec_set_32(load_as<i32>(input + i * sizeof(i32)));
             const auto    col =
               reinterpret_cast<const invec_t*>(&weights_cp[i * OutputDimensions * ChunkSize]);
-            for (IndexType k = 0; k < NumAccums; ++k)
-                vec_add_dpbusd_32(acc[k], in, col[k]);
+            Detail::accumulate(acc, in, col, add_dpbusd);
         }
     #else
         static_assert(InputDimensions % 256 == 0);
@@ -270,8 +329,7 @@ class AffineTransformSparseInput {
 
                 if (!bits)
                 {
-                    for (IndexType l = 0; l < NumAccums; ++l)
-                        vec_add_dpbusd_32(acc[l], in0, col0[l]);
+                    Detail::accumulate(acc, in0, col0, add_dpbusd);
                     break;
                 }
 
@@ -280,11 +338,8 @@ class AffineTransformSparseInput {
                 const auto    col1 = reinterpret_cast<const invec_t*>(
                   &weights_base[i1 * OutputDimensions * ChunkSize]);
 
-                for (IndexType l = 0; l < NumAccums; ++l)
-                {
-                    vec_add_dpbusd_32(acc[l], in0, col0[l]);
-                    vec_add_dpbusd_32(acc[l + NumAccums], in1, col1[l]);
-                }
+                Detail::accumulate(acc, in0, col0, add_dpbusd);
+                Detail::accumulate(acc2, in1, col1, add_dpbusd);
             }
         #elif defined(USE_NEON_DOTPROD)
             while (bits)
@@ -295,8 +350,7 @@ class AffineTransformSparseInput {
                     const invec_t in0  = vec_set_32(load_as<i32>(base_addr + i0 * sizeof(i32)));
                     const auto    col0 = reinterpret_cast<const invec_t*>(
                       &weights_base[i0 * OutputDimensions * ChunkSize]);
-                    for (IndexType l = 0; l < NumAccums; ++l)
-                        vec_add_dpbusd_32(acc[l], in0, col0[l]);
+                    Detail::accumulate(acc, in0, col0, add_dpbusd);
                     break;
                 }
 
@@ -309,11 +363,8 @@ class AffineTransformSparseInput {
                       &weights_base[i0 * OutputDimensions * ChunkSize]);
                     const auto col1 = reinterpret_cast<const invec_t*>(
                       &weights_base[i1 * OutputDimensions * ChunkSize]);
-                    for (IndexType l = 0; l < NumAccums; ++l)
-                    {
-                        vec_add_dpbusd_32(acc[l], in0, col0[l]);
-                        vec_add_dpbusd_32(acc[l + NumAccums], in1, col1[l]);
-                    }
+                    Detail::accumulate(acc, in0, col0, add_dpbusd);
+                    Detail::accumulate(acc2, in1, col1, add_dpbusd);
                     break;
                 }
 
@@ -327,12 +378,9 @@ class AffineTransformSparseInput {
                   &weights_base[i1 * OutputDimensions * ChunkSize]);
                 const auto col2 = reinterpret_cast<const invec_t*>(
                   &weights_base[i2 * OutputDimensions * ChunkSize]);
-                for (IndexType l = 0; l < NumAccums; ++l)
-                {
-                    vec_add_dpbusd_32(acc[l], in0, col0[l]);
-                    vec_add_dpbusd_32(acc[l + NumAccums], in1, col1[l]);
-                    vec_add_dpbusd_32(acc[l + 2 * NumAccums], in2, col2[l]);
-                }
+                Detail::accumulate(acc, in0, col0, add_dpbusd);
+                Detail::accumulate(acc2, in1, col1, add_dpbusd);
+                Detail::accumulate(acc3, in2, col2, add_dpbusd);
             }
         #else
             while (bits)
@@ -348,23 +396,30 @@ class AffineTransformSparseInput {
             #endif
 
                 const invec_t in = vec_set_32(load_as<i32>(input_addr));
-                for (IndexType l = 0; l < NumAccums; ++l)
-                    vec_add_dpbusd_32(acc[l], in, col[l]);
+                Detail::accumulate(acc, in, col, add_dpbusd);
             }
         #endif
         }
 
-        #if defined(USE_AVXVNNI)
-        for (IndexType l = 0; l < NumAccums; ++l)
-            acc[l] = vec_add_32(acc[l], acc[l + NumAccums]);
-        #elif defined(USE_NEON_DOTPROD)
-        for (IndexType l = 0; l < NumAccums; ++l)
-            acc[l] = vaddq_s32(vaddq_s32(acc[l], acc[l + NumAccums]), acc[l + 2 * NumAccums]);
-        #endif
     #endif
+    #if defined(USE_AVXVNNI) || defined(USE_NEON_DOTPROD) \
+      || (defined(USE_AVX512) && defined(USE_VNNI))
+        const auto add_32 = [](outvec_t a, outvec_t b) {
+        #if defined(USE_NEON_DOTPROD)
+            return vaddq_s32(a, b);
+        #else
+            return vec_add_32(a, b);
+        #endif
+        };
+        Detail::merge_add(acc, acc2, add_32);
+    #endif
+
+    #if defined(USE_NEON_DOTPROD) || (defined(USE_AVX512) && defined(USE_VNNI))
+        Detail::merge_add(acc, acc3, add_32);
+    #endif
+
         outvec_t* outptr = reinterpret_cast<outvec_t*>(output);
-        for (IndexType k = 0; k < NumAccums; ++k)
-            outptr[k] = acc[k];
+        Detail::store(acc, outptr);
 
     #undef vec_set_32
     #undef vec_add_dpbusd_32
