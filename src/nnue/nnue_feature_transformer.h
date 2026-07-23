@@ -329,10 +329,9 @@ class FeatureTransformer {
                     uint16x8_t mul0 = vmull_u8(vqmovun_s16(acc0a), vqmovun_s16(acc1a));
                     uint16x8_t mul1 = vmull_u8(vqmovun_s16(acc0b), vqmovun_s16(acc1b));
 
-                    uint8x16x2_t uzp =
-                      vuzpq_u8(vreinterpretq_u8_u16(mul0), vreinterpretq_u8_u16(mul1));
-                    uint8x16_t pab    = vshrq_n_u8(uzp.val[1], 1);
-                    vec_t      result = reinterpret_cast<vec_t>(pab);
+                    uint8x16_t pab = vshrq_n_u8(
+                      vuzp2q_u8(vreinterpretq_u8_u16(mul0), vreinterpretq_u8_u16(mul1)), 1);
+                    vec_t result = reinterpret_cast<vec_t>(pab);
     #elif defined(USE_LSX) || defined(USE_LASX)
                     vec_t pa = vec_packus_16(acc0a, acc0b);
                     vec_t pb = vec_packus_16(acc1a, acc1b);

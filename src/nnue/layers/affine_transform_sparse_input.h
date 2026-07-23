@@ -169,9 +169,9 @@ class AffineTransformSparseInput {
         // If we're using high-latency dot product instructions, split the accumulators
         // into separate dependency chains and merge at the end
         constexpr IndexType NumRegs =
-    #if (defined(USE_VNNI) && defined(USE_AVX512)) || defined(USE_NEON_DOTPROD)
+    #if (defined(USE_VNNI) && defined(USE_AVX512))
           3 * NumAccums;
-    #elif defined(USE_AVXVNNI)
+    #elif defined(USE_AVXVNNI) || defined(USE_NEON_DOTPROD)
           2 * NumAccums;
     #else
           NumAccums;
@@ -301,37 +301,16 @@ class AffineTransformSparseInput {
                 }
 
                 const isize i1 = pop_lsb(bits);
-                if (!bits)
-                {
-                    const invec_t in0  = vec_set_32(load_as<i32>(base_addr + i0 * sizeof(i32)));
-                    const invec_t in1  = vec_set_32(load_as<i32>(base_addr + i1 * sizeof(i32)));
-                    const auto    col0 = reinterpret_cast<const invec_t*>(
-                      &weights_base[i0 * OutputDimensions * ChunkSize]);
-                    const auto col1 = reinterpret_cast<const invec_t*>(
-                      &weights_base[i1 * OutputDimensions * ChunkSize]);
-                    for (IndexType l = 0; l < NumAccums; ++l)
-                    {
-                        vec_add_dpbusd_32(acc[l], in0, col0[l]);
-                        vec_add_dpbusd_32(acc[l + NumAccums], in1, col1[l]);
-                    }
-                    break;
-                }
-
-                const isize   i2   = pop_lsb(bits);
                 const invec_t in0  = vec_set_32(load_as<i32>(base_addr + i0 * sizeof(i32)));
                 const invec_t in1  = vec_set_32(load_as<i32>(base_addr + i1 * sizeof(i32)));
-                const invec_t in2  = vec_set_32(load_as<i32>(base_addr + i2 * sizeof(i32)));
                 const auto    col0 = reinterpret_cast<const invec_t*>(
                   &weights_base[i0 * OutputDimensions * ChunkSize]);
                 const auto col1 = reinterpret_cast<const invec_t*>(
                   &weights_base[i1 * OutputDimensions * ChunkSize]);
-                const auto col2 = reinterpret_cast<const invec_t*>(
-                  &weights_base[i2 * OutputDimensions * ChunkSize]);
                 for (IndexType l = 0; l < NumAccums; ++l)
                 {
                     vec_add_dpbusd_32(acc[l], in0, col0[l]);
                     vec_add_dpbusd_32(acc[l + NumAccums], in1, col1[l]);
-                    vec_add_dpbusd_32(acc[l + 2 * NumAccums], in2, col2[l]);
                 }
             }
         #else
@@ -359,7 +338,7 @@ class AffineTransformSparseInput {
             acc[l] = vec_add_32(acc[l], acc[l + NumAccums]);
         #elif defined(USE_NEON_DOTPROD)
         for (IndexType l = 0; l < NumAccums; ++l)
-            acc[l] = vaddq_s32(vaddq_s32(acc[l], acc[l + NumAccums]), acc[l + 2 * NumAccums]);
+            acc[l] = vaddq_s32(acc[l], acc[l + NumAccums]);
         #endif
     #endif
         outvec_t* outptr = reinterpret_cast<outvec_t*>(output);

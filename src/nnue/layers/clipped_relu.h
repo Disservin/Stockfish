@@ -103,19 +103,21 @@ class ClippedReLU {
         constexpr IndexType Start = NumChunks * 16;
 
 #elif defined(USE_NEON)
-        constexpr IndexType    NumChunks = InputDimensions / (SimdWidth / 2);
-        const SIMD::vec_i8x8_t Zero      = {0};
+        constexpr IndexType    NumChunks = InputDimensions / SimdWidth;
+        const SIMD::vec_i8x16_t Zero     = {0};
         const auto             in        = reinterpret_cast<const SIMD::vec_i32x4_t*>(input);
-        const auto             out       = reinterpret_cast<SIMD::vec_i8x8_t*>(output);
+        const auto             out       = reinterpret_cast<SIMD::vec_i8x16_t*>(output);
         for (IndexType i = 0; i < NumChunks; ++i)
         {
-            int16x8_t  shifted;
-            const auto pack = reinterpret_cast<int16x4_t*>(&shifted);
-            pack[0]         = vqshrn_n_s32(in[i * 2 + 0], WeightScaleBitsLocal);
-            pack[1]         = vqshrn_n_s32(in[i * 2 + 1], WeightScaleBitsLocal);
-            out[i]          = vmax_s8(vqmovn_s16(shifted), Zero);
+            const int16x8_t words0 =
+              vcombine_s16(vqshrn_n_s32(in[i * 4 + 0], WeightScaleBitsLocal),
+                            vqshrn_n_s32(in[i * 4 + 1], WeightScaleBitsLocal));
+            const int16x8_t words1 =
+              vcombine_s16(vqshrn_n_s32(in[i * 4 + 2], WeightScaleBitsLocal),
+                            vqshrn_n_s32(in[i * 4 + 3], WeightScaleBitsLocal));
+            out[i] = vmaxq_s8(vcombine_s8(vqmovn_s16(words0), vqmovn_s16(words1)), Zero);
         }
-        constexpr IndexType Start = NumChunks * (SimdWidth / 2);
+        constexpr IndexType Start = NumChunks * SimdWidth;
 
 #elif defined(USE_LASX)
         constexpr IndexType NumChunks = InputDimensions / 32;

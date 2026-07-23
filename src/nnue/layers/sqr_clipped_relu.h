@@ -194,10 +194,12 @@ class SqrClippedReLU {
               vcombine_s16(vqmovn_s32(in[i * 4 + 2]), vqmovn_s32(in[i * 4 + 3]));
             // Neon needs to shift by one more since the used simd instruction does
             // `Saturating Doubling Multiply High` (doubling before shift by 16).
-            const int16x8_t r0 = vshrq_n_s16(vqdmulhq_s16(words0, words0), SimdShiftAmount + 1);
-            const int16x8_t r1 = vshrq_n_s16(vqdmulhq_s16(words1, words1), SimdShiftAmount + 1);
+            const int8x8_t r0 = vqshrn_n_s16(vqdmulhq_s16(words0, words0),
+                                             SimdShiftAmount + 1);
+            const int8x8_t r1 = vqshrn_n_s16(vqdmulhq_s16(words1, words1),
+                                             SimdShiftAmount + 1);
 
-            out[i] = vcombine_s8(vqmovn_s16(r0), vqmovn_s16(r1));
+            out[i] = vcombine_s8(r0, r1);
         }
         constexpr IndexType Start = NumChunks * 16;
 
