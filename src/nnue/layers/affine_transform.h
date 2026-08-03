@@ -271,6 +271,9 @@ class AffineTransform {
 
             IndexType i = 0;
     #if defined(USE_VNNI) || defined(USE_NEON_DOTPROD)
+            #if defined(__clang__)
+            #pragma clang loop unroll(disable)
+            #endif
             for (; i < NumChunks; i += 2)
             {
                 const vec_t in0 = vec_load_32(input + i * sizeof(i32));
@@ -294,6 +297,9 @@ class AffineTransform {
                 acc[k] = vec_add_32(acc[k], acc[k + NumAccums]);
         #endif
     #endif
+            #if defined(__clang__)
+            #pragma clang loop unroll(disable)
+            #endif
             for (; i < NumChunks; ++i)
             {
                 const vec_t in0 = vec_load_32(input + i * sizeof(i32));
@@ -355,6 +361,9 @@ class AffineTransform {
             vec_t               sum0      = vec_setzero();
             const auto          row0      = reinterpret_cast<const vec_t*>(&weights[0]);
 
+            #if defined(__clang__)
+            #pragma clang loop unroll(disable)
+            #endif
             for (int j = 0; j < int(NumChunks); ++j)
             {
                 const vec_t in = inputVector[j];
