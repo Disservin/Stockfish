@@ -18,6 +18,7 @@
 
 #include "movepick.h"
 
+#include <algorithm>
 #include <cassert>
 #include <limits>
 #include <utility>
@@ -29,6 +30,22 @@
 namespace Stockfish {
 
 namespace {
+
+constexpr int QuietScoreScale       = 8;
+constexpr int EvasionCaptureScore   = 30000;
+constexpr int goodQuietThreshold    = -14000 / QuietScoreScale;
+constexpr int ExtMoveScoreSentinel  = std::numeric_limits<i16>::min();
+constexpr int ExtMoveScoreLowest    = ExtMoveScoreSentinel + 1;
+
+static_assert(sizeof(ExtMove) == 4);
+
+int to_i16_score(int value) {
+    return std::clamp<int>(value, ExtMoveScoreLowest, std::numeric_limits<i16>::max());
+}
+
+i16 quiet_score(int value) { return i16(to_i16_score(value / QuietScoreScale)); }
+
+i16 evasion_score(int value) { return i16(to_i16_score(value)); }
 
 enum Stages {
     // generate main search moves
@@ -56,172 +73,21 @@ enum Stages {
     QCAPTURE
 };
 
-#ifdef USE_AVX512
-
-alignas(16) inline constexpr std::array<std::uint8_t, 16> IotaBytes = {
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-
-alignas(16) inline constexpr std::array<std::uint8_t, 16> PackLoBytes = {
-  0, 16, 1, 17, 2, 18, 3, 19, 4, 20, 5, 21, 6, 22, 7, 23};
-
-alignas(16) inline constexpr std::array<std::uint8_t, 16> PackHiBytes = {
-  8, 24, 9, 25, 10, 26, 11, 27, 12, 28, 13, 29, 14, 30, 15, 31};
-
-inline __m512i expand_indices(const std::array<std::uint8_t, 16>& bytes) noexcept {
-    return _mm512_cvtepu8_epi32(_mm_loadu_si128(reinterpret_cast<const __m128i*>(bytes.data())));
-}
-
-// Maintains up to 16 moves in descending score order.
-//
-// Moves and scores are kept in separate 16-lane vectors. To insert a move,
-// all scores are compared in parallel to find the insertion point. The
-// resulting mask is converted into permutation indices that shift every lane
-// after that point one position to the right, leaving one lane for the new
-// move and score.
-//
-// Unused score lanes contain INT_MIN, which guarantees an insertion point for
-// every valid score. When writing the result, the move and score vectors are
-// interleaved again to reconstruct ExtMove objects.
-struct MoveSorter {
-    static constexpr isize MAX_ELEMENTS = 16;
-
-    __m512i sortedValues;
-    __m512i sortedMoves;
-    __m512i iota;
-
-    explicit MoveSorter(const ExtMove& first) {
-        sortedMoves  = _mm512_set1_epi32(first.raw());
-        sortedValues = _mm512_set1_epi32(first.value);
-
-        iota = expand_indices(IotaBytes);
-
-        // Set the uninitialized move values to INT_MIN, so that they sort less than any other move
-        sortedValues = _mm512_mask_set1_epi32(sortedValues, static_cast<__mmask16>(0xFFFE),
-                                              std::numeric_limits<int>::min());
-    }
-
-    void insert(const ExtMove& m) {
-        assert(m.value != std::numeric_limits<int>::min());
-
-        const __m512i value = _mm512_set1_epi32(m.value);
-        const __m512i move  = _mm512_set1_epi32(m.raw());
-
-        const __mmask16 beyond = _mm512_cmplt_epi32_mask(sortedValues, value);
-
-        // INT_MIN sentinels guarantee at least one bit is set.
-        assert(beyond != 0);
-
-        // If beyond = 11111000...
-        // subtracting 1 gives 11110111...
-        // i.e. every lane except the insertion lane.
-        const __mmask16 allButInsertion = _kadd_mask16(beyond, static_cast<__mmask16>(0xFFFF));
-
-        // movm gives -1 for set mask bits and 0 otherwise.
-        //
-        // index:
-        //   before insertion -> iota
-        //   insertion onward -> iota - 1
-        const __m512i index = _mm512_add_epi32(iota, _mm512_movm_epi32(beyond));
-
-        sortedValues = _mm512_mask_permutexvar_epi32(value, allButInsertion, index, sortedValues);
-
-        sortedMoves = _mm512_mask_permutexvar_epi32(move, allButInsertion, index, sortedMoves);
-    }
-
-    void write_sorted(ExtMove* moves, isize count) const {
-        static_assert(sizeof(ExtMove) == 8);
-
-        assert(count >= 1);
-        assert(count <= MAX_ELEMENTS);
-
-        //
-        // First 8 ExtMoves
-        //
-        const __m512i loIndices = expand_indices(PackLoBytes);
-
-        const __m512i lo = _mm512_permutex2var_epi32(sortedMoves, loIndices, sortedValues);
-
-        // count is <= 16. Truncation to __mmask8 intentionally
-        // gives 0xFF when count >= 8.
-        const __mmask8 loMask = static_cast<__mmask8>((1u << count) - 1u);
-
-        _mm512_mask_storeu_epi64(moves, loMask, lo);
-
-        if (count <= 8)
-            return;
-
-        const __m512i hiIndices = expand_indices(PackHiBytes);
-
-        const __m512i hi = _mm512_permutex2var_epi32(sortedMoves, hiIndices, sortedValues);
-
-        const __mmask8 hiMask = static_cast<__mmask8>((1u << (count - 8)) - 1u);
-
-        _mm512_mask_storeu_epi64(moves + 8, hiMask, hi);
-    }
-};
-#endif
-
 // Sort moves in descending order up to and including a given limit.
 // The order of moves smaller than the limit is left unspecified.
 void partial_insertion_sort(ExtMove* begin, ExtMove* end, int limit) {
-    ExtMove* sortedEnd = begin;
-    ExtMove* p;
+    assert(limit >= ExtMoveScoreSentinel && limit <= std::numeric_limits<i16>::max());
+    ExtMove *sortedEnd = begin, *p = begin + 1;
 
-#ifdef USE_AVX512
-
-    if (begin == end)
-        return;
-
-    p = begin + 1;
-
-    MoveSorter sorter(*begin);
-
-    isize count = 1;
-
-    for (; p != end; ++p)
-    {
-        if (p->value < limit)
-            continue;
-
-        if (count == MoveSorter::MAX_ELEMENTS)
-            break;
-
-        sorter.insert(*p);
-
-        *p = begin[count];
-        ++count;
-    }
-
-    sorter.write_sorted(begin, count);
-
-    sortedEnd = begin + count - 1;
-
-#else
-
-    p = begin + 1;
-
-#endif
-
-    // Scalar implementation.
-    for (; p != end; ++p)
-    {
-        if (p->value < limit)
-            continue;
-
-        ExtMove tmp = *p;
-
-        *p = *++sortedEnd;
-
-        ExtMove* q = sortedEnd;
-
-        while (q != begin && *(q - 1) < tmp)
+    for (; p < end; ++p)
+        if (p->value >= limit)
         {
-            *q = *(q - 1);
-            --q;
+            ExtMove tmp = *p, *q;
+            *p          = *++sortedEnd;
+            for (q = sortedEnd; q != begin && *(q - 1) < tmp; --q)
+                *q = *(q - 1);
+            *q = tmp;
         }
-
-        *q = tmp;
-    }
 }
 
 }  // namespace
@@ -304,39 +170,42 @@ ExtMove* MovePicker::score(const MoveList<Type>& ml) {
         const Piece     capturedPiece = pos.piece_on(to);
 
         if constexpr (Type == CAPTURES)
-            m.value = (*captureHistory)[pc][to][type_of(capturedPiece)]
-                    + 7 * int(PieceValue[capturedPiece]);
+            m.value = i16((*captureHistory)[pc][to][type_of(capturedPiece)]
+                        + 7 * int(PieceValue[capturedPiece]));
 
         else if constexpr (Type == QUIETS)
         {
             // histories
-            m.value = 2 * (*mainHistory)[us][m.raw()];
-            m.value += 2 * sharedHistory->pawn_entry(pos)[pc][to];
-            m.value += (*continuationHistory[0])[pc][to];
-            m.value += (*continuationHistory[1])[pc][to];
-            m.value += (*continuationHistory[2])[pc][to];
-            m.value += (*continuationHistory[3])[pc][to];
-            m.value += (*continuationHistory[5])[pc][to];
+            int value = 2 * (*mainHistory)[us][m.raw()];
+            value += 2 * sharedHistory->pawn_entry(pos)[pc][to];
+            value += (*continuationHistory[0])[pc][to];
+            value += (*continuationHistory[1])[pc][to];
+            value += (*continuationHistory[2])[pc][to];
+            value += (*continuationHistory[3])[pc][to];
+            value += (*continuationHistory[5])[pc][to];
 
             // bonus for checks
-            m.value += ((pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * 16384;
+            value += ((pos.check_squares(pt) & to) && pos.see_ge(m, -75)) * 16384;
 
             // penalty for moving to a square threatened by a lesser piece
             // or bonus for escaping an attack by a lesser piece.
             int v = 20 * (bool(threatByLesser[pt] & from) - bool(threatByLesser[pt] & to));
-            m.value += PieceValue[pt] * v;
+            value += PieceValue[pt] * v;
 
 
             if (ply < LOW_PLY_HISTORY_SIZE)
-                m.value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+                value += 8 * (*lowPlyHistory)[ply][m.raw()] / (1 + ply);
+
+            m.value = quiet_score(value);
         }
 
         else  // Type == EVASIONS
         {
             if (pos.capture_stage(m))
-                m.value = PieceValue[capturedPiece] + (1 << 28);
+                m.value = i16(EvasionCaptureScore + PieceValue[capturedPiece]);
             else
-                m.value = (*mainHistory)[us][m.raw()] + (*continuationHistory[0])[pc][to];
+                m.value = evasion_score((*mainHistory)[us][m.raw()]
+                                      + (*continuationHistory[0])[pc][to]);
         }
     }
     return it;
@@ -358,8 +227,6 @@ Move MovePicker::select(Pred filter) {
 // new pseudo-legal move on every call until there are no more moves left,
 // picking the move with the highest score from a list of generated moves.
 Move MovePicker::next_move() {
-
-    constexpr int goodQuietThreshold = -14000;
 top:
     switch (stage)
     {
@@ -379,7 +246,7 @@ top:
         cur = endBadCaptures = moves;
         endCur = endCaptures = score<CAPTURES>(ml);
 
-        partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
+        partial_insertion_sort(cur, endCur, ExtMoveScoreSentinel);
         ++stage;
         goto top;
     }
@@ -403,7 +270,7 @@ top:
 
             endCur = endGenerated = score<QUIETS>(ml);
 
-            partial_insertion_sort(cur, endCur, -3560 * depth);
+            partial_insertion_sort(cur, endCur, -3560 * depth / QuietScoreScale);
         }
 
         ++stage;
@@ -443,7 +310,7 @@ top:
         cur    = moves;
         endCur = endGenerated = score<EVASIONS>(ml);
 
-        partial_insertion_sort(cur, endCur, std::numeric_limits<int>::min());
+        partial_insertion_sort(cur, endCur, ExtMoveScoreSentinel);
         ++stage;
         [[fallthrough]];
     }
