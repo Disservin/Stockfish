@@ -429,6 +429,7 @@ class FeatureTransformer {
 #endif
     }
 
+   public:
     alignas(CacheLineSize) BiasesArray biases;
     alignas(CacheLineSize) WeightArray weights;
 
