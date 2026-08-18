@@ -71,6 +71,20 @@ jobs:
           echo "$COMMITS" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Get Latest Dev Prerelease Tag
+        if: steps.prerelease_metadata.outputs.release_tag != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA_TAG=$(gh release list --repo "${{ github.repository }}" --exclude-drafts --limit 100 --json tagName,isPrerelease | jq -r 'map(select(.isPrerelease)) | first | .tagName // "null"')
+          echo "COMMIT_SHA_TAG=$COMMIT_SHA_TAG" >> "$GITHUB_ENV"
+
+      - name: Delete Previous Dev Prerelease
+        if: steps.prerelease_metadata.outputs.release_tag != '' && env.COMMIT_SHA_TAG != 'null'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete "${{ env.COMMIT_SHA_TAG }}" --repo "${{ github.repository }}" --cleanup-tag
+
       - name: Create Draft Prerelease
         if: steps.prerelease_metadata.outputs.release_tag != ''
         uses: softprops/action-gh-release@4634c16e79c963813287e889244c50009e7f0981
