@@ -144,4 +144,4 @@ jobs:
       - name: Publish Draft Official Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${{ needs.OfficialReleaseDraft.outputs.release_tag }}" --draft=false --prerelease=false
+        run: gh release edit "${{ needs.OfficialReleaseDraft.outputs.release_tag }}" --repo "${{ github.repository }}" --draft=false --prerelease=false

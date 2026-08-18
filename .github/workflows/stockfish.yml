@@ -189,4 +189,4 @@ jobs:
       - name: Publish Draft Prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh release edit "${{ needs.Prerelease.outputs.release_tag }}" --draft=false --prerelease
+        run: gh release edit "${{ needs.Prerelease.outputs.release_tag }}" --repo "${{ github.repository }}" --draft=false --prerelease
