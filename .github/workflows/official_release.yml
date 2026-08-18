@@ -19,20 +19,20 @@ jobs:
   Matrix:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.set-matrix.outputs.matrix }}
+      universal_matrix: ${{ steps.set-universal-matrix.outputs.universal_matrix }}
       arm_matrix: ${{ steps.set-arm-matrix.outputs.arm_matrix }}
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - id: set-matrix
+      - id: set-universal-matrix
         run: |
-          TASKS=$(echo $(cat .github/ci/matrix.json) )
-          echo "MATRIX=$TASKS" >> $GITHUB_OUTPUT
+          UNIVERSAL_MATRIX=$(jq -c '.' .github/ci/universal_matrix.json)
+          echo "UNIVERSAL_MATRIX=$UNIVERSAL_MATRIX" >> $GITHUB_OUTPUT
       - id: set-arm-matrix
         run: |
-          TASKS_ARM=$(echo $(cat .github/ci/arm_matrix.json) )
-          echo "ARM_MATRIX=$TASKS_ARM" >> $GITHUB_OUTPUT
+          ARM_MATRIX=$(jq -c '.' .github/ci/arm_matrix.json)
+          echo "ARM_MATRIX=$ARM_MATRIX" >> $GITHUB_OUTPUT
 
   OfficialReleaseDraft:
     if: github.repository == 'official-stockfish/Stockfish'
@@ -98,11 +98,9 @@ jobs:
           printf '%s' "$RELEASE_NOTES" > "$NOTES_FILE"
           gh release create "${{ inputs.release_tag }}" --draft --title "${{ inputs.release_title }}" --notes-file "$NOTES_FILE"
 
-  Compilation:
+  UniversalCompilation:
     needs: [Matrix]
-    uses: ./.github/workflows/compilation.yml
-    with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
+    uses: ./.github/workflows/universal_compilation.yml
 
   ARMCompilation:
     needs: [Matrix]
@@ -112,10 +110,10 @@ jobs:
 
   OfficialBinaries:
     if: github.repository == 'official-stockfish/Stockfish'
-    needs: [OfficialReleaseDraft, Matrix, Compilation]
+    needs: [OfficialReleaseDraft, Matrix, UniversalCompilation]
     uses: ./.github/workflows/upload_binaries.yml
     with:
-      matrix: ${{ needs.Matrix.outputs.matrix }}
+      matrix: ${{ needs.Matrix.outputs.universal_matrix }}
       release_tag: ${{ needs.OfficialReleaseDraft.outputs.release_tag }}
       release_prerelease: false
     permissions:
@@ -135,3 +133,15 @@ jobs:
       contents: write # For uploading release assets
     secrets:
       token: ${{ secrets.GITHUB_TOKEN }}
+
+  PublishOfficialRelease:
+    if: github.repository == 'official-stockfish/Stockfish'
+    needs: [OfficialReleaseDraft, OfficialBinaries, OfficialARMBinaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # For publishing the draft release
+    steps:
+      - name: Publish Draft Official Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ needs.OfficialReleaseDraft.outputs.release_tag }}" --draft=false --prerelease=false
