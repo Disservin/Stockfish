@@ -643,14 +643,20 @@ ifdef COMPCXX
 	CXX=$(COMPCXX)
 endif
 
+# Optional compiler launcher, used by CI to enable sccache without changing the
+# compiler selected for a particular architecture or platform.
+ifneq ($(strip $(CXX_WRAPPER)),)
+	CXX := $(CXX_WRAPPER) $(CXX)
+endif
+
 # llvm-profdata must be version compatible with the specified CXX (be it clang, or the gcc alias)
 # make -j profile-build CXX=clang++-20 COMP=clang
 # Locate the version in the same directory as the compiler used,
 # with fallback to a generic one if it can't be located
-	LLVM_PROFDATA := $(dir $(realpath $(shell which $(CXX) 2> /dev/null)))llvm-profdata
+	LLVM_PROFDATA := $(dir $(realpath $(shell which $(lastword $(CXX)) 2> /dev/null)))llvm-profdata
 # for icx
 ifeq ($(wildcard $(LLVM_PROFDATA)),)
-	LLVM_PROFDATA := $(dir $(realpath $(shell which $(CXX) 2> /dev/null)))/compiler/llvm-profdata
+	LLVM_PROFDATA := $(dir $(realpath $(shell which $(lastword $(CXX)) 2> /dev/null)))/compiler/llvm-profdata
 endif
 ifeq ($(wildcard $(LLVM_PROFDATA)),)
 	LLVM_PROFDATA := llvm-profdata

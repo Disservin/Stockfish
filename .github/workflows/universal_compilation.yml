@@ -5,6 +5,9 @@ jobs:
   UniversalLinux:
     name: Linux
     runs-on: ubuntu-22.04
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     defaults:
       run:
         shell: bash
@@ -18,6 +21,9 @@ jobs:
         uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2.0
         with:
           version: 15
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@31aa4a8e85e109bef00f1d838613fcc6ec421271 # v5.0
@@ -59,6 +65,9 @@ jobs:
   UniversalWindows:
     name: Windows
     runs-on: windows-2022
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     defaults:
       run:
         shell: msys2 {0}
@@ -73,6 +82,9 @@ jobs:
         with:
           msystem: mingw64
           install: mingw-w64-x86_64-gcc make git zip
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@31aa4a8e85e109bef00f1d838613fcc6ec421271 # v5.0
@@ -116,6 +128,9 @@ jobs:
   UniversalLinuxARM64:
     name: Linux arm64
     runs-on: ubuntu-22.04-arm
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     defaults:
       run:
         shell: bash
@@ -129,6 +144,9 @@ jobs:
         uses: egor-tensin/setup-gcc@a2861a8b8538f49cf2850980acccf6b05a1b2ae4 # v2.0
         with:
           version: 15
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Install qemu-user
         run: |
@@ -169,6 +187,9 @@ jobs:
   UniversalWindowsARM64:
     name: Windows arm64
     runs-on: windows-11-arm
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     defaults:
       run:
         shell: msys2 {0}
@@ -183,6 +204,9 @@ jobs:
         with:
           msystem: clangarm64
           install: mingw-w64-clang-aarch64-clang make git zip
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=arm64-universal profile-build COMP=clang COMPCXX=clang++
@@ -221,6 +245,9 @@ jobs:
   UniversalMacOS:
     name: macOS
     runs-on: macos-15
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     defaults:
       run:
         shell: bash
@@ -229,6 +256,9 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       # macos-15 is Apple silicon; Rosetta 2 is needed to exercise the x86-64 slice
       - name: Install Rosetta 2
@@ -263,11 +293,16 @@ jobs:
         shell: bash
     env:
       QEMU_DEB: https://launchpad.net/ubuntu/+archive/primary/+files/qemu-user_9.2.1+ds-1ubuntu5_amd64.deb
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Install clang and the riscv cross runtime
         run: |

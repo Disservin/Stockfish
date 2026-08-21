@@ -9,6 +9,8 @@ jobs:
       COMPCXX: ${{ matrix.config.compiler }}
       COMP: ${{ matrix.config.comp }}
       CXXFLAGS: "-Werror"
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -51,6 +53,9 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Download required linux packages
         run: |

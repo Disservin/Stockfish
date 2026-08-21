@@ -7,6 +7,9 @@ jobs:
   wasm:
     name: wasm (${{ matrix.arch }})
     runs-on: ubuntu-latest
+    env:
+      CXX_WRAPPER: sccache
+      SCCACHE_GHA_ENABLED: "true"
     strategy:
       fail-fast: false
       matrix:
@@ -20,6 +23,9 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Install emsdk
         working-directory: .
