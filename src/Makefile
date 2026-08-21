@@ -645,6 +645,7 @@ endif
 
 # Optional compiler launcher, used by CI to enable sccache without changing the
 # compiler selected for a particular architecture or platform.
+CXX_BASE := $(CXX)
 ifneq ($(strip $(CXX_WRAPPER)),)
 	CXX := $(CXX_WRAPPER) $(CXX)
 endif
@@ -1513,7 +1514,7 @@ $(TEMP_DIR)/%/.setup: | $(TEMP_DIR)
 $(TEMP_DIR)/%/stockfish.o: $(TEMP_DIR)/%/.setup $(NNUE_EMBED_OBJ) $(NET_SENTINEL)
 	+ENV_CXXFLAGS='$(ENV_CXXFLAGS) $(call arch-cxxflags,$*)' \
 	    $(MAKE) -C $(TEMP_DIR)/$* $(UOBJ_TGT) \
-	        ARCH=$* CXX=$(CXX) COMP=$(COMP) \
+	        ARCH=$* CXX=$(CXX_BASE) COMP=$(COMP) \
 	        NNUE_EMBED_OBJ=$(NNUE_EMBED_OBJ)
 ifeq ($(TARGET_KERNEL),Darwin)
 # Rename the initializer section
