@@ -77,14 +77,15 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
+
       - name: Setup msys and install required packages
         uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
         with:
           msystem: mingw64
+          path-type: inherit
           install: mingw-w64-x86_64-gcc make git zip
-
-      - name: Set up sccache
-        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Download SDE package
         uses: petarpetrovt/setup-sde@31aa4a8e85e109bef00f1d838613fcc6ec421271 # v5.0
@@ -199,14 +200,15 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Set up sccache
+        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
+
       - name: Setup msys and install required packages
         uses: msys2/setup-msys2@e9898307ac31d1a803454791be09ab9973336e1c # v2.31.1
         with:
           msystem: clangarm64
+          path-type: inherit
           install: mingw-w64-clang-aarch64-clang make git zip
-
-      - name: Set up sccache
-        uses: mozilla-actions/sccache-action@fd02668681acd5f960e1372061bee5e3e987195c # v0.0.11
 
       - name: Build universal binary
         run: make -j4 -C src ARCH=arm64-universal profile-build COMP=clang COMPCXX=clang++
