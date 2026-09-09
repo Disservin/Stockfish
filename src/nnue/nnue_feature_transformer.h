@@ -22,6 +22,7 @@
 #define NNUE_FEATURE_TRANSFORMER_H_INCLUDED
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <cstring>
 #include <iosfwd>
@@ -237,20 +238,31 @@ class FeatureTransformer {
 
         const auto& accumulation = accumulatorState.accumulation;
 
-        for (IndexType p = 0; p < 2; ++p)
-            transform_perspective(accumulation[perspectives[p]], output, p, nnzInfo);
+        transform_accumulators(accumulation[perspectives[0]], accumulation[perspectives[1]],
+                               output, nnzInfo);
 
         return psqt;
     }
 
+    // Accumulators are already in the engine's PackusEpi16Order, not file order.
+    static void transform_accumulators(const std::array<i16, L1>& us,
+                                       const std::array<i16, L1>& them,
+                                       OutputType*                output,
+                                       NNZInfo<OutputDimensions>& nnzInfo) {
+        transform_perspective(us, them, output, 0, nnzInfo);
+        transform_perspective(them, us, output, 1, nnzInfo);
+    }
+
    private:
     static void transform_perspective(const std::array<i16, HalfDimensions>&      accumulation,
+                                      const std::array<i16, HalfDimensions>&      opponent,
                                       OutputType*                                 output,
                                       IndexType                                   perspective,
                                       [[maybe_unused]] NNZInfo<OutputDimensions>& nnzInfo) {
 
         using namespace SIMD;
         const IndexType offset = (HalfDimensions / 2) * perspective;
+        constexpr IndexType LocalDimensions = HalfDimensions / 2 - CrossDimensions;
 
 #if defined(VECTOR)
 
@@ -259,13 +271,14 @@ class FeatureTransformer {
         constexpr IndexType OutputChunkSize = MaxChunkSize;
         static_assert((HalfDimensions / 2) % OutputChunkSize == 0);
         constexpr IndexType NumOutputChunks = HalfDimensions / 2 / OutputChunkSize;
+        static_assert(LocalDimensions % (2 * OutputChunkSize) == 0);
+        static_assert(CrossDimensions % (2 * OutputChunkSize) == 0);
 
         [[maybe_unused]] const vec_t   Zero  = vec_zero();
         [[maybe_unused]] const vec_t   FtMax = vec_set_16(FtMaxVal);
         [[maybe_unused]] constexpr int shift = 7;
 
         const vec_t* in0 = reinterpret_cast<const vec_t*>(&accumulation[0]);
-        const vec_t* in1 = reinterpret_cast<const vec_t*>(&accumulation[HalfDimensions / 2]);
         vec_t*       out = reinterpret_cast<vec_t*>(output + offset);
 
         // Per the NNUE architecture, here we want to multiply pairs of
@@ -300,8 +313,9 @@ class FeatureTransformer {
         // value left by 7, and perform mulhi, which shifts the product
         // right by 16 bits, then we will net a right shift of 9 bits.
 
-        for (IndexType j = 0; j < NumOutputChunks; j += 2)
-        {
+        const auto transform_range = [&](IndexType begin, IndexType end, const vec_t* in1) {
+          for (IndexType j = begin; j < end; j += 2)
+          {
             vec_t packed[2];
             for (IndexType k = 0; k < 2; ++k)
             {
@@ -356,11 +370,16 @@ class FeatureTransformer {
             }
 
             cursor.record2(packed[0], packed[1]);
-        }
+          }
+        };
+        transform_range(0, LocalDimensions / OutputChunkSize,
+                        reinterpret_cast<const vec_t*>(&accumulation[HalfDimensions / 2]));
+        if constexpr (CrossDimensions != 0)
+            transform_range(LocalDimensions / OutputChunkSize, NumOutputChunks,
+                            reinterpret_cast<const vec_t*>(&opponent[HalfDimensions / 2]));
 
 #elif defined(USE_RVV)
 
-        usize       j  = 0;
         usize       VL = __riscv_vsetvlmax_e8m1();
         vuint8m1_t  vid8;
         vuint16m2_t vid16;
@@ -369,12 +388,13 @@ class FeatureTransformer {
         else
             vid16 = __riscv_vid_v_u16m2(VL);
 
-        for (usize vl; j < HalfDimensions / 2; j += vl)
-        {
-            vl = __riscv_vsetvl_e16m2(HalfDimensions / 2 - j);
+        const auto transform_range = [&](usize begin, usize end, const i16* in1) {
+          for (usize j = begin, vl; j < end; j += vl)
+          {
+            vl = __riscv_vsetvl_e16m2(end - j);
 
             vint16m2_t acc0 = __riscv_vle16_v_i16m2(&accumulation[j], vl);
-            vint16m2_t acc1 = __riscv_vle16_v_i16m2(&accumulation[j + HalfDimensions / 2], vl);
+            vint16m2_t acc1 = __riscv_vle16_v_i16m2(in1 + j, vl);
 
             acc0 = __riscv_vmax(acc0, 0, vl);
             acc1 = __riscv_vmax(acc1, 0, vl);
@@ -396,20 +416,29 @@ class FeatureTransformer {
                 vidx = __riscv_vcompress(vid16, m, vl);
             __riscv_vse16(&nnzInfo.nnz[nnzInfo.count], __riscv_vadd(vidx, offset + j, cnt), cnt);
             nnzInfo.count += cnt;
-        }
+          }
+        };
+        transform_range(0, LocalDimensions, &accumulation[HalfDimensions / 2]);
+        if constexpr (CrossDimensions != 0)
+            transform_range(LocalDimensions, HalfDimensions / 2, &opponent[HalfDimensions / 2]);
 
 #else
 
-        for (IndexType j = 0; j < HalfDimensions / 2; ++j)
-        {
+        const auto transform_range = [&](IndexType begin, IndexType end, const i16* in1) {
+          for (IndexType j = begin; j < end; ++j)
+          {
             BiasType sum0 = accumulation[j];
-            BiasType sum1 = accumulation[j + HalfDimensions / 2];
+            BiasType sum1 = in1[j];
 
             sum0 = std::clamp<BiasType>(sum0, 0, FtMaxVal);
             sum1 = std::clamp<BiasType>(sum1, 0, FtMaxVal);
 
-            output[offset + j] = static_cast<OutputType>(unsigned(sum0 * sum1) / 512);
-        }
+            output[offset + j] = static_cast<OutputType>((int(sum0) * int(sum1)) >> 9);
+          }
+        };
+        transform_range(0, LocalDimensions, &accumulation[HalfDimensions / 2]);
+        if constexpr (CrossDimensions != 0)
+            transform_range(LocalDimensions, HalfDimensions / 2, &opponent[HalfDimensions / 2]);
 
 #endif
     }

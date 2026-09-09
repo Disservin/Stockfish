@@ -34,6 +34,10 @@
 #include "nnue_common.h"
 #include "nnz_helper.h"
 
+#ifndef NNUE_CROSS_DIMENSIONS
+    #define NNUE_CROSS_DIMENSIONS 128
+#endif
+
 namespace Stockfish::Eval::NNUE {
 
 // Input features used in evaluation function
@@ -45,6 +49,11 @@ using PSQFeatureSet    = Features::HalfKAv2_hm;
 constexpr IndexType L1 = 1024;
 constexpr int       L2 = 32;
 constexpr int       L3 = 32;
+
+constexpr IndexType CrossDimensions = NNUE_CROSS_DIMENSIONS;
+static_assert(L1 == 1024, "Cross-perspective FT uses the production 1024-channel architecture.");
+static_assert(CrossDimensions == 0 || CrossDimensions == L1 / 8);
+static_assert(CrossDimensions % 128 == 0 && (L1 / 2 - CrossDimensions) % 128 == 0);
 
 constexpr IndexType PSQTBuckets = 8;
 constexpr IndexType LayerStacks = 8;
@@ -73,6 +82,8 @@ struct NetworkArchitecture {
         // input slice hash
         u32 hashValue = 0xEC42E90Du;
         hashValue ^= TransformedFeatureDimensions * 2;
+        if constexpr (CrossDimensions != 0)
+            hashValue ^= 0x43504654u ^ CrossDimensions;
 
         hashValue = decltype(fc_0)::get_hash_value(hashValue);
         // TODO: consider including hash value of ac_sqr_0 in the overall hash value.
