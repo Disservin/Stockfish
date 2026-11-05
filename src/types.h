@@ -349,10 +349,35 @@ struct DirtyPawnPairs {
     Bitboard after[COLOR_NB];
 };
 
+// King pin features of a position, in a form that doesn't depend on the perspective. Each king
+// can have at most 15 enemy sliders aimed at it, so 30 entries always suffice.
+struct KingPinList {
+    static constexpr int Capacity = 30;
+
+    static constexpr u16 encode(Color king, PieceType slider, Piece blocker, Square s) {
+        return u16((int(king) << 13) | (int(slider) << 10) | (int(blocker) << 6) | int(s));
+    }
+    static constexpr Color     king(u16 raw) { return Color(raw >> 13); }
+    static constexpr PieceType slider(u16 raw) { return PieceType((raw >> 10) & 7); }
+    static constexpr Piece     blocker(u16 raw) { return Piece((raw >> 6) & 15); }
+    static constexpr Square    square(u16 raw) { return Square(raw & 63); }
+
+    u16 raw[Capacity];
+    u8  count;
+};
+
+// Keep track of the king pin features before and after a move (used by NNUE). They point at the
+// StateInfo of each position, which outlive the accumulators of their search frames.
+struct DirtyKingPins {
+    const KingPinList* before;
+    const KingPinList* after;
+};
+
 struct Dirties {
     DirtyPiece     dirtyPiece;
     DirtyThreats   dirtyThreats;
     DirtyPawnPairs dirtyPawnPairs;
+    DirtyKingPins  dirtyKingPins;
 };
 
     #define ENABLE_INCR_OPERATORS_ON(T) \

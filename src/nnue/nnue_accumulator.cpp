@@ -596,6 +596,27 @@ sf_always_inline Tile apply_combined_features(IndexType                         
     return apply_odd_features(j, acc, oddRemoved, oddAdded);
 }
 
+// King pin features rarely change, so they get a pass of their own and leave the
+// hot loops above untouched when there is nothing to do.
+void apply_king_pins(const FeatureTransformer&           ft,
+                     const KingPinFeatureSet::IndexList& removed,
+                     const KingPinFeatureSet::IndexList& added,
+                     std::array<i16, L1>&                accumulation) {
+
+    if (removed.size() == 0 && added.size() == 0)
+        return;
+
+    Tile acc;
+
+    for (IndexType j = 0; j < Dimensions; increment_index(j))
+    {
+        acc = load_tile(j, accumulation.data());
+        acc = apply_features<-1>(j, acc, removed.begin(), removed.ssize(), &ft.kingPinWeights[j]);
+        acc = apply_features<+1>(j, acc, added.begin(), added.ssize(), &ft.kingPinWeights[j]);
+        store_tile(j, accumulation.data(), acc);
+    }
+}
+
 void apply_combined(Color                              perspective,
                     const FeatureTransformer&          featureTransformer,
                     const AccumulatorState&            from,
@@ -666,6 +687,23 @@ void update_accumulator_incremental(Color                     perspective,
     apply_combined(perspective, featureTransformer, computed, target_state, psqAdded, psqRemoved,
                    thrAdded, thrRemoved, featureTransformer.psq_weights(psqBlock));
 
+    const auto& dirtyKingPins = Forward ? target_state.dirtyKingPins : computed.dirtyKingPins;
+
+    if (KingPinFeatureSet::may_change(dirtyKingPins))
+    {
+        KingPinFeatureSet::IndexList pinRemoved, pinAdded;
+
+        if constexpr (Forward)
+            KingPinFeatureSet::append_changed_indices(perspective, ksq, dirtyKingPins, pinRemoved,
+                                                      pinAdded);
+        else
+            KingPinFeatureSet::append_changed_indices(perspective, ksq, dirtyKingPins, pinAdded,
+                                                      pinRemoved);
+
+        apply_king_pins(featureTransformer, pinRemoved, pinAdded,
+                        target_state.accumulation[perspective]);
+    }
+
     target_state.computed[perspective] = true;
 }
 
@@ -705,6 +743,17 @@ void update_accumulator_incremental_both(const FeatureTransformer& featureTransf
     apply_combined(BLACK, featureTransformer, computed, target_state, psq_added[BLACK],
                    psq_removed[BLACK], thr_added[BLACK], thr_removed[BLACK],
                    featureTransformer.psq_weights(blackBlock));
+
+    if (KingPinFeatureSet::may_change(target_state.dirtyKingPins))
+        for (Color perspective : {WHITE, BLACK})
+        {
+            KingPinFeatureSet::IndexList pinRemoved, pinAdded;
+            KingPinFeatureSet::append_changed_indices(
+              perspective, perspective == WHITE ? white_ksq : black_ksq, target_state.dirtyKingPins,
+              pinRemoved, pinAdded);
+            apply_king_pins(featureTransformer, pinRemoved, pinAdded,
+                            target_state.accumulation[perspective]);
+        }
 
     target_state.computed[WHITE] = true;
     target_state.computed[BLACK] = true;
@@ -937,6 +986,14 @@ void update_accumulator_hybrid(Color                     perspective,
         store_tile(j, toAcc.data(), acc);
     }
 
+    if (KingPinFeatureSet::may_change(target.dirtyKingPins))
+    {
+        KingPinFeatureSet::IndexList pinRemoved, pinAdded;
+        KingPinFeatureSet::append_changed_indices(perspective, newKsq, target.dirtyKingPins,
+                                                  pinRemoved, pinAdded);
+        apply_king_pins(featureTransformer, pinRemoved, pinAdded, toAcc);
+    }
+
     newEntry.pieces  = currentPieces;
     newEntry.pieceBB = pos.pieces();
 
@@ -981,6 +1038,11 @@ void update_accumulator_refresh_cache(Color                     perspective,
 
         store_tile(j, accumulator.accumulation[perspective].data(), acc);
     }
+
+    // Computed from the board because trace() edits pieces without touching the StateInfo
+    KingPinFeatureSet::IndexList pinActive;
+    KingPinFeatureSet::append_active_indices(perspective, pos, pinActive);
+    apply_king_pins(featureTransformer, {}, pinActive, accumulator.accumulation[perspective]);
 }
 
 }

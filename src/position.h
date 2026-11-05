@@ -64,6 +64,9 @@ struct StateInfo {
     Bitboard   threats[PIECE_TYPE_NB];
     Piece      capturedPiece;
     int        repetition;
+
+    // Rarely read, so kept away from the fields above
+    KingPinList kingPins;
 };
 
 

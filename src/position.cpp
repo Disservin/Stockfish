@@ -460,6 +460,7 @@ void Position::set_castling_right(Color c, Square rfrom) {
 // computed lazily by compute_threats().
 void Position::set_extra_bitboards() const {
 
+    st->kingPins.count = 0;
     update_slider_blockers(WHITE);
     update_slider_blockers(BLACK);
 
@@ -641,6 +642,14 @@ void Position::update_slider_blockers(Color c) const {
             st->blockersForKing[c] |= b;
             if (b & pieces(c))
                 st->pinners[~c] |= sniperSq;
+
+            // Must match Features::KingPins::append_active_indices()
+            if (!(b & pieces(KING)))
+            {
+                assert(st->kingPins.count < KingPinList::Capacity);
+                st->kingPins.raw[st->kingPins.count++] =
+                  KingPinList::encode(c, type_of(piece_on(sniperSq)), piece_on(lsb(b)), lsb(b));
+            }
         }
     }
 }
@@ -1005,6 +1014,8 @@ void Position::do_move(
 
     // Update king attacks used for fast check detection
     set_extra_bitboards();
+
+    dirties.dirtyKingPins = {&st->previous->kingPins, &st->kingPins};
 
     // Calculate the repetition info. It is the ply distance from the previous
     // occurrence of the same position, negative in the 3-fold case, or zero
